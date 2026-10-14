@@ -1,4 +1,4 @@
--- Tiny local sound bank: loaded once, with no network or subprocess work.
+-- Tiny local quote bank. Audio is fetched separately after the dashboard renders.
 return {
   "Pika-pika! Chu! - Pikachu (c)",
   "Bulba! Bulbasaur! - Bulbasaur (c)",

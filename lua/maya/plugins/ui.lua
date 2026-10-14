@@ -29,6 +29,17 @@ return {
     "folke/snacks.nvim",
     priority = 1000,
     lazy = false,
+    init = function()
+      vim.api.nvim_create_autocmd("User", {
+        pattern = "SnacksDashboardUpdatePost",
+        once = true,
+        callback = function()
+          vim.schedule(function()
+            require("maya.pokemon_audio").play(sound)
+          end)
+        end,
+      })
+    end,
     opts = {
       bigfile = { enabled = true },
       indent = { enabled = true },

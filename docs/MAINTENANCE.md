@@ -18,6 +18,7 @@ uv pip install --python .local/test-env/bin/python pynvim
 .local/test-env/bin/python tests/languages.py
 .local/test-env/bin/python tests/ui_helpers.py
 .local/test-env/bin/python tests/explorer.py
+.local/test-env/bin/python tests/pokemon_audio.py
 ```
 
 Tests for Maya's existing Python/C++ projects require those projects. Advanced
@@ -51,6 +52,20 @@ files, only the staged version is formatted; unstaged text stays untouched, so
 the remaining working-tree diff may include formatting differences. Unstaged
 Markdown files are left alone. A formatter error stops the commit before any
 formatted content is staged.
+
+## Pokémon dashboard audio
+
+After the dashboard renders, mvim asynchronously requests the displayed Pokémon's
+game cry from [PokéAPI](https://pokeapi.co/docs/v2#pokemon). This is a game sound,
+not a spoken recording of the dashboard quote. Cached `.ogg` files live under
+`stdpath('cache')/pokemon-cries`; repeat launches play from cache without network
+access. The first available player is used: `mpv`, `ffplay`, `pw-play`, or `paplay`.
+Downloads require `curl`. Missing tools, offline requests, and playback failures
+are quiet. Headless launches skip audio, and each launch plays at most once.
+
+To disable it, set `vim.g.maya_pokemon_sound = false` in the `setup` function of
+your personal `~/.config/mvim/init.lua`, or launch with `MAYA_NVIM_NO_SOUND=1`.
+Pokémon assets are excluded from the code's MIT license; see `LICENSE` and `NOTICE`.
 
 ## External changes
 

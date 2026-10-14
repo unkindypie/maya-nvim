@@ -1,5 +1,8 @@
 # Changelog
 
+- Play the dashboard Pokémon's cry asynchronously through PokéAPI, with local caching.
+- License original code under MIT while retaining third-party terms and Pokémon asset attribution.
+
 - Make Explorer Enter toggle multi-selection; Tab opens files or expands directories.
 
 - Add a staged Markdown pre-commit formatter using mvim's Prettier, preserving unstaged edits.
