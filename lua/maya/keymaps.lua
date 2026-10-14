@@ -207,6 +207,7 @@ leader("Lld", cmd("MasonLog"), "Tool installation log")
 leader("Ti", cmd("checkhealth nvim-treesitter"), "Treesitter health")
 leader("Tl", cmd("MayaTools"), "Install/retry current language tools")
 leader("od", U.open_directory, "Open directory in desktop explorer")
+leader("om", cmd("RenderMarkdown toggle"), "Toggle Markdown preview")
 for key, provider in pairs({ o = "ollama", c = "copilot", x = "off" }) do
   leader("a" .. key, function()
     require("maya.ai").select(provider)

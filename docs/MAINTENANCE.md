@@ -26,6 +26,7 @@ uv pip install --python .local/test-env/bin/python pynvim
 .local/test-env/bin/python tests/ui_helpers.py
 .local/test-env/bin/python tests/explorer.py
 .local/test-env/bin/python tests/pokemon_audio.py
+.local/test-env/bin/python tests/markdown_preview.py
 ```
 
 Tests for Maya's existing Python/C++ projects require those projects. Advanced

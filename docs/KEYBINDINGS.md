@@ -34,6 +34,7 @@ The authoritative mappings are in `lua/maya/keymaps.lua` and `plugins/completion
 | `Space Lld/Lll/Lln`                      | Mason/LSP/Neovim logs                                                                   |
 | `Space Ti/Tl`                            | Tree-sitter health, retry current language tooling                                      |
 | `Space od`                               | Desktop file manager at current directory                                               |
+| `Space om`                               | Toggle in-editor Markdown preview                                                       |
 | `Space ao/ac/ax/as`                      | Ollama/Copilot/off/status                                                               |
 | `Ctrl-\`                                 | Floating terminal                                                                       |
 | `Ctrl-h/j/k/l`                           | Window navigation, including terminal mode                                              |
@@ -42,6 +43,10 @@ The authoritative mappings are in `lua/maya/keymaps.lua` and `plugins/completion
 
 Current-line Git blame aligns to the right edge of the editor window. Long
 author/date/commit text is shortened to fit beside the file content.
+
+Markdown files render headings, tables, checkboxes, and code blocks inside the
+buffer. Use `Space om` or `:RenderMarkdown toggle` to switch rendering off/on.
+Insert mode shows raw text for editing; rendering does not change file contents.
 
 Picker input retains Ctrl-N/P selection, Ctrl-J/K history, Enter open, Ctrl-Q
 quickfix. Explorer uses its current supported controls (`?` for help), l

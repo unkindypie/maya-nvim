@@ -16,6 +16,13 @@ return {
     opts = {
       flavour = "frappe",
       transparent_background = true,
+      custom_highlights = function(colors)
+        return {
+          GitSignsCurrentLineBlame = { fg = colors.subtext1, italic = true },
+          MayaMarkdownBackground = { bg = "NONE" },
+          RenderMarkdownCodeInline = { fg = colors.green, bg = "NONE" },
+        }
+      end,
       integrations = { blink_cmp = true, snacks = true, gitsigns = true },
     },
     config = function(_, opts)
@@ -24,6 +31,19 @@ return {
     end,
   },
   { "nvim-tree/nvim-web-devicons", lazy = true },
+  {
+    "MeanderingProgrammer/render-markdown.nvim",
+    ft = "markdown",
+    cmd = "RenderMarkdown",
+    dependencies = { "nvim-treesitter/nvim-treesitter", "nvim-tree/nvim-web-devicons" },
+    opts = {
+      heading = { backgrounds = { "MayaMarkdownBackground" } },
+      code = {
+        disable_background = true,
+        highlight = "MayaMarkdownBackground",
+      },
+    },
+  },
   {
     "folke/snacks.nvim",
     priority = 1000,

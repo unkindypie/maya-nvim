@@ -2,9 +2,9 @@
 
 Hi. I'm Maya and it's my Neovim config/distro.
 
-A standalone Neovim 0.12.5 setup for Mac and Linux: LunarVim muscle memory, transparent
-Catppuccin Frappé, modern language tools, local AI, and safe collaboration with
-external editors such as Codex or Claude Code. Launch with **`mvim`**. Isolated from other nvim distros.
+A standalone Neovim 0.12.5 setup for Mac and Linux: **LunarVim muscle memory**, transparent
+**Catppuccin Frappé**, modern language tools, **local AI**, and safe **collaboration** with
+**external editors** such as Codex or Claude Code. Launch with **`mvim`**. Isolated from other nvim distros.
 
 Installation is one command, with guided questions and automatic setup of missing
 prerequisites. Existing tools are kept; incompatible versions receive manual
