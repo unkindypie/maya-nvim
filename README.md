@@ -3,8 +3,8 @@
 Hi. I'm Maya and it's my Neovim config/distro.
 
 A standalone Neovim 0.12.5 setup for Mac and Linux: **LunarVim muscle memory**, transparent
-**Catppuccin Frappé**, modern language tools, **local AI**, and safe **collaboration** with
-**external editors** such as Codex or Claude Code. Launch with **`mvim`**. Isolated from other nvim distros.
+**Catppuccin Frappé**, modern language tools, **local AI**, and **safe collaboration** with
+**external editors** such as **Codex** or **Claude Code**. Launch with **`mvim`**. Isolated from other nvim distros.
 
 Installation is one command, with guided questions and automatic setup of missing
 prerequisites. Existing tools are kept; incompatible versions receive manual
@@ -12,10 +12,10 @@ instructions.
 
 ## Install
 
-Supported systems: **Fedora, Debian/Ubuntu, Arch, openSUSE, and macOS with
-Homebrew**. Managed downloads support **x86-64 and ARM64**.
+Supported systems: **Fedora, Debian/Ubuntu, Arch, openSUSE,** and **macOS with
+Homebrew**. Managed downloads support **x86-64** and **ARM64**.
 
-One-command installation (clones into `~/maya-nvim`, or updates that checkout, then runs setup):
+**One-command installation** (clones into `~/maya-nvim`, or updates that checkout, then runs setup):
 
 ```sh
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/unkindypie/maya-nvim/master/bootstrap.sh)"
