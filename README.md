@@ -6,7 +6,23 @@ external editors such as Codex. Launch with **`mvim`**. Isolated from other nvim
 
 ## Install
 
-Clone this repository anywhere (Maya uses `~/maya-nvim`), then:
+One-command installation (clones into `~/maya-nvim`, then runs setup):
+
+```sh
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/unkindypie/maya-nvim/master/bootstrap.sh)"
+```
+
+This keeps installer questions interactive. On a fresh install, Enter accepts the
+sound, tab-restoration, and local Ollama AI defaults; `n` disables each option.
+System prerequisites listed below must already be installed. The bootstrap
+refuses to overwrite an existing destination. To choose another directory or
+pass installer flags:
+
+```sh
+MAYA_NVIM_INSTALL_DIR="$HOME/projects/maya-nvim" bash -c "$(curl -fsSL https://raw.githubusercontent.com/unkindypie/maya-nvim/master/bootstrap.sh)" -- --ai off
+```
+
+Alternatively, clone this repository anywhere (Maya uses `~/maya-nvim`), then:
 
 ```sh
 ./install.sh
@@ -21,8 +37,8 @@ mvim
 The installer links the repository into `${XDG_CONFIG_HOME:-~/.config}/maya-nvim`,
 installs the launcher under `~/.local/bin` and an executable symlink under
 `~/.local/libexec/maya-nvim` (so tmux displays `mvim`), adds a managed zsh alias, restores
-locked plugins, installs language tools/parsers and debug adapters, and sets up
-local Ollama. It does not install system packages or run sudo. Open a new zsh
+locked plugins, installs language tools/parsers and debug adapters, and optionally sets up
+local Ollama after asking. It does not install system packages or run sudo. Open a new zsh
 session afterwards, or run `~/.local/bin/mvim` immediately.
 
 Prerequisites: Neovim **0.12+** (tested with **0.12.5**), Python 3.11+, Git, curl,
