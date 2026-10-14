@@ -22,6 +22,7 @@ compatibility shims. Keep language metadata in one inventory.
 3. Format Lua with StyLua and check Python/shell syntax.
 4. Run relevant tests below. A plugin update requires startup and integration checks.
 5. Commit coherent validated changes on master. Commit the plugin lockfile.
+   Use prefixes like feat: ... or fix: ... in commit
 
 Do not commit credentials, AI state, model blobs, generated parsers, logs, or
 machine-specific shell configuration. AI preferences live under

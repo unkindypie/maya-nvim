@@ -3,6 +3,7 @@
 import os
 from pathlib import Path
 import tempfile
+import time
 from integration import start, wait, stop, ROOT
 
 
@@ -10,6 +11,11 @@ def main():
     nvim = start()
     nvim.ui_attach(110, 35, rgb=True)
     try:
+        nvim.exec_lua('require("lazy").load({plugins={"lualine.nvim"}})')
+        nvim.command('redrawstatus')
+        time.sleep(2.2)  # Lualine reports configuration notices after two seconds.
+        assert nvim.funcs.exists(':LualineNotices') == 0, 'Unexpected lualine configuration warning'
+        print('PASS lualine startup without configuration notices', flush=True)
         nvim.command('enew')
         nvim.current.buffer[:] = ['local value = 1']
         nvim.command('setfiletype lua')

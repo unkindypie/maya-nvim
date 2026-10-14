@@ -14,3 +14,4 @@
 
 - Use explicit semantic which-key icons with broadly supported Nerd Font glyphs.
 - Close Explorer after opening a file; keep it open when expanding directories.
+- Fix lualine theme name to `catppuccin-frappe`, removing its startup configuration warning.

@@ -160,7 +160,7 @@ return {
     event = "VeryLazy",
     dependencies = { "nvim-tree/nvim-web-devicons" },
     opts = {
-      options = { theme = "catppuccin", globalstatus = true },
+      options = { theme = "catppuccin-frappe", globalstatus = true },
       sections = {
         lualine_c = { { "filename", path = 1 } },
         lualine_x = {
