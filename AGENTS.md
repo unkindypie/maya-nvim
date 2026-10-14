@@ -27,7 +27,7 @@ Enable the repository's Markdown formatting hook after cloning:
 3. Format Lua with StyLua and check Python/shell syntax.
 4. Run relevant tests below. A plugin update requires startup and integration checks.
 5. Commit coherent validated changes on master. Commit the plugin lockfile.
-   Use prefixes like feat: ... or fix: ... in commit
+   Use prefixes like feat: ... or fix: ... or doc: ..., chore: ... in commit
 6. After committing, push master to its configured remote (`git push origin master`).
    Never force-push or rewrite remote history without explicit authorization;
    report push failures rather than silently leaving a commit unpushed.

@@ -12,15 +12,9 @@ One-command installation (clones into `~/maya-nvim`, then runs setup):
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/unkindypie/maya-nvim/master/bootstrap.sh)"
 ```
 
-This keeps installer questions interactive. On a fresh install, Enter accepts the
-sound, tab-restoration, and local Ollama AI defaults; `n` disables each option.
-System prerequisites listed below must already be installed. The bootstrap
-refuses to overwrite an existing destination. To choose another directory or
-pass installer flags:
-
-```sh
-MAYA_NVIM_INSTALL_DIR="$HOME/projects/maya-nvim" bash -c "$(curl -fsSL https://raw.githubusercontent.com/unkindypie/maya-nvim/master/bootstrap.sh)" -- --ai off
-```
+System prerequisites listed below must already be installed.
+To choose another directory add this ENV at the start of the install script:
+`MAYA_NVIM_INSTALL_DIR="$HOME/projects/maya-nvim"`
 
 Alternatively, clone this repository anywhere (Maya uses `~/maya-nvim`), then:
 
@@ -163,20 +157,20 @@ Details: [AI setup](docs/AI.md), [keybindings and migration](docs/KEYBINDINGS.md
 
 ## Configuration map
 
-| Location | Responsibility |
-|---|---|
-| `init.lua` | Small ordered entry point |
-| `lua/maya/options.lua` | Editor defaults and safe config-file indentation |
-| `lua/maya/keymaps.lua` | Familiar global bindings and which-key descriptions |
-| `lua/maya/plugins/` | Plugin choices grouped by UI, completion, and tools |
-| `lua/maya/languages.lua` | LSP setup and first-use tool/parser inventory |
-| `lua/maya/ai.lua` | Provider switching and shared suggestion controls |
-| `lua/maya/pokemon.lua` | Local dashboard sound bank |
-| `lua/maya/session.lua` | Native folder session save/restore |
-| `lua/maya/reload.lua` | Native file-change checks and disk diff |
-| `lua/maya/debug.lua` | Python and Node debug adapters |
-| `scripts/` | Installer, bootstrap, and Ollama setup |
-| `tests/` | Installer and real editor integration checks |
+| Location                 | Responsibility                                      |
+| ------------------------ | --------------------------------------------------- |
+| `init.lua`               | Small ordered entry point                           |
+| `lua/maya/options.lua`   | Editor defaults and safe config-file indentation    |
+| `lua/maya/keymaps.lua`   | Familiar global bindings and which-key descriptions |
+| `lua/maya/plugins/`      | Plugin choices grouped by UI, completion, and tools |
+| `lua/maya/languages.lua` | LSP setup and first-use tool/parser inventory       |
+| `lua/maya/ai.lua`        | Provider switching and shared suggestion controls   |
+| `lua/maya/pokemon.lua`   | Local dashboard sound bank                          |
+| `lua/maya/session.lua`   | Native folder session save/restore                  |
+| `lua/maya/reload.lua`    | Native file-change checks and disk diff             |
+| `lua/maya/debug.lua`     | Python and Node debug adapters                      |
+| `scripts/`               | Installer, bootstrap, and Ollama setup              |
+| `tests/`                 | Installer and real editor integration checks        |
 
 ## Updates and removal
 
