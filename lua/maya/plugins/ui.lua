@@ -85,7 +85,15 @@ return {
                 end
               end,
             },
-            win = { list = { keys = { ["<Tab>"] = "maya_open", ["<CR>"] = "select_and_next" } } },
+            win = {
+              list = {
+                keys = {
+                  ["<Tab>"] = "maya_open",
+                  ["<CR>"] = "maya_open",
+                  ["s"] = "select_and_next",
+                },
+              },
+            },
           },
         },
         win = {

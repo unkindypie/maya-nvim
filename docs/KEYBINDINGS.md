@@ -50,8 +50,8 @@ Insert mode shows raw text for editing; rendering does not change file contents.
 
 Picker input retains Ctrl-N/P selection, Ctrl-J/K history, Enter open, Ctrl-Q
 quickfix. Explorer uses its current supported controls (`?` for help), l
-open, h parent, and `a/d/r` add/delete/rename. Tab expands/collapses a directory
-or opens a file in the main window and closes Explorer. Enter toggles
+open, h parent, and `a/d/r` add/delete/rename. Tab or Enter expands/collapses a directory
+or opens a file in the main window and closes Explorer. `s` toggles
 selection of a file or directory and moves to the next item, keeping Explorer
 open for multi-selection actions such as copy, move, or delete.
 
