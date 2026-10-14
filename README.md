@@ -59,16 +59,27 @@ opens it; `Space Lc` still opens the managed entry point.
 
 ```lua
 return {
-  options = { relativenumber = true, shiftwidth = 4 },
-  plugins = {
-    { "folke/which-key.nvim", opts = { delay = 200 } },
-    -- Add other lazy.nvim specs here.
+  pokemon_sound_on_start = true, -- Play a Pokémon cry at 50% volume.
+  reopen_tabs = true, -- Restore this folder's files, tabs, and splits.
+
+  options = {
+    -- relativenumber = true,
+    -- shiftwidth = 4,
   },
+
+  plugins = {
+    -- Add plugins or override their settings:
+    -- { "folke/which-key.nvim", opts = { delay = 200 } },
+  },
+
   setup = function()
-    vim.keymap.set("n", "<leader>w", "<cmd>write<cr>", { desc = "My save" })
+    -- Add custom keybindings or other setup here.
   end,
 }
 ```
+
+Use lowercase `true` / `false`. The installer asks about sound and tab restoration
+when creating a new config; reinstalling preserves your existing file.
 
 Options and `setup()` run after the built-in defaults/keymaps. Plugin specs are
 merged after the built-in specs, so they can add plugins, override `opts`, or
