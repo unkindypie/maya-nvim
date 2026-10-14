@@ -14,13 +14,14 @@ return {
     name = "catppuccin",
     priority = 1000,
     lazy = false,
-    config = function()
-      require("catppuccin").setup({
-        flavour = "frappe",
-        transparent_background = true,
-        integrations = { blink_cmp = true, snacks = true, gitsigns = true },
-      })
-      vim.cmd.colorscheme("catppuccin-frappe")
+    opts = {
+      flavour = "frappe",
+      transparent_background = true,
+      integrations = { blink_cmp = true, snacks = true, gitsigns = true },
+    },
+    config = function(_, opts)
+      require("catppuccin").setup(opts)
+      vim.cmd.colorscheme("catppuccin")
     end,
   },
   { "nvim-tree/nvim-web-devicons", lazy = true },

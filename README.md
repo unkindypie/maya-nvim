@@ -10,6 +10,7 @@ Clone this repository anywhere (Maya uses `~/maya-nvim`), then:
 
 ```sh
 ./install.sh
+mvim  # launch the editor after installation
 ```
 
 The installer links the repository into `${XDG_CONFIG_HOME:-~/.config}/maya-nvim`,
@@ -43,6 +44,41 @@ installed Ollama and existing models, downloads only missing models, and keeps
 model files outside this repository. Maya's chosen store is `/mnt/ml/ollama`.
 Installation is repeatable; unrelated existing config directories/launchers are
 never overwritten. Edited shell/sessionizer files get dated backups.
+
+## Personal configuration
+
+Use `~/.config/mvim/init.lua` to extend the managed configuration without editing
+this repository (`$XDG_CONFIG_HOME/mvim` when XDG_CONFIG_HOME is set). Installation
+creates a commented example if the file does not already exist. `Space LC`
+opens it; `Space Lc` still opens the managed entry point.
+
+```lua
+return {
+  options = { relativenumber = true, shiftwidth = 4 },
+  plugins = {
+    { "folke/which-key.nvim", opts = { delay = 200 } },
+    -- Add other lazy.nvim specs here.
+  },
+  setup = function()
+    vim.keymap.set("n", "<leader>w", "<cmd>write<cr>", { desc = "My save" })
+  end,
+}
+```
+
+Options and `setup()` run after the built-in defaults/keymaps. Plugin specs are
+merged after the built-in specs, so they can add plugins, override `opts`, or
+use `enabled = false`. For larger setups, put modules in `lua/mvim/` and use
+`require("mvim.name")`, or import plugin specs with `{ import = "mvim.plugins" }`.
+Personal `ftplugin/` and `after/` directories are supported too. Restart mvim to
+apply changes. Configuration errors are reported without discarding defaults.
+
+When personal plugin specs are present, their lockfile is
+`~/.config/mvim/lazy-lock.json`, initially copied from the repository's lockfile.
+It is independent afterwards: plugin updates/restore use that local lockfile.
+To adopt newer repository pins, back up or remove the personal lockfile and
+restart; it will be seeded again. A read-only personal directory uses a lockfile
+in maya-nvim's state directory instead. Keep personal config and locks when
+uninstalling unless you explicitly want to remove them.
 
 ## Daily use
 

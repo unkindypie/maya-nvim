@@ -42,10 +42,14 @@ class InstallerTest(unittest.TestCase):
             self.assertEqual(sessionizer.read_text(), before)
             subprocess.run(command, env=env, check=True, capture_output=True)
             self.assertEqual((home / 'config space/maya-nvim').resolve(), ROOT)
+            personal = home / 'config space/mvim/init.lua'
+            self.assertTrue(personal.is_file())
+            personal.write_text('return {options={number=false}}\n')
             shell = (home / '.zshrc').read_text()
             updated = sessionizer.read_text()
             subprocess.run(command, env=env, check=True, capture_output=True)
             self.assertEqual((home / '.zshrc').read_text(), shell)
+            self.assertEqual(personal.read_text(), 'return {options={number=false}}\n')
             self.assertEqual(sessionizer.read_text(), updated)
             self.assertEqual(updated.count(str(ROOT)), 1)
             target = home / '.local/bin/mvim'

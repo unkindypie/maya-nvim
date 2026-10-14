@@ -41,6 +41,9 @@ def main():
     nvim = shutil.which('nvim')
     if nvim:
         links.append((Path.home() / '.local/libexec/maya-nvim/mvim', Path(nvim).resolve()))
+    personal = config / 'mvim'
+    if (personal.exists() or personal.is_symlink()) and not personal.is_dir():
+        parser.error(f'Personal config path must be a directory: {personal}')
     edits = []
     if not args.no_shell:
         shell = Path(os.environ.get('ZDOTDIR', Path.home())) / '.zshrc'
@@ -85,6 +88,7 @@ def main():
         print(f'Link {target} -> {source}')
     for path, _ in edits:
         print(f'Update managed block: {path}')
+    print(f'Create personal config example if missing: {personal / "init.lua"}')
     if args.dry_run:
         print(f'AI: {args.ai}; bootstrap: {not args.skip_bootstrap}; no changes made')
         return
@@ -92,6 +96,10 @@ def main():
         target.parent.mkdir(parents=True, exist_ok=True)
         if not target.is_symlink():
             target.symlink_to(source)
+    personal.mkdir(parents=True, exist_ok=True)
+    personal_init = personal / 'init.lua'
+    if not personal_init.exists() and not personal_init.is_symlink():
+        shutil.copy2(ROOT / 'examples/mvim/init.lua', personal_init)
     stamp = datetime.datetime.now().strftime('%Y%m%d-%H%M%S-%f')
     for path, text in edits:
         if path.exists() and path.read_text() == text:

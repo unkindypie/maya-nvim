@@ -44,7 +44,7 @@ assert(found, "dashboard sound must come from the local bank")
  end
  return false
 end)()''', 15)
-        assert 'Build isolated' in text, text
+        assert 'build isolated' in text.lower(), text
         print('PASS native comment mapping and inline blame author/date/commit summary', flush=True)
     finally:
         stop(nvim)

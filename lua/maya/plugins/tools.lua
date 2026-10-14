@@ -14,8 +14,9 @@ return {
     branch = "main",
     lazy = false,
     build = ":TSUpdate",
-    config = function()
-      require("nvim-treesitter").setup({ install_dir = vim.fn.stdpath("data") .. "/site" })
+    opts = { install_dir = vim.fn.stdpath("data") .. "/site" },
+    config = function(_, opts)
+      require("nvim-treesitter").setup(opts)
     end,
   },
   {

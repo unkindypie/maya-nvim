@@ -28,6 +28,7 @@ The authoritative mappings are in `lua/maya/keymaps.lua` and `plugins/completion
 | `Space dr/dp/dd/dq` | Debug REPL, pause, disconnect, close |
 | `Space pi/ps/pS/pc/pu/pp/pl/pd` | Lazy install/sync/show/clean/update/profile/log/debug |
 | `Space sf/sh/sH/sM/sr/sR/sk/sC/sl/sp/sP` | Files/help/highlights/man/recent/registers/keymaps/commands/resume/colors/projects |
+| `Space LC` | Edit personal `~/.config/mvim/init.lua` |
 | `Space Lc/Ld/Lf/Lg/Lk/Li/LI` | Config, docs, find/grep config, keymaps, health, changelog |
 | `Space Lr/Lu` | Restart instructions, plugin update |
 | `Space Lld/Lll/Lln` | Mason/LSP/Neovim logs |

@@ -13,7 +13,9 @@ Keep `init.lua` small. Editor defaults belong in `options.lua`; mappings in
 `keymaps.lua`; plugin specs in `plugins/`; tools and filetype mappings in
 `languages.lua`; AI provider controls in `ai.lua`. Prefer supported Neovim APIs
 and documented plugin APIs. Do not patch private LSP tables or add distribution
-compatibility shims. Keep language metadata in one inventory.
+compatibility shims. Keep language metadata in one inventory. Personal overrides are loaded by
+`user.lua` from `$XDG_CONFIG_HOME/mvim`; never overwrite that directory during
+updates or commit a user’s personal configuration into this repository.
 
 ## Workflow
 
@@ -23,6 +25,9 @@ compatibility shims. Keep language metadata in one inventory.
 4. Run relevant tests below. A plugin update requires startup and integration checks.
 5. Commit coherent validated changes on master. Commit the plugin lockfile.
    Use prefixes like feat: ... or fix: ... in commit
+6. After committing, push master to its configured remote (`git push origin master`).
+   Never force-push or rewrite remote history without explicit authorization;
+   report push failures rather than silently leaving a commit unpushed.
 
 Do not commit credentials, AI state, model blobs, generated parsers, logs, or
 machine-specific shell configuration. AI preferences live under
@@ -32,7 +37,7 @@ provider. Keep exactly one suggestion backend enabled.
 ## Checks
 
 ```sh
-python3 -m unittest discover -s tests -p 'test_installer.py' -v
+python3 -m unittest discover -s tests -p 'test_*.py' -v
 bash -n install.sh bin/mvim
 MAYA_NVIM_NO_INSTALL=1 MAYA_NVIM_NO_AI=1 bin/mvim --headless '+lua assert(vim.g.mapleader == " ")' +qa
 # Real project tests require pynvim (install it in a disposable uv environment).

@@ -17,3 +17,5 @@
 - Fix lualine theme name to `catppuccin-frappe`, removing its startup configuration warning.
 - Launch through a user-local executable symlink so tmux detects `mvim` instead of `nvim`.
 - Remove the 350 ms current-line blame delay for immediate cursor updates.
+- Support personal options, plugin specs, keymaps and Lua modules under `~/.config/mvim`.
+- Document launching with `mvim` and pushing commits to the configured remote.

@@ -78,3 +78,11 @@ python3 -m unittest discover -s tests -p 'test_installer.py' -v
 
 Set up the disposable pynvim environment as described in MAINTENANCE.md.
 Raw development logs/screenshots remain in `/tmp`, not in the repository.
+
+## Personal configuration extension
+
+Real startup tests cover options/keymap precedence, merged plugin options,
+disabling a bundled plugin, importing and loading an additional local plugin,
+Lua module lookup, personal filetype files, separate personal plugin locks,
+missing configuration, malformed Lua, invalid options and setup failures.
+Installer tests verify that existing personal configuration is not overwritten.

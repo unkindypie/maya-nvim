@@ -247,3 +247,7 @@ leader("bs", cmd("MayaSessionSave"), "Save folder session")
 leader("br", cmd("MayaSessionLoad"), "Restore folder session")
 
 leader("bo", U.close_others, "Close all others (buffers/tabs)")
+
+leader("LC", function()
+  vim.cmd.edit(vim.fn.fnameescape(require("maya.user").path .. "/init.lua"))
+end, "Edit personal configuration")

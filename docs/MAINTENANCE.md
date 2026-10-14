@@ -3,7 +3,7 @@
 ## Checks and updates
 
 ```sh
-python3 -m unittest discover -s tests -p 'test_installer.py' -v
+python3 -m unittest discover -s tests -p 'test_*.py' -v
 bash -n install.sh bin/mvim
 MAYA_NVIM_NO_INSTALL=1 MAYA_NVIM_NO_AI=1 MAYA_NVIM_NO_SESSION=1 bin/mvim --headless '+checkhealth' +qa
 ```
