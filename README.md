@@ -4,7 +4,16 @@ A standalone Neovim 0.12.5 setup for Maya: LunarVim muscle memory, transparent
 Catppuccin Frappé, modern language tools, local AI, and safe collaboration with
 external editors such as Codex. Launch with **`mvim`**. Isolated from other nvim distros..
 
+Installation is one command, with guided questions and automatic setup of missing
+prerequisites. Existing tools are kept; incompatible versions receive manual
+instructions.
+
 ## Install
+
+Supported systems: **Fedora, Debian/Ubuntu, Arch, openSUSE, and macOS with
+Homebrew**. Managed downloads support **x86-64 and ARM64**. Prerequisite installation
+is tested in Fedora 44 and Ubuntu 24.04 containers; macOS and the other Linux
+package-manager paths are covered by command-plan tests, not full system tests.
 
 One-command installation (clones into `~/maya-nvim`, then runs setup):
 
@@ -12,7 +21,11 @@ One-command installation (clones into `~/maya-nvim`, then runs setup):
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/unkindypie/maya-nvim/master/bootstrap.sh)"
 ```
 
-System prerequisites listed below must already be installed.
+The command itself needs Bash and curl. The bootstrap can install missing Git
+and Python; setup detects the remaining prerequisites, shows the proposed commands,
+and asks `Install missing prerequisites? [Y/n]`. Enter installs them; `n` prints
+manual instructions. System packages may require a sudo password. Homebrew on
+macOS must already be installed.
 To choose another directory add this ENV at the start of the install script:
 `MAYA_NVIM_INSTALL_DIR="$HOME/projects/maya-nvim"`
 
@@ -34,19 +47,40 @@ The installer links the repository into `${XDG_CONFIG_HOME:-~/.config}/maya-nvim
 installs the launcher under `~/.local/bin` and an executable symlink under
 `~/.local/libexec/maya-nvim` (so tmux displays `mvim`), adds a managed zsh alias, restores
 locked plugins, installs language tools/parsers and debug adapters, and optionally sets up
-local Ollama after asking. It does not install system packages or run sudo. Open a new zsh
+local Ollama after asking. Only missing prerequisites are installed, after showing
+the commands; package managers may update dependencies needed by those packages.
+Open a new zsh
 session afterwards, or run `~/.local/bin/mvim` immediately.
 
-Prerequisites: Neovim **0.12+** (tested with **0.12.5**), Python 3.11+, Git, curl,
-tar, a C compiler, tree-sitter CLI **0.26.1+**, Node.js **22+**, and npm. Linux
-Ollama installation additionally requires zstd and a working systemd user
-session. A Nerd Font and ripgrep are recommended; Maya's Kitty already uses
-FantasqueSansM Nerd Font. macOS users install Ollama separately before selecting
-local AI. Linux is the fully validated platform.
+Prerequisites are normally installed automatically. This table lists the tools
+and versions for reference **if automatic installation fails**. Copyable commands
+for each system and manual recovery are in [prerequisite troubleshooting](docs/PREREQUISITES.md).
+
+| Prerequisite                       | Required version            | Automatic installation                                                                        |
+| ---------------------------------- | --------------------------- | --------------------------------------------------------------------------------------------- |
+| Bash and curl                      | System version              | Bash is required to start; missing curl can be installed by the local installer               |
+| Python                             | 3.11+                       | System package; existing older versions are preserved                                         |
+| Git, tar, unzip, CA certificates   | System versions             | System packages when missing                                                                  |
+| Neovim                             | 0.12+; tested/pinned 0.12.5 | Verified user-local download when absent                                                      |
+| tree-sitter CLI                    | 0.26.1+                     | Verified user-local 0.26.1 download when absent                                               |
+| Node.js and npm                    | Node 22+                    | Verified user-local Node 22.23.3 with npm when Node is absent; system package for missing npm |
+| C compiler and ripgrep             | System versions             | System compiler tools and `ripgrep` packages                                                  |
+| Python virtual-environment support | Matches selected Python     | Distro package when missing                                                                   |
+| Audio player                       | Optional                    | Offer mpv if no supported player exists and sound is enabled                                  |
+| Nerd Font                          | Optional                    | Offer user-local FantasqueSansMono Nerd Font 3.4.0; select it in terminal settings yourself   |
+| Ollama / zstd                      | Optional local AI           | Reuse existing Ollama; install zstd only if a Linux binary download needs it                  |
+
+Fresh installs also ask about sound, saved tabs, and local Ollama AI. Linux Ollama
+automatic startup needs a working systemd user session; macOS users install/start
+Ollama separately. Declining optional audio/font setup does not block the editor.
 
 ```sh
 ./install.sh --help
 ./install.sh --dry-run
+./install.sh --install-prerequisites       # allow missing prerequisite installation
+./install.sh --no-install-prerequisites    # print manual instructions instead
+./install.sh --no-install-audio --no-install-nerd-font
+./install.sh --yes --ai off                # unattended setup, including missing prerequisites
 ./install.sh --ai copilot                  # no Ollama installation
 ./install.sh --ai off                      # language tools without AI
 ./install.sh --no-shell                    # do not edit zsh configuration

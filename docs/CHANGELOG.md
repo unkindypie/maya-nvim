@@ -1,5 +1,8 @@
 # Changelog
 
+- Automatically install missing prerequisites after confirmation, with isolated verified tools, optional audio/fonts, and actionable manual recovery.
+- Validate fresh prerequisite installation and idempotent reruns in Fedora and Ubuntu containers.
+
 - Add a one-command bootstrap that clones master, preserves interactive questions, and forwards installer flags.
 
 - Ask whether to enable Ollama during fresh interactive installation; preserve saved AI choices and reuse running servers without installing another executable.

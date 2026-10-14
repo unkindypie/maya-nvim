@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Reversible user-local installation. Never modifies LunarVim or system packages."""
+"""User-local editor installation with confirmed missing-prerequisite setup."""
 import argparse
 import datetime
 import json
@@ -12,6 +12,8 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / 'scripts'))
+from prerequisites import Prerequisites, add_arguments
 BEGIN, END = '# >>> maya-nvim >>>', '# <<< maya-nvim <<<'
 
 
@@ -38,14 +40,12 @@ def main():
     parser.add_argument('--ai', choices=['ollama', 'copilot', 'off'], help='override the local-AI question')
     parser.add_argument('--ollama-models-dir', type=Path)
     parser.add_argument('--model', help='Ollama model override; otherwise reuse Qwen 7B or install Qwen 1.5B')
+    add_arguments(parser)
     args = parser.parse_args()
     config = Path(os.environ.get('XDG_CONFIG_HOME', Path.home() / '.config'))
     links = [(config / 'maya-nvim', ROOT), (Path.home() / '.local/bin/mvim', ROOT / 'bin/mvim')]
-    # Linux/tmux detects the executable basename, not the shell alias or argv[0].
-    nvim = shutil.which('nvim')
-    if nvim:
-        links.append((Path.home() / '.local/libexec/maya-nvim/mvim', Path(nvim).resolve()))
     personal = config / 'mvim'
+    personal_init = personal / 'init.lua'
     if (personal.exists() or personal.is_symlink()) and not personal.is_dir():
         parser.error(f'Personal config path must be a directory: {personal}')
     edits = []
@@ -70,21 +70,16 @@ def main():
     for target, source in links:
         if (target.exists() or target.is_symlink()) and not (target.is_symlink() and target.resolve() == source):
             parser.error(f'Refusing to replace unrelated path: {target}')
+    prerequisites = Prerequisites(args)
     if not args.skip_bootstrap:
-        required = ['nvim', 'git', 'curl', 'tar', 'tree-sitter', 'cc', 'node', 'npm', 'rg']
-        missing = [name for name in required if not shutil.which(name)]
-        if missing:
-            parser.error('Install system prerequisites first: ' + ', '.join(missing))
-        version = subprocess.check_output(['nvim', '--version'], text=True).splitlines()[0]
-        if not re.search(r'v0\.(?:12|[2-9][0-9])\.', version):
-            parser.error('Neovim 0.12+ required; tested on 0.12.5')
-        node_version = int(subprocess.check_output(['node', '--version'], text=True).strip().lstrip('v').split('.')[0])
-        if node_version < 22:
-            parser.error('Node.js 22+ is required')
-        ts = subprocess.check_output(['tree-sitter', '--version'], text=True)
-        ts_version = tuple(map(int, re.search(r'(\d+)\.(\d+)\.(\d+)', ts).groups()))
-        if ts_version < (0, 26, 1):
-            parser.error('tree-sitter CLI 0.26.1+ is required')
+        prerequisites.required()
+    nvim = shutil.which('nvim')
+    if nvim:
+        engine = Path.home() / '.local/libexec/maya-nvim/mvim'
+        resolved = Path(nvim).resolve()
+        if (engine.exists() or engine.is_symlink()) and not (engine.is_symlink() and engine.resolve() == resolved):
+            parser.error(f'Refusing to replace unrelated path: {engine}')
+        links.append((engine, resolved))
     state = Path(os.environ.get('XDG_STATE_HOME', Path.home() / '.local/state')) / 'maya-nvim'
     args.ai = choose_ai(args, state)
     for target, source in links:
@@ -93,24 +88,34 @@ def main():
         print(f'Update managed block: {path}')
     print(f'Create personal config example if missing: {personal / "init.lua"}')
     if args.dry_run:
+        if not args.skip_bootstrap:
+            prerequisites.optional(sound=sound_enabled(args, personal_init))
+            if args.ai == 'ollama':
+                prerequisites.ollama()
         print(f'AI: {args.ai}; bootstrap: {not args.skip_bootstrap}; no changes made')
         return
-    for target, source in links:
-        target.parent.mkdir(parents=True, exist_ok=True)
-        if not target.is_symlink():
-            target.symlink_to(source)
-    personal.mkdir(parents=True, exist_ok=True)
-    personal_init = personal / 'init.lua'
+    personal_text = None
     if not personal_init.exists() and not personal_init.is_symlink():
-        text = (ROOT / 'examples/mvim/init.lua').read_text()
+        personal_text = (ROOT / 'examples/mvim/init.lua').read_text()
         interactive = sys.stdin.isatty() and not args.yes
         for key, label in [('pokemon_sound_on_start', 'Play a Pokemon cry on startup?'),
                            ('reopen_tabs', 'Reopen saved files and tabs in the same folder?')]:
             value = getattr(args, key)
             if value is None:
                 value = ask_boolean(label) if interactive else True
-            text = text.replace(f'{key} = true,', f'{key} = {str(value).lower()},')
-        personal_init.write_text(text)
+            setattr(args, key, value)
+            personal_text = personal_text.replace(f'{key} = true,', f'{key} = {str(value).lower()},')
+    if not args.skip_bootstrap:
+        prerequisites.optional(sound=sound_enabled(args, personal_init))
+        if args.ai == 'ollama':
+            prerequisites.ollama()
+    for target, source in links:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        if not target.is_symlink():
+            target.symlink_to(source)
+    personal.mkdir(parents=True, exist_ok=True)
+    if personal_text is not None:
+        personal_init.write_text(personal_text)
     else:
         print(f'Keeping existing preferences: {personal_init}')
     stamp = datetime.datetime.now().strftime('%Y%m%d-%H%M%S-%f')
@@ -140,6 +145,19 @@ def main():
             state.mkdir(parents=True, exist_ok=True)
             (state / 'ai.json').write_text(json.dumps({'provider': args.ai}))
     print('Installed. Open a new zsh or run ~/.local/bin/mvim. LunarVim is unchanged.')
+
+
+def sound_enabled(args, personal_init):
+    if args.install_audio is True:
+        return True
+    if args.pokemon_sound_on_start is not None:
+        return args.pokemon_sound_on_start
+    if personal_init.is_file():
+        # Recognize the simple setting we generate without executing a user's Lua.
+        match = re.search(r'(?:^|[\n,{])\s*pokemon_sound_on_start\s*=\s*(true|false)\b', personal_init.read_text())
+        if match:
+            return match[1] == 'true'
+    return True
 
 
 def choose_ai(args, state):
@@ -173,4 +191,23 @@ def ask_boolean(question):
 
 
 if __name__ == '__main__':
-    main()
+    while True:
+        try:
+            main()
+            break
+        except (OSError, RuntimeError, subprocess.CalledProcessError) as error:
+            print(f'Installation stopped: {error}', file=sys.stderr)
+            if isinstance(error, PermissionError):
+                print('Check ownership and write access to the reported path; do not run the whole installer with sudo.', file=sys.stderr)
+                if error.filename:
+                    print('Inspect: ' + shlex.join(['ls', '-ld', str(Path(error.filename).parent), error.filename]), file=sys.stderr)
+                    print('Check write access: ' + shlex.join(['test', '-w', str(Path(error.filename).parent)]), file=sys.stderr)
+            print('Rerun: ' + shlex.join(['bash', str(ROOT / 'install.sh'), *sys.argv[1:]]), file=sys.stderr)
+            # Prerequisite RuntimeErrors already handled their own retry/exit prompt.
+            if not isinstance(error, RuntimeError) and sys.stdin.isatty() and not any(arg in sys.argv for arg in ('--yes', '-y')):
+                try:
+                    if input('Correct the error above, then press Enter to retry; q to exit: ').strip() == '':
+                        continue
+                except EOFError:
+                    pass
+            sys.exit(1)

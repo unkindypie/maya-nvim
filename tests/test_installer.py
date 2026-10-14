@@ -15,6 +15,15 @@ spec.loader.exec_module(installer)
 
 
 class InstallerTest(unittest.TestCase):
+    def test_audio_offer_respects_existing_simple_preference(self):
+        with tempfile.TemporaryDirectory() as temp:
+            personal = Path(temp) / 'init.lua'
+            personal.write_text('return {pokemon_sound_on_start=false}')
+            args = SimpleNamespace(install_audio=None, pokemon_sound_on_start=None)
+            self.assertFalse(installer.sound_enabled(args, personal))
+            args.install_audio = True
+            self.assertTrue(installer.sound_enabled(args, personal))
+
     def test_declining_ai_skips_ollama_and_persists_off(self):
         with tempfile.TemporaryDirectory() as temp:
             def version(args, **kwargs):
@@ -24,6 +33,7 @@ class InstallerTest(unittest.TestCase):
                  patch.object(installer.shutil, 'which', return_value='/usr/bin/true'), \
                  patch.object(installer.subprocess, 'check_output', side_effect=version), \
                  patch.object(installer.subprocess, 'run') as run, \
+                 patch.object(installer, 'Prerequisites'), \
                  patch.object(installer.sys.stdin, 'isatty', return_value=True), \
                  patch('builtins.input', return_value='n'):
                 installer.main()

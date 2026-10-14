@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 export NVIM_APPNAME=maya-nvim
+# Managed tools fill missing commands without changing the user's system defaults.
+managed_tools="${XDG_DATA_HOME:-$HOME/.local/share}/maya-nvim/tools"
+export PATH="$PATH:$managed_tools/bin:$managed_tools/brew-node/bin"
 # The executable symlink also makes tmux's pane_current_command report mvim.
 engine="$HOME/.local/libexec/maya-nvim/mvim"
 if [[ -x "$engine" ]]; then

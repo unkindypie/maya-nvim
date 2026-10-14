@@ -41,7 +41,7 @@ provider. Keep exactly one suggestion backend enabled.
 
 ```sh
 python3 -m unittest discover -s tests -p 'test_*.py' -v
-bash -n install.sh bin/mvim
+bash -n bootstrap.sh install.sh bin/mvim
 MAYA_NVIM_NO_INSTALL=1 MAYA_NVIM_NO_AI=1 bin/mvim --headless '+lua assert(vim.g.mapleader == " ")' +qa
 # Real project tests require pynvim (install it in a disposable uv environment).
 .local/test-env/bin/python tests/integration.py

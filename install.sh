@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
-exec python3 "$ROOT/scripts/install.py" "$@"
+source "$ROOT/bootstrap.sh"
+maya_base_prerequisites local "$@"
+exec "$MAYA_NVIM_PYTHON" "$ROOT/scripts/install.py" "$@"

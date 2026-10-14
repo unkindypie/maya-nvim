@@ -4,7 +4,7 @@
 
 ```sh
 python3 -m unittest discover -s tests -p 'test_*.py' -v
-bash -n install.sh bin/mvim
+bash -n bootstrap.sh install.sh bin/mvim
 MAYA_NVIM_NO_INSTALL=1 MAYA_NVIM_NO_AI=1 MAYA_NVIM_NO_SESSION=1 bin/mvim --headless '+checkhealth' +qa
 ```
 
@@ -31,7 +31,8 @@ commit on master. Restore an earlier lockfile with Git and use `:Lazy restore`
 to roll plugins back. Tree-sitter updates require matching parser updates;
 `:TSUpdate` handles that. Mason packages have independent versions; use its UI
 for version selection and record tool upgrades. Neither Neovim nor system
-packages are upgraded by this repository.
+packages are explicitly upgraded by this repository. Missing tools can be installed
+with confirmation; see [prerequisite setup and recovery](PREREQUISITES.md).
 
 ## Markdown formatting hook
 
