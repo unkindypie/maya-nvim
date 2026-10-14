@@ -40,6 +40,9 @@ The authoritative mappings are in `lua/maya/keymaps.lua` and `plugins/completion
 | `Ctrl-arrows`, `Alt-j/k`                 | Resize windows, move lines/selections                                                   |
 | `gc`, `gcc`, `Space /`                   | Native comments / line / selection                                                      |
 
+Current-line Git blame aligns to the right edge of the editor window. Long
+author/date/commit text is shortened to fit beside the file content.
+
 Picker input retains Ctrl-N/P selection, Ctrl-J/K history, Enter open, Ctrl-Q
 quickfix. Explorer uses its current supported controls (`?` for help), l
 open, h parent, and `a/d/r` add/delete/rename. Tab expands/collapses a directory

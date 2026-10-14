@@ -202,16 +202,32 @@ return {
     event = { "BufReadPost", "BufNewFile" },
     opts = {
       current_line_blame = true,
-      current_line_blame_opts = { delay = 0, virt_text_pos = "eol", virt_text_priority = 1 },
+      current_line_blame_opts = { delay = 0, virt_text_pos = "right_align", virt_text_priority = 1 },
       current_line_blame_formatter = function(_, info)
+        local text = string.format(
+          "%s, %s — %s",
+          info.author,
+          os.date("%Y-%m-%d", info.author_time),
+          info.summary
+        )
+        local window = vim.fn.getwininfo(vim.api.nvim_get_current_win())[1]
+        local available = math.max(
+          0,
+          vim.api.nvim_win_get_width(0)
+            - (window and window.textoff or 0)
+            - vim.fn.strdisplaywidth(vim.api.nvim_get_current_line())
+            - 2
+        )
+        if vim.fn.strdisplaywidth(text) > available then
+          text = vim.fn.strcharpart(text, 0, math.max(0, available - 1))
+          while vim.fn.strdisplaywidth(text) > math.max(0, available - 1) do
+            text = vim.fn.strcharpart(text, 0, vim.fn.strchars(text) - 1)
+          end
+          text = available > 0 and (text .. "…") or ""
+        end
         return {
           {
-            string.format(
-              "%s, %s — %s",
-              info.author,
-              os.date("%Y-%m-%d", info.author_time),
-              info.summary
-            ),
+            text,
             "GitSignsCurrentLineBlame",
           },
         }

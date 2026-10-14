@@ -38,7 +38,10 @@ assert(found, "dashboard sound must come from the local bank")
   if ns:match("blame") then
    for _,mark in ipairs(vim.api.nvim_buf_get_extmarks(0,id,0,-1,{details=true})) do
     local text=vim.inspect(mark[4].virt_text)
-    if text:match("Maya") and text:match("2026") then return text end
+    if text:match("Maya") and text:match("2026") then
+     assert(mark[4].virt_text_pos == "right_align", "blame should align with the window's right edge")
+     return text
+    end
    end
   end
  end
