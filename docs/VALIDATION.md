@@ -86,3 +86,6 @@ disabling a bundled plugin, importing and loading an additional local plugin,
 Lua module lookup, personal filetype files, separate personal plugin locks,
 missing configuration, malformed Lua, invalid options and setup failures.
 Installer tests verify that existing personal configuration is not overwritten.
+
+Explorer key tests verify Tab expands directories, opens files without closing
+or losing focus, and Enter opens the selected file and closes the sidebar.

@@ -19,3 +19,4 @@
 - Remove the 350 ms current-line blame delay for immediate cursor updates.
 - Support personal options, plugin specs, keymaps and Lua modules under `~/.config/mvim`.
 - Document launching with `mvim` and pushing commits to the configured remote.
+- Use Explorer Tab to open/preview while keeping focus, and Enter to select/open and close.

@@ -43,7 +43,15 @@ return {
         sources = {
           files = { hidden = true },
           grep = { hidden = true },
-          explorer = { jump = { close = true } },
+          explorer = {
+            jump = { close = true },
+            actions = {
+              maya_open = function(...)
+                require("maya.explorer").open(...)
+              end,
+            },
+            win = { list = { keys = { ["<Tab>"] = "maya_open", ["<CR>"] = "confirm" } } },
+          },
         },
         win = {
           input = {
