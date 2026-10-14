@@ -9,6 +9,16 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class UserConfigTest(unittest.TestCase):
+    def test_simple_preferences(self):
+        self.launch('return {pokemon_sound_on_start=false,reopen_tabs=false}', '''
+assert(require("maya.user").get("pokemon_sound_on_start")==false)
+assert(require("maya.user").get("reopen_tabs")==false)
+''')
+        self.launch('return {}', '''
+assert(require("maya.user").get("pokemon_sound_on_start")==true)
+assert(require("maya.user").get("reopen_tabs")==true)
+''')
+
     def launch(self, config, assertions, modules=None):
         with tempfile.TemporaryDirectory(prefix='maya personal config ') as temp:
             root = Path(temp)

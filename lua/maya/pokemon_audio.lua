@@ -16,7 +16,12 @@ local function player()
 end
 
 function M.play(quote)
-  if started or vim.g.maya_pokemon_sound == false or vim.env.MAYA_NVIM_NO_SOUND == "1" then
+  if
+    started
+    or not require("maya.user").get("pokemon_sound_on_start")
+    or vim.g.maya_pokemon_sound == false
+    or vim.env.MAYA_NVIM_NO_SOUND == "1"
+  then
     return
   end
   -- Headless checks should never access the network or speakers.

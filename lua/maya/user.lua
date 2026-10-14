@@ -1,5 +1,12 @@
 -- Optional personal configuration, separate from the managed repository.
 local M = { config = {} }
+local defaults = { pokemon_sound_on_start = true, reopen_tabs = true }
+function M.get(key)
+  if M.config[key] ~= nil then
+    return M.config[key]
+  end
+  return defaults[key]
+end
 local home = vim.env.XDG_CONFIG_HOME
 M.path = (home and home ~= "" and home or vim.fn.expand("~/.config")) .. "/mvim"
 
@@ -31,7 +38,13 @@ function M.load()
     report(file, "expected a configuration table")
     return
   end
-  for key, kind in pairs({ options = "table", plugins = "table", setup = "function" }) do
+  for key, kind in pairs({
+    options = "table",
+    plugins = "table",
+    setup = "function",
+    pokemon_sound_on_start = "boolean",
+    reopen_tabs = "boolean",
+  }) do
     if config[key] ~= nil and type(config[key]) ~= kind then
       report(file, key .. " must be a " .. kind)
       return

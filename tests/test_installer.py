@@ -5,6 +5,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location('installer', ROOT / 'scripts/install.py')
@@ -13,6 +14,24 @@ spec.loader.exec_module(installer)
 
 
 class InstallerTest(unittest.TestCase):
+    def test_preference_questions(self):
+        with patch('builtins.input', side_effect=['maybe', 'n']):
+            self.assertFalse(installer.ask_boolean('Sound?'))
+        with patch('builtins.input', return_value=''):
+            self.assertTrue(installer.ask_boolean('Tabs?'))
+
+    def test_persist_preferences_and_preserve_on_reinstall(self):
+        with tempfile.TemporaryDirectory() as temp:
+            env = dict(os.environ, HOME=temp, XDG_CONFIG_HOME=str(Path(temp) / 'config'))
+            command = [sys.executable, str(ROOT / 'scripts/install.py'), '--skip-bootstrap', '--no-shell', '--yes']
+            subprocess.run(command + ['--no-pokemon-sound-on-start', '--no-reopen-tabs'], env=env, check=True, capture_output=True)
+            personal = Path(temp) / 'config/mvim/init.lua'
+            text = personal.read_text()
+            self.assertIn('pokemon_sound_on_start = false,', text)
+            self.assertIn('reopen_tabs = false,', text)
+            subprocess.run(command, env=env, check=True, capture_output=True)
+            self.assertEqual(personal.read_text(), text)
+
     def test_managed_block_precedes_tmux_and_is_idempotent(self):
         original = "# settings\nif command -v tmux; then\n  exec tmux\nfi\n"
         updated = installer.managed(original, "alias mvim='/tmp/some path/mvim'")
@@ -44,6 +63,8 @@ class InstallerTest(unittest.TestCase):
             self.assertEqual((home / 'config space/maya-nvim').resolve(), ROOT)
             personal = home / 'config space/mvim/init.lua'
             self.assertTrue(personal.is_file())
+            self.assertIn('pokemon_sound_on_start = true,', personal.read_text())
+            self.assertIn('reopen_tabs = true,', personal.read_text())
             personal.write_text('return {options={number=false}}\n')
             shell = (home / '.zshrc').read_text()
             updated = sessionizer.read_text()

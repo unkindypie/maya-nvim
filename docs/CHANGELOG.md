@@ -1,5 +1,9 @@
 # Changelog
 
+- Add simple sound/session preferences and first-install questions, preserving existing configs.
+- Show the launch's Pokémon quote and optional cry when automatically restoring a folder session.
+- Ensure Explorer Tab collapses an already open directory, including while searching.
+
 - Reduce Pokémon cry playback to 50% volume and close Explorer when Tab opens a file.
 
 - Play the dashboard Pokémon's cry asynchronously through PokéAPI, with local caching.

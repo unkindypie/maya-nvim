@@ -26,6 +26,13 @@ end''')
  if item.file:match("/child.txt$") then return true end end return false end)()''')
                 self.assertFalse(nvim.exec_lua('return explorer.closed'))
                 nvim.exec_lua('''for i,item in ipairs(explorer.list.items) do
+ if item.dir and item.file:match("/folder$") then explorer.list:move(i,true,true); break end
+end''')
+                nvim.input('\t')
+                wait(nvim,'''(function() for _,item in ipairs(explorer.list.items) do
+ if item.file:match("/child.txt$") then return false end end return true end)()''')
+                self.assertFalse(nvim.exec_lua('return explorer.closed'))
+                nvim.exec_lua('''for i,item in ipairs(explorer.list.items) do
  if item.file:match("/file.txt$") then explorer.list:move(i,true,true); break end
 end''')
                 nvim.input('\r')

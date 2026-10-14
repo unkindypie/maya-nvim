@@ -17,9 +17,18 @@ function M.setup()
   vim.api.nvim_create_autocmd("VimEnter", {
     once = true,
     callback = function()
-      if vim.fn.argc() == 0 and not stdin and vim.env.MAYA_NVIM_NO_SESSION ~= "1" then
+      if
+        vim.fn.argc() == 0
+        and not stdin
+        and vim.env.MAYA_NVIM_NO_SESSION ~= "1"
+        and require("maya.user").get("reopen_tabs")
+      then
         vim.schedule(function()
-          require("persistence").load()
+          local persistence = require("persistence")
+          if vim.fn.filereadable(persistence.current()) == 1 then
+            persistence.load()
+            require("maya.pokemon_startup").greet(true)
+          end
         end)
       end
     end,

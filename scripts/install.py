@@ -28,6 +28,9 @@ def managed(text, body):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--dry-run', action='store_true')
+    parser.add_argument('--yes', '-y', action='store_true', help='use defaults without interactive questions')
+    parser.add_argument('--pokemon-sound-on-start', action=argparse.BooleanOptionalAction, default=None)
+    parser.add_argument('--reopen-tabs', action=argparse.BooleanOptionalAction, default=None)
     parser.add_argument('--no-shell', action='store_true')
     parser.add_argument('--skip-bootstrap', action='store_true', help='link only, without downloading plugins or language tools')
     parser.add_argument('--tmux-sessionizer', type=Path, metavar='PATH')
@@ -99,7 +102,17 @@ def main():
     personal.mkdir(parents=True, exist_ok=True)
     personal_init = personal / 'init.lua'
     if not personal_init.exists() and not personal_init.is_symlink():
-        shutil.copy2(ROOT / 'examples/mvim/init.lua', personal_init)
+        text = (ROOT / 'examples/mvim/init.lua').read_text()
+        interactive = sys.stdin.isatty() and not args.yes
+        for key, label in [('pokemon_sound_on_start', 'Play a Pokemon cry on startup?'),
+                           ('reopen_tabs', 'Reopen saved files and tabs in the same folder?')]:
+            value = getattr(args, key)
+            if value is None:
+                value = ask_boolean(label) if interactive else True
+            text = text.replace(f'{key} = true,', f'{key} = {str(value).lower()},')
+        personal_init.write_text(text)
+    else:
+        print(f'Keeping existing preferences: {personal_init}')
     stamp = datetime.datetime.now().strftime('%Y%m%d-%H%M%S-%f')
     for path, text in edits:
         if path.exists() and path.read_text() == text:
@@ -127,6 +140,19 @@ def main():
             state.mkdir(parents=True, exist_ok=True)
             (state / 'ai.json').write_text(json.dumps({'provider': args.ai}))
     print('Installed. Open a new zsh or run ~/.local/bin/mvim. LunarVim is unchanged.')
+
+
+def ask_boolean(question):
+    while True:
+        try:
+            answer = input(question + ' [Y/n] ').strip().lower()
+        except EOFError:
+            return True
+        if answer in ('', 'y', 'yes'):
+            return True
+        if answer in ('n', 'no'):
+            return False
+        print('Please answer yes or no.')
 
 
 if __name__ == '__main__':

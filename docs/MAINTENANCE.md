@@ -55,6 +55,23 @@ formatted content is staged.
 
 ## Pokémon dashboard audio
 
+The personal config at `~/.config/mvim/init.lua` includes these defaults:
+
+```lua
+return {
+  pokemon_sound_on_start = true,
+  reopen_tabs = true,
+  -- Other options, plugins, and setup can also go here.
+}
+```
+
+The installer asks both questions when creating a new config in an interactive
+terminal. Noninteractive installs and `./install.sh --yes` use `true` defaults.
+Use `--no-pokemon-sound-on-start` or `--no-reopen-tabs` to explicitly turn either
+off in a new config. Reinstallation preserves existing personal configs and does
+not ask again; edit that file to change preferences. Lua uses lowercase `true`
+and `false`. Missing settings use the defaults above.
+
 After the dashboard renders, mvim asynchronously requests the displayed Pokémon's
 game cry from [PokéAPI](https://pokeapi.co/docs/v2#pokemon). This is a game sound,
 not a spoken recording of the dashboard quote. Cached `.ogg` files live under
@@ -64,8 +81,9 @@ Downloads require `curl`. Missing tools, offline requests, and playback failures
 are quiet. Playback uses 50% volume without changing the system volume. Headless
 launches skip audio, and each launch plays at most once.
 
-To disable it, set `vim.g.maya_pokemon_sound = false` in the `setup` function of
-your personal `~/.config/mvim/init.lua`, or launch with `MAYA_NVIM_NO_SOUND=1`.
+To disable it, set `pokemon_sound_on_start = false` in your personal config's
+returned table, or launch with `MAYA_NVIM_NO_SOUND=1`. The older
+`vim.g.maya_pokemon_sound = false` override still works.
 Pokémon assets are excluded from the code's MIT license; see `LICENSE` and `NOTICE`.
 
 ## External changes
@@ -88,7 +106,10 @@ is available after a crash; sessions do not preserve deliberately discarded text
 Persistence writes native session files beneath `stdpath('state')/sessions` on
 exit when file buffers are open. No-argument startup restores the current
 folder's buffers, tab pages, splits and cursor positions. Branch changes do not select a
-different session. Explicit file arguments and stdin bypass automatic restore.
+different session. Set `reopen_tabs = false` to disable automatic restoration;
+manual save/restore still works. Successful automatic restoration shows the
+same launch's Pokémon dashboard quote in a top-right notification and plays
+its cry if sound is enabled. Explicit file arguments and stdin bypass automatic restore.
 `Space bs/br` save/restore manually. To exit without replacing a saved session,
 run `:lua require('persistence').stop()` before quitting. Concurrent editors in
 the same folder use the last session saved; file contents still use native

@@ -1,5 +1,4 @@
-local sounds = require("maya.pokemon")
-local sound = sounds[(vim.uv.hrtime() % #sounds) + 1]
+local pokemon = require("maya.pokemon_startup")
 
 return {
   {
@@ -35,7 +34,7 @@ return {
         once = true,
         callback = function()
           vim.schedule(function()
-            require("maya.pokemon_audio").play(sound)
+            pokemon.greet(false)
           end)
         end,
       })
@@ -56,7 +55,17 @@ return {
           grep = { hidden = true },
           explorer = {
             jump = { close = true },
-            win = { list = { keys = { ["<Tab>"] = "confirm", ["<CR>"] = "select_and_next" } } },
+            actions = {
+              maya_open = function(picker, item, action)
+                local actions = require("snacks.explorer.actions").actions
+                if item and item.dir and item.open then
+                  actions.explorer_close(picker, item)
+                else
+                  actions.confirm(picker, item, action)
+                end
+              end,
+            },
+            win = { list = { keys = { ["<Tab>"] = "maya_open", ["<CR>"] = "select_and_next" } } },
           },
         },
         win = {
@@ -74,7 +83,7 @@ return {
       dashboard = {
         enabled = true,
         preset = {
-          header = "🌙  maya-nvim\n\n" .. sound,
+          header = "🌙  maya-nvim\n\n" .. pokemon.quote,
           keys = {
             { icon = " ", key = "f", desc = "Find file", action = ":lua Snacks.picker.files()" },
             { icon = " ", key = "n", desc = "New file", action = ":ene | startinsert" },
