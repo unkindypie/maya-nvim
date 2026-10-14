@@ -2,7 +2,7 @@
 
 A standalone Neovim 0.12.5 setup for Maya: LunarVim muscle memory, transparent
 Catppuccin Frappé, modern language tools, local AI, and safe collaboration with
-external editors such as Codex. Launch with **`mvim`**. Existing `lvim` stays separate.
+external editors such as Codex. Launch with **`mvim`**. Isolated from other nvim distros..
 
 ## Install
 
@@ -10,7 +10,12 @@ Clone this repository anywhere (Maya uses `~/maya-nvim`), then:
 
 ```sh
 ./install.sh
-mvim  # launch the editor after installation
+```
+
+Launch your new maya-nvim:
+
+```sh
+mvim
 ```
 
 The installer links the repository into `${XDG_CONFIG_HOME:-~/.config}/maya-nvim`,
