@@ -11,3 +11,5 @@
 - Automatic folder sessions, including tabs and cursor positions.
 - Local randomized Pokémon dashboard sounds and safe Close all others.
 - Validated Python/C++ projects, Rust installation, both debuggers and local AI.
+
+- Use explicit semantic which-key icons with broadly supported Nerd Font glyphs.

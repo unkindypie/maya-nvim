@@ -103,20 +103,36 @@ return {
     config = function(_, opts)
       local wk = require("which-key")
       wk.setup(opts)
+      -- Explicit, widely supported Nerd Font glyphs avoid ambiguous inferred icons.
       local groups = {
-        b = "Buffers",
-        d = "Debug",
-        g = "Git",
-        l = "LSP",
-        L = "maya-nvim",
-        p = "Plugins",
-        s = "Search",
-        T = "Treesitter",
-        o = "Open",
-        a = "AI",
+        b = { "Buffers", "", "cyan" },
+        d = { "Debug", "", "red" },
+        g = { "Git", "", "orange" },
+        l = { "LSP", "", "blue" },
+        L = { "maya-nvim", "", "purple" },
+        p = { "Plugins", "", "yellow" },
+        s = { "Search", "", "green" },
+        T = { "Treesitter", "", "green" },
+        o = { "Open", "", "cyan" },
+        a = { "AI", "", "purple" },
       }
-      for key, label in pairs(groups) do
-        wk.add({ { "<leader>" .. key, group = label } })
+      for key, item in pairs(groups) do
+        wk.add({
+          { "<leader>" .. key, group = item[1], icon = { icon = item[2], color = item[3] } },
+        })
+      end
+      local actions = {
+        c = { "Close buffer", "", "red" },
+        e = { "Explorer", "", "cyan" },
+        f = { "Find project file", "", "green" },
+        h = { "Clear search highlight", "", "yellow" },
+        q = { "Quit", "", "red" },
+        w = { "Save", "", "blue" },
+        ["/"] = { "Comment line", "", "grey" },
+        [";"] = { "Dashboard", "", "purple" },
+      }
+      for key, item in pairs(actions) do
+        wk.add({ { "<leader>" .. key, desc = item[1], icon = { icon = item[2], color = item[3] } } })
       end
     end,
   },
