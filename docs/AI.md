@@ -12,6 +12,13 @@ when completion opens, so Tab precedence stays predictable.
 
 ## Local installation and models
 
+Fresh interactive installs ask `Enable local AI with Ollama? [Y/n]`. Enter
+enables setup; `n` skips it and saves AI off. Reinstalls reuse the saved provider.
+Pass `--ai ollama|copilot|off` to explicitly change it without the question.
+Noninteractive fresh installs leave AI off unless `--ai ollama` or `--yes` is
+passed. `--yes` also skips the models-directory question. Link-only installs
+(`--skip-bootstrap`) do not set up AI.
+
 `install.sh --ollama-models-dir PATH` accepts the chosen storage directory. Without
 that option an interactive installer asks, defaulting to `OLLAMA_MODELS`, an
 existing `/mnt/ml/ollama`, or `~/.ollama/models`. It must be readable and writable.

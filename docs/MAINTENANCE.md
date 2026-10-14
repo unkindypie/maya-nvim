@@ -53,6 +53,21 @@ the remaining working-tree diff may include formatting differences. Unstaged
 Markdown files are left alone. A formatter error stops the commit before any
 formatted content is staged.
 
+## Optional local AI during installation
+
+On a fresh interactive installation, the installer asks
+`Enable local AI with Ollama? [Y/n]` and explains the possible server/model
+downloads. Enter enables local AI; `n` skips Ollama installation and leaves AI
+off. `--ai ollama`, `--ai copilot`, and `--ai off` explicitly select a provider
+without asking. Existing AI selections are preserved on reinstall unless
+overridden with `--ai`.
+
+The choice is saved in maya-nvim's existing state `ai.json`, also used by
+`:MayaAI`; no additional personal-config variable is needed. Ollama setup reuses
+a running server or an installed executable and downloads only missing models.
+Noninteractive fresh installs default to AI off; `--yes` accepts local AI on a
+fresh full install. Dry runs and `--skip-bootstrap` do not ask or install AI.
+
 ## Pokémon dashboard audio
 
 The personal config at `~/.config/mvim/init.lua` includes these defaults:

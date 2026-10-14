@@ -1,5 +1,7 @@
 # Changelog
 
+- Ask whether to enable Ollama during fresh interactive installation; preserve saved AI choices and reuse running servers without installing another executable.
+
 - Add simple sound/session preferences and first-install questions, preserving existing configs.
 - Show the launch's Pokémon quote and optional cry when automatically restoring a folder session.
 - Ensure Explorer Tab collapses an already open directory, including while searching.

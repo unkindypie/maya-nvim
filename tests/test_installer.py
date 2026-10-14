@@ -5,6 +5,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from types import SimpleNamespace
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -14,6 +15,46 @@ spec.loader.exec_module(installer)
 
 
 class InstallerTest(unittest.TestCase):
+    def test_declining_ai_skips_ollama_and_persists_off(self):
+        with tempfile.TemporaryDirectory() as temp:
+            def version(args, **kwargs):
+                return {'nvim': 'NVIM v0.12.5', 'node': 'v22.0.0', 'tree-sitter': 'tree-sitter 0.26.1'}[args[0]]
+            with patch.dict(os.environ, {'HOME': temp, 'XDG_CONFIG_HOME': temp + '/config', 'XDG_STATE_HOME': temp + '/state'}), \
+                 patch('sys.argv', ['install.py', '--no-shell', '--pokemon-sound-on-start', '--reopen-tabs']), \
+                 patch.object(installer.shutil, 'which', return_value='/usr/bin/true'), \
+                 patch.object(installer.subprocess, 'check_output', side_effect=version), \
+                 patch.object(installer.subprocess, 'run') as run, \
+                 patch.object(installer.sys.stdin, 'isatty', return_value=True), \
+                 patch('builtins.input', return_value='n'):
+                installer.main()
+                self.assertEqual(run.call_count, 2)  # Only plugin/tool bootstrap.
+                self.assertNotIn('setup_ollama.py', str(run.call_args_list))
+            import json
+            self.assertEqual(json.loads((Path(temp) / 'state/maya-nvim/ai.json').read_text())['provider'], 'off')
+
+    def test_ai_question_overrides_and_saved_selection(self):
+        with tempfile.TemporaryDirectory() as temp:
+            state = Path(temp)
+            args = SimpleNamespace(ai=None, skip_bootstrap=False, dry_run=False, yes=False)
+            with patch.object(installer.sys.stdin, 'isatty', return_value=True), patch('builtins.input', return_value='n'):
+                self.assertEqual(installer.choose_ai(args, state), 'off')
+            with patch.object(installer.sys.stdin, 'isatty', return_value=True), patch('builtins.input', return_value=''):
+                self.assertEqual(installer.choose_ai(args, state), 'ollama')
+            with patch.object(installer.sys.stdin, 'isatty', return_value=False):
+                self.assertEqual(installer.choose_ai(args, state), 'off')
+                args.yes = True
+                self.assertEqual(installer.choose_ai(args, state), 'ollama')
+            (state / 'ai.json').write_text('{"provider":"off"}')
+            with patch('builtins.input', side_effect=AssertionError('must preserve existing choice')):
+                self.assertEqual(installer.choose_ai(args, state), 'off')
+                args.ai = 'copilot'
+                self.assertEqual(installer.choose_ai(args, state), 'copilot')
+            (state / 'ai.json').unlink()
+            args.ai = None
+            args.dry_run = True
+            with patch('builtins.input', side_effect=AssertionError('dry run must not prompt')):
+                self.assertEqual(installer.choose_ai(args, state), 'off')
+
     def test_preference_questions(self):
         with patch('builtins.input', side_effect=['maybe', 'n']):
             self.assertFalse(installer.ask_boolean('Sound?'))

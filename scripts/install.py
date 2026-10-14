@@ -2,6 +2,7 @@
 """Reversible user-local installation. Never modifies LunarVim or system packages."""
 import argparse
 import datetime
+import json
 import os
 from pathlib import Path
 import re
@@ -34,7 +35,7 @@ def main():
     parser.add_argument('--no-shell', action='store_true')
     parser.add_argument('--skip-bootstrap', action='store_true', help='link only, without downloading plugins or language tools')
     parser.add_argument('--tmux-sessionizer', type=Path, metavar='PATH')
-    parser.add_argument('--ai', choices=['ollama', 'copilot', 'off'], default='ollama')
+    parser.add_argument('--ai', choices=['ollama', 'copilot', 'off'], help='override the local-AI question')
     parser.add_argument('--ollama-models-dir', type=Path)
     parser.add_argument('--model', help='Ollama model override; otherwise reuse Qwen 7B or install Qwen 1.5B')
     args = parser.parse_args()
@@ -84,9 +85,8 @@ def main():
         ts_version = tuple(map(int, re.search(r'(\d+)\.(\d+)\.(\d+)', ts).groups()))
         if ts_version < (0, 26, 1):
             parser.error('tree-sitter CLI 0.26.1+ is required')
-        if args.ai == 'ollama' and sys.platform.startswith('linux') and not shutil.which('ollama'):
-            if not shutil.which('zstd'):
-                parser.error('Install zstd before downloading Ollama')
+    state = Path(os.environ.get('XDG_STATE_HOME', Path.home() / '.local/state')) / 'maya-nvim'
+    args.ai = choose_ai(args, state)
     for target, source in links:
         print(f'Link {target} -> {source}')
     for path, _ in edits:
@@ -129,17 +129,34 @@ def main():
         subprocess.run(['nvim', '--headless', "+lua dofile(vim.fn.stdpath('config') .. '/scripts/run-bootstrap.lua')"], env=env, check=True)
         if args.ai == 'ollama':
             command = [sys.executable, str(ROOT / 'scripts/setup_ollama.py')]
+            if args.yes:
+                command += ['--yes']
             if args.ollama_models_dir:
                 command += ['--models-dir', str(args.ollama_models_dir.expanduser())]
             if args.model:
                 command += ['--model', args.model]
             subprocess.run(command, check=True)
         else:
-            import json
-            state = Path(os.environ.get('XDG_STATE_HOME', Path.home() / '.local/state')) / 'maya-nvim'
             state.mkdir(parents=True, exist_ok=True)
             (state / 'ai.json').write_text(json.dumps({'provider': args.ai}))
     print('Installed. Open a new zsh or run ~/.local/bin/mvim. LunarVim is unchanged.')
+
+
+def choose_ai(args, state):
+    if args.ai is not None:
+        return args.ai
+    try:
+        saved = json.loads((state / 'ai.json').read_text()).get('provider')
+        if saved in ('ollama', 'copilot', 'off'):
+            return saved
+    except (OSError, ValueError, AttributeError):
+        pass
+    if args.skip_bootstrap or args.dry_run:
+        return 'off'
+    if sys.stdin.isatty() and not args.yes:
+        print('Local AI can install Ollama, start a user service, and download a missing Qwen model.')
+        return 'ollama' if ask_boolean('Enable local AI with Ollama?') else 'off'
+    return 'ollama' if args.yes else 'off'
 
 
 def ask_boolean(question):

@@ -34,6 +34,8 @@ def install_binary():
         return Path(found) if found else local
     if platform.system() != 'Linux':
         raise SystemExit('Install Ollama for your platform, then rerun setup. No existing installation changed.')
+    if not shutil.which('zstd'):
+        raise SystemExit('Install zstd before downloading Ollama')
     arch = {'x86_64': 'amd64', 'aarch64': 'arm64'}.get(platform.machine())
     if not arch:
         raise SystemExit('Unsupported Ollama architecture: ' + platform.machine())
@@ -61,17 +63,17 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--models-dir', type=Path)
     parser.add_argument('--model')
+    parser.add_argument('--yes', '-y', action='store_true', help='use the default models directory without asking')
     args = parser.parse_args()
     existing = Path('/mnt/ml/ollama')
     default = Path(os.environ.get('OLLAMA_MODELS', str(existing if existing.is_dir() else Path.home() / '.ollama/models')))
     models = args.models_dir
-    if models is None and os.isatty(0):
+    if models is None and os.isatty(0) and not args.yes:
         models = Path(input(f'Ollama models directory [{default}]: ').strip() or default)
     models = (models or default).expanduser().resolve()
     models.mkdir(parents=True, exist_ok=True)
     if not os.access(models, os.R_OK | os.W_OK):
         raise SystemExit(f'Models directory must be readable/writable: {models}')
-    binary = install_binary()
     running = False
     try:
         api('/api/tags', timeout=2)
@@ -79,6 +81,7 @@ def main():
     except Exception:
         pass
     if not running:
+        binary = install_binary()
         config = Path(os.environ.get('XDG_CONFIG_HOME', Path.home() / '.config'))
         service = config / 'systemd/user/maya-nvim-ollama.service'
         if service.exists():
