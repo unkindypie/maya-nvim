@@ -9,10 +9,13 @@ The application does not load or depend on the installed LunarVim runtime.
 Plugin repositories listed in Lua specs and lazy-lock.json retain their own
 copyright notices and licenses; plugin source is not vendored here.
 
-Original maya-nvim code is MIT licensed. LunarVim-derived adaptations above
-retain GPL-3.0 terms; see LICENSE and LICENSE-GPL-3.0.
+maya-nvim code and configuration are licensed under GNU GPL version 3;
+see LICENSE. LunarVim-derived adaptations retain the attribution above.
 
 Pokemon cries are retrieved through https://pokeapi.co/ from
 https://github.com/PokeAPI/cries and cached locally. Pokemon assets belong to
-Nintendo and the respective Pokemon rights holders; they are excluded from
-the project's MIT license. Pokemon character names are trademarks of Nintendo.
+Nintendo and the respective Pokemon rights holders (The Pokemon Company,
+Game Freak, and Creatures). Pokemon character names are trademarks of Nintendo.
+These assets are not covered by this project's GPL-3.0 license. maya-nvim grants
+no ownership of, or license to, those assets. Downloaded cries are cached locally
+and are not distributed with this repository.

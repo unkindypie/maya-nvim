@@ -7,7 +7,7 @@
 - Reduce Pokémon cry playback to 50% volume and close Explorer when Tab opens a file.
 
 - Play the dashboard Pokémon's cry asynchronously through PokéAPI, with local caching.
-- License original code under MIT while retaining third-party terms and Pokémon asset attribution.
+- Consolidate project code and configuration under GPL-3.0; retain Pokémon asset ownership notices separately.
 
 - Make Explorer Enter toggle multi-selection; Tab opens files or expands directories.
 

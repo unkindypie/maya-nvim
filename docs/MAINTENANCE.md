@@ -84,7 +84,7 @@ launches skip audio, and each launch plays at most once.
 To disable it, set `pokemon_sound_on_start = false` in your personal config's
 returned table, or launch with `MAYA_NVIM_NO_SOUND=1`. The older
 `vim.g.maya_pokemon_sound = false` override still works.
-Pokémon assets are excluded from the code's MIT license; see `LICENSE` and `NOTICE`.
+Pokémon assets are excluded from the code's GPL-3.0 license; see `LICENSE` and `NOTICE`.
 
 ## External changes
 
