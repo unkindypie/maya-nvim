@@ -16,3 +16,4 @@
 - Close Explorer after opening a file; keep it open when expanding directories.
 - Fix lualine theme name to `catppuccin-frappe`, removing its startup configuration warning.
 - Launch through a user-local executable symlink so tmux detects `mvim` instead of `nvim`.
+- Remove the 350 ms current-line blame delay for immediate cursor updates.
