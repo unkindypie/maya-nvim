@@ -1,5 +1,7 @@
 # Changelog
 
+- Add a staged Markdown pre-commit formatter using mvim's Prettier, preserving unstaged edits.
+
 ## Initial setup — 2026-10-14
 
 - Standalone Neovim 0.12.5 configuration, isolated from LunarVim.

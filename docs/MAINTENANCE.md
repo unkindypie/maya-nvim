@@ -32,6 +32,26 @@ to roll plugins back. Tree-sitter updates require matching parser updates;
 for version selection and record tool upgrades. Neither Neovim nor system
 packages are upgraded by this repository.
 
+## Markdown formatting hook
+
+Enable the hook once per clone:
+
+```sh
+git config --local core.hooksPath .githooks
+```
+
+Commits automatically format staged `.md` files with Prettier, matching mvim's
+Markdown formatter and project configuration. The hook prefers repository-local
+Prettier, then maya-nvim's Mason installation, then Prettier on PATH. It requires
+Python 3 and Prettier; install the formatter with `:MasonInstall prettier` in mvim
+if needed. It respects `.prettierignore` and does not download tools on commit.
+
+Fully staged files are also updated in the working tree. For partially staged
+files, only the staged version is formatted; unstaged text stays untouched, so
+the remaining working-tree diff may include formatting differences. Unstaged
+Markdown files are left alone. A formatter error stops the commit before any
+formatted content is staged.
+
 ## External changes
 
 A one-second timer calls native `checktime` for loaded files, plus focus/buffer

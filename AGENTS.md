@@ -19,6 +19,9 @@ updates or commit a user’s personal configuration into this repository.
 
 ## Workflow
 
+Enable the repository's Markdown formatting hook after cloning:
+`git config --local core.hooksPath .githooks`. It uses the same Prettier as mvim.
+
 1. Read the relevant module and upstream documentation before changing APIs.
 2. Preserve user changes; update documentation with changed defaults/mappings.
 3. Format Lua with StyLua and check Python/shell syntax.
