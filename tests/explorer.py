@@ -6,7 +6,7 @@ from integration import start, wait, stop
 
 
 class ExplorerTest(unittest.TestCase):
-    def test_tab_opens_without_closing_enter_selects_and_closes(self):
+    def test_tab_opens_and_enter_toggles_multiselection(self):
         with tempfile.TemporaryDirectory(prefix='maya-explorer-') as temp:
             root = Path(temp)
             (root / 'folder').mkdir()
@@ -33,8 +33,21 @@ end''')
                 self.assertFalse(nvim.exec_lua('return explorer.closed'))
                 self.assertTrue(nvim.exec_lua('return explorer:is_focused()'))
                 nvim.input('\r')
-                wait(nvim,'explorer.closed')
-                self.assertEqual(nvim.current.buffer.name,str(file))
+                wait(nvim,'#explorer:selected() == 1')
+                self.assertFalse(nvim.exec_lua('return explorer.closed'))
+                nvim.exec_lua('''for i,item in ipairs(explorer.list.items) do
+ if item.dir and item.file:match("/folder$") then explorer.list:move(i,true,true); break end
+end''')
+                nvim.input('\r')
+                wait(nvim,'#explorer:selected() == 2')
+                self.assertFalse(nvim.exec_lua('return explorer.closed'))
+                self.assertEqual(nvim.exec_lua('return vim.api.nvim_buf_get_name(vim.api.nvim_win_get_buf(explorer.main))'),str(file))
+                nvim.exec_lua('''for i,item in ipairs(explorer.list.items) do
+ if item.dir and item.file:match("/folder$") then explorer.list:move(i,true,true); break end
+end''')
+                nvim.input('\r')
+                wait(nvim,'#explorer:selected() == 1')
+                self.assertTrue(nvim.exec_lua('return explorer:selected()[1].file:match("/file.txt$") ~= nil'))
             finally:
                 stop(nvim)
 
