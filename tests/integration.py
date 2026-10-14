@@ -81,6 +81,14 @@ def reload_and_diff():
             file.write_text('external replacement longer\n')
             wait(nvim, 'vim.api.nvim_get_current_line() == "external replacement longer"', 5)
             assert nvim.current.buffer.number == source
+            nvim.input('i')
+            wait(nvim, 'vim.fn.mode()=="i"')
+            replacement = Path(temp) / 'replacement'
+            replacement.write_text('atomic external replacement while inserting\n')
+            replacement.replace(file)
+            wait(nvim, 'vim.api.nvim_get_current_line() == "atomic external replacement while inserting"', 5)
+            assert nvim.current.buffer.number == source
+            nvim.input('\x1b')
             nvim.current.buffer[:] = ['Maya unsaved edit']
             # Native FileChangedShell is intercepted in this test only, to emulate keeping edits.
             nvim.exec_lua('vim.api.nvim_create_autocmd("FileChangedShell", {callback=function() vim.v.fcs_choice="" end})')

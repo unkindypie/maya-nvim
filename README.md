@@ -45,12 +45,16 @@ never overwritten. Edited shell/sessionizer files get dated backups.
 
 ## Daily use
 
+The dashboard picks a Pokémon sound from a tiny local Lua bank on startup.
+No network request or external command is needed.
+
 Space opens which-key. `Space f` finds files, `Space e` toggles the explorer,
 `Space st` searches text, `Space w` saves, `Space c` closes a buffer, and `H`/`L`
-switch buffers. `Space od` opens the current directory in the desktop file
+switch buffers. `Space bo` closes all other buffers/tab pages, with native
+confirmation for unsaved edits. `Space od` opens the current directory in the desktop file
 manager. `Space Ld` opens this README; `Space Lc` opens `init.lua`.
 
-Starting `mvim` with no file arguments restores the last buffers, splits, and
+Starting `mvim` with no file arguments restores the last buffers, tab pages, splits, and
 cursor positions for that folder. Explicit file arguments take priority.
 `Space bs` saves a session and `Space br` restores it manually. Session files
 live in maya-nvim’s state directory; unsaved text is not saved into sessions.
@@ -98,6 +102,8 @@ Details: [AI setup](docs/AI.md), [keybindings and migration](docs/KEYBINDINGS.md
 | `lua/maya/plugins/` | Plugin choices grouped by UI, completion, and tools |
 | `lua/maya/languages.lua` | LSP setup and first-use tool/parser inventory |
 | `lua/maya/ai.lua` | Provider switching and shared suggestion controls |
+| `lua/maya/pokemon.lua` | Local dashboard sound bank |
+| `lua/maya/session.lua` | Native folder session save/restore |
 | `lua/maya/reload.lua` | Native file-change checks and disk diff |
 | `lua/maya/debug.lua` | Python and Node debug adapters |
 | `scripts/` | Installer, bootstrap, and Ollama setup |

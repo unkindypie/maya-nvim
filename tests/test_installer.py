@@ -2,6 +2,7 @@ import importlib.util
 import os
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -17,6 +18,16 @@ class InstallerTest(unittest.TestCase):
         updated = installer.managed(original, "alias mvim='/tmp/some path/mvim'")
         self.assertLess(updated.index('alias mvim'), updated.index('if command'))
         self.assertEqual(updated, installer.managed(updated, "alias mvim='/tmp/some path/mvim'"))
+
+    def test_missing_prerequisites_make_no_changes(self):
+        with tempfile.TemporaryDirectory() as temp:
+            home = Path(temp)
+            env = dict(os.environ, HOME=temp, XDG_CONFIG_HOME=str(home / 'config'), PATH=str(home / 'empty'))
+            result = subprocess.run([sys.executable, str(ROOT / 'scripts/install.py'), '--ai', 'off'], env=env, capture_output=True, text=True)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn('prerequisites', result.stderr)
+            self.assertFalse((home / '.zshrc').exists())
+            self.assertFalse((home / 'config').exists())
 
     def test_install_repeat_collision_and_dry_run(self):
         with tempfile.TemporaryDirectory(prefix='maya install space ') as temp:

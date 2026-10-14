@@ -11,6 +11,7 @@ The authoritative mappings are in `lua/maya/keymaps.lua` and `plugins/completion
 | `H/L`, `Space bb/bn` | Previous/next buffer |
 | `Space bj/bf/be` | Pick buffer, search buffers, pick buffer to close |
 | `Space bh/bl/bD/bL` | Close left/right; sort directory/extension |
+| `Space bo` | Close all other buffers/tab pages (confirm unsaved changes) |
 | `Space bW` | Save without formatting |
 | `Space bd` | Native diff of unsaved text against disk snapshot |
 | `Space bs/br` | Save/restore this folder's session |

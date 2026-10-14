@@ -15,6 +15,8 @@ uv venv .local/test-env
 uv pip install --python .local/test-env/bin/python pynvim
 .local/test-env/bin/python tests/integration.py
 .local/test-env/bin/python tests/advanced.py
+.local/test-env/bin/python tests/languages.py
+.local/test-env/bin/python tests/ui_helpers.py
 ```
 
 Tests for Maya's existing Python/C++ projects require those projects. Advanced
@@ -48,7 +50,7 @@ is available after a crash; sessions do not preserve deliberately discarded text
 
 Persistence writes native session files beneath `stdpath('state')/sessions` on
 exit when file buffers are open. No-argument startup restores the current
-folder's buffers, splits and cursor positions. Branch changes do not select a
+folder's buffers, tab pages, splits and cursor positions. Branch changes do not select a
 different session. Explicit file arguments and stdin bypass automatic restore.
 `Space bs/br` save/restore manually. To exit without replacing a saved session,
 run `:lua require('persistence').stop()` before quitting. Concurrent editors in

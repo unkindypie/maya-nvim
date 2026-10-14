@@ -1,0 +1,104 @@
+#!/usr/bin/env python3
+"""Comments, inline blame, and safe desktop launcher arguments."""
+import os
+from pathlib import Path
+import tempfile
+from integration import start, wait, stop, ROOT
+
+
+def main():
+    nvim = start()
+    nvim.ui_attach(110, 35, rgb=True)
+    try:
+        nvim.command('enew')
+        nvim.current.buffer[:] = ['local value = 1']
+        nvim.command('setfiletype lua')
+        nvim.input(' /')
+        wait(nvim, 'vim.api.nvim_get_current_line():match("^%-%-") ~= nil')
+        nvim.input(' /')
+        wait(nvim, 'vim.api.nvim_get_current_line() == "local value = 1"')
+        nvim.exec_lua('''
+local bank=require("maya.pokemon")
+local header=Snacks.config.dashboard.preset.header
+local found=false
+for _,sound in ipairs(bank) do if header:find(sound,1,true) then found=true end end
+assert(found, "dashboard sound must come from the local bank")
+''')
+        nvim.command('edit! ' + str(ROOT / 'README.md'))
+        nvim.current.window.cursor = (2, 0)
+        nvim.input("k")
+        text = wait(nvim, '''(function()
+ for ns,id in pairs(vim.api.nvim_get_namespaces()) do
+  if ns:match("blame") then
+   for _,mark in ipairs(vim.api.nvim_buf_get_extmarks(0,id,0,-1,{details=true})) do
+    local text=vim.inspect(mark[4].virt_text)
+    if text:match("Maya") and text:match("2026") then return text end
+   end
+  end
+ end
+ return false
+end)()''', 15)
+        assert 'Build isolated' in text, text
+        print('PASS native comment mapping and inline blame author/date/commit summary', flush=True)
+    finally:
+        stop(nvim)
+    with tempfile.TemporaryDirectory(prefix='maya-close-others-') as temp:
+        root = Path(temp)
+        first, second = root / 'keep.txt', root / 'other.txt'
+        first.write_text('keep on disk\n'); second.write_text('other on disk\n')
+        nvim = start()
+        try:
+            nvim.command('edit ' + str(first))
+            keep = nvim.current.buffer.number
+            nvim.current.buffer[:] = ['keep unsaved changes']
+            nvim.command('tabedit ' + str(second))
+            other = nvim.current.buffer.number
+            nvim.current.buffer[:] = ['other unsaved changes']
+            nvim.command('tabprevious')
+            nvim.exec_lua('''
+local native=vim.fn.confirm
+vim.fn.confirm=function() return 3 end
+require("maya.util").close_others()
+vim.fn.confirm=native
+''')
+            assert len(nvim.tabpages)==2
+            assert nvim.buffers[other].options['modified']
+            nvim.exec_lua('''
+local native=vim.fn.confirm
+vim.fn.confirm=function() return 2 end
+require("maya.util").close_others()
+vim.fn.confirm=native
+''')
+            assert len(nvim.tabpages)==1
+            assert len([w for w in nvim.windows if not nvim.api.win_get_config(w.handle)['relative']])==1
+            assert nvim.current.buffer.number==keep
+            assert nvim.current.buffer[:]==['keep unsaved changes']
+            assert [b.number for b in nvim.buffers if b.options['buflisted']]==[keep]
+            assert second.read_text()=='other on disk\n'
+            print('PASS Close all others: current unsaved buffer kept; cancel protects dirty buffer/tabs; explicit discard closes others',flush=True)
+        finally:
+            stop(nvim)
+    with tempfile.TemporaryDirectory(prefix='maya open directory ') as temp:
+        root = Path(temp)
+        capture = root / 'args.txt'
+        thunar = root / 'thunar'
+        # Record each argument on its own line; the directory with spaces must remain one argument.
+        thunar.write_text('#!/usr/bin/env bash\nprintf "%s\\n" "$@" > ' + "'" + str(capture) + "'" + '\n')
+        thunar.chmod(0o755)
+        old_path = os.environ['PATH']
+        os.environ['PATH'] = str(root) + os.pathsep + old_path
+        nvim = start()
+        try:
+            file = root / 'some file.txt'; file.write_text('Maya\n')
+            nvim.command('edit ' + nvim.funcs.fnameescape(str(file)))
+            nvim.exec_lua('require("maya.util").open_directory()')
+            wait(nvim, 'vim.fn.filereadable(...) == 1'.replace('...',repr(str(capture))))
+            assert capture.read_text().splitlines() == [str(root)]
+            print('PASS desktop explorer launch with a directory containing spaces', flush=True)
+        finally:
+            stop(nvim)
+            os.environ['PATH'] = old_path
+
+
+if __name__ == '__main__':
+    main()

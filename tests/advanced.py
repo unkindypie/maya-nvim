@@ -112,23 +112,25 @@ def folder_sessions():
     try:
         with tempfile.TemporaryDirectory(prefix='maya-session-') as temp:
             root = Path(temp)
-            first, second = root / 'a.txt', root / 'b.txt'
-            first.write_text('a\nb\nc\n'); second.write_text('x\ny\nz\n')
+            first, second, third = root / 'a.txt', root / 'b.txt', root / 'c.txt'
+            first.write_text('a\nb\nc\n'); second.write_text('x\ny\nz\n'); third.write_text('third tab\n')
             def launch(directory, args=()):
                 argv = ['nvim', '--embed', '--headless', '--cmd', 'cd ' + str(directory), *map(str,args)]
                 return pynvim.attach('child', argv=argv)
             nvim = launch(root)
             nvim.command('edit ' + str(first)); nvim.current.window.cursor = (2, 0)
             nvim.command('vsplit ' + str(second)); nvim.current.window.cursor = (3, 0)
+            nvim.command('tabedit ' + str(third))
             stop(nvim)
             nvim = launch(root)
             try:
                 wait(nvim, '#vim.fn.getbufinfo({buflisted=1}) >= 2')
                 names = {Path(b.name).name for b in nvim.buffers if b.options['buflisted']}
-                assert {'a.txt','b.txt'} <= names, names
+                assert {'a.txt','b.txt','c.txt'} <= names, names
                 windows = [w for w in nvim.windows if not nvim.api.win_get_config(w.handle)['relative']]
-                assert len(windows)==2
-                assert {w.cursor[0] for w in windows} == {2,3}
+                assert len(windows)==3
+                assert len(nvim.tabpages)==2
+                assert {w.cursor[0] for w in windows} == {1,2,3}
             finally:
                 stop(nvim)
             nvim = launch(root, [first])
@@ -145,8 +147,11 @@ def folder_sessions():
                 assert not any(b.name in (str(first),str(second)) for b in nvim.buffers)
             finally:
                 stop(nvim)
-            print('PASS sessions: same-folder buffers/splits/cursors restore; other folder and explicit file stay separate', flush=True)
+            print('PASS sessions: same-folder buffers/tabs/splits/cursors restore; other folder and explicit file stay separate', flush=True)
     finally:
+        state = Path(os.environ.get('XDG_STATE_HOME',Path.home()/'.local/state')) / 'maya-nvim/sessions'
+        for file in state.glob('%tmp%maya-session-*.vim'):
+            file.unlink()
         if old is not None:
             os.environ['MAYA_NVIM_NO_SESSION'] = old
 

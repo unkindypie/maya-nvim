@@ -7,3 +7,7 @@
 - Ruff + ty, automatic language tools, Python/Node debugging.
 - Current-line blame and native external-change/reconciliation workflow.
 - Ollama/GitHub provider selection and reversible user-local installation.
+
+- Automatic folder sessions, including tabs and cursor positions.
+- Local randomized Pokémon dashboard sounds and safe Close all others.
+- Validated Python/C++ projects, Rust installation, both debuggers and local AI.
