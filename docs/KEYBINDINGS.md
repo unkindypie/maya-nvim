@@ -41,7 +41,8 @@ The authoritative mappings are in `lua/maya/keymaps.lua` and `plugins/completion
 
 Picker input retains Ctrl-N/P selection, Ctrl-J/K history, Enter open, Ctrl-Q
 quickfix. Explorer uses its current supported controls (`?` for help), Enter/l
-open, h parent, and `a/d/r` add/delete/rename.
+open, h parent, and `a/d/r` add/delete/rename. Opening a file with Enter closes
+the explorer; expanding a directory keeps it open.
 
 ## Intentional changes
 

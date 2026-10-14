@@ -13,3 +13,4 @@
 - Validated Python/C++ projects, Rust installation, both debuggers and local AI.
 
 - Use explicit semantic which-key icons with broadly supported Nerd Font glyphs.
+- Close Explorer after opening a file; keep it open when expanding directories.

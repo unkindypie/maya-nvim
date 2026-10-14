@@ -39,7 +39,11 @@ return {
       picker = {
         enabled = true,
         layout = { preset = "telescope" },
-        sources = { files = { hidden = true }, grep = { hidden = true } },
+        sources = {
+          files = { hidden = true },
+          grep = { hidden = true },
+          explorer = { jump = { close = true } },
+        },
         win = {
           input = {
             keys = {
