@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 export NVIM_APPNAME=maya-nvim
+# The executable symlink also makes tmux's pane_current_command report mvim.
+engine="$HOME/.local/libexec/maya-nvim/mvim"
+if [[ -x "$engine" ]]; then
+  exec "$engine" "$@"
+fi
 exec nvim "$@"

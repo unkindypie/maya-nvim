@@ -13,7 +13,8 @@ Clone this repository anywhere (Maya uses `~/maya-nvim`), then:
 ```
 
 The installer links the repository into `${XDG_CONFIG_HOME:-~/.config}/maya-nvim`,
-installs the launcher under `~/.local/bin`, adds a managed zsh alias, restores
+installs the launcher under `~/.local/bin` and an executable symlink under
+`~/.local/libexec/maya-nvim` (so tmux displays `mvim`), adds a managed zsh alias, restores
 locked plugins, installs language tools/parsers and debug adapters, and sets up
 local Ollama. It does not install system packages or run sudo. Open a new zsh
 session afterwards, or run `~/.local/bin/mvim` immediately.

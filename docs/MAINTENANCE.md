@@ -75,7 +75,8 @@ conflict handling. Session files are machine-local, not committed.
 ## Uninstall / rollback
 
 1. Close mvim. Remove `~/.config/maya-nvim` and `~/.local/bin/mvim` **only if they
-   are the links installed by this repository**. Leave `lvim` alone.
+   are the links installed by this repository**. Also remove the installed
+   `~/.local/libexec/maya-nvim/mvim` executable symlink. Leave `lvim` alone.
 2. Remove the `# >>> maya-nvim >>>` managed block from `.zshrc`, and the
    `# >>> maya-nvim directory >>>` block from the optional sessionizer. Dated
    backups are beside those files; restoring an old backup replaces later edits,

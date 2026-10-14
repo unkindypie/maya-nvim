@@ -37,6 +37,10 @@ def main():
     args = parser.parse_args()
     config = Path(os.environ.get('XDG_CONFIG_HOME', Path.home() / '.config'))
     links = [(config / 'maya-nvim', ROOT), (Path.home() / '.local/bin/mvim', ROOT / 'bin/mvim')]
+    # Linux/tmux detects the executable basename, not the shell alias or argv[0].
+    nvim = shutil.which('nvim')
+    if nvim:
+        links.append((Path.home() / '.local/libexec/maya-nvim/mvim', Path(nvim).resolve()))
     edits = []
     if not args.no_shell:
         shell = Path(os.environ.get('ZDOTDIR', Path.home())) / '.zshrc'
