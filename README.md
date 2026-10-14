@@ -1,5 +1,6 @@
 # 🌙 maya-nvim
 
+Hi. I'm Maya and it's my Neovim config/distro.
 A standalone Neovim 0.12.5 setup for Maya: LunarVim muscle memory, transparent
 Catppuccin Frappé, modern language tools, local AI, and safe collaboration with
 external editors such as Codex. Launch with **`mvim`**. Isolated from other nvim distros..
@@ -11,9 +12,7 @@ instructions.
 ## Install
 
 Supported systems: **Fedora, Debian/Ubuntu, Arch, openSUSE, and macOS with
-Homebrew**. Managed downloads support **x86-64 and ARM64**. Prerequisite installation
-is tested in Fedora 44 and Ubuntu 24.04 containers; macOS and the other Linux
-package-manager paths are covered by command-plan tests, not full system tests.
+Homebrew**. Managed downloads support **x86-64 and ARM64**.
 
 One-command installation (clones into `~/maya-nvim`, or updates that checkout, then runs setup):
 
@@ -22,11 +21,11 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/unkindypie/maya-nvim/mas
 ```
 
 The command itself needs Bash and curl. The bootstrap can install missing Git
-and Python; setup detects the remaining prerequisites, shows the proposed commands,
-and asks `Install missing prerequisites? [Y/n]`. Enter installs them; `n` prints
-manual instructions. System packages may require a sudo password. Homebrew on
-macOS must already be installed.
-To choose another directory add this ENV at the start of the install script:
+and Python; setup detects the remaining prerequisites or shows install command on failure.
+System packages may require a sudo password. Homebrew on macOS must already be installed.
+
+To choose another directory add this ENV at the start of the install script install command
+(before `bash` separated by a space):
 `MAYA_NVIM_INSTALL_DIR="$HOME/projects/maya-nvim"`
 
 Alternatively, clone this repository anywhere (Maya uses `~/maya-nvim`), then:
@@ -52,59 +51,15 @@ the commands; package managers may update dependencies needed by those packages.
 Open a new zsh
 session afterwards, or run `~/.local/bin/mvim` immediately.
 
-Prerequisites are normally installed automatically. This table lists the tools
-and versions for reference **if automatic installation fails**. Copyable commands
-for each system and manual recovery are in [prerequisite troubleshooting](docs/PREREQUISITES.md).
+Missing tools install automatically; see [prerequisites and versions](docs/PREREQUISITES.md#prerequisites-and-versions) for details and manual fallback commands.
 
-| Prerequisite                       | Required version            | Automatic installation                                                                        |
-| ---------------------------------- | --------------------------- | --------------------------------------------------------------------------------------------- |
-| Bash and curl                      | System version              | Bash is required to start; missing curl can be installed by the local installer               |
-| Python                             | 3.11+                       | System package; existing older versions are preserved                                         |
-| Git, tar, unzip, CA certificates   | System versions             | System packages when missing                                                                  |
-| Neovim                             | 0.12+; tested/pinned 0.12.5 | Verified user-local download when absent                                                      |
-| tree-sitter CLI                    | 0.26.1+                     | Verified user-local 0.26.1 download when absent                                               |
-| Node.js and npm                    | Node 22+                    | Verified user-local Node 22.23.3 with npm when Node is absent; system package for missing npm |
-| C compiler and ripgrep             | System versions             | System compiler tools and `ripgrep` packages                                                  |
-| Python virtual-environment support | Matches selected Python     | Distro package when missing                                                                   |
-| Audio player                       | Optional                    | Offer mpv if no supported player exists and sound is enabled                                  |
-| Nerd Font                          | Optional                    | Offer user-local FantasqueSansMono Nerd Font 3.4.0; select it in terminal settings yourself   |
-| Ollama / zstd                      | Optional local AI           | Reuse existing Ollama; install zstd only if a Linux binary download needs it                  |
-
-Fresh installs also ask about sound, saved tabs, and local Ollama AI. Linux Ollama
-automatic startup needs a working systemd user session; macOS users install/start
-Ollama separately. Declining optional audio/font setup does not block the editor.
+See [installer options](docs/PREREQUISITES.md#installer-options) for custom setup, AI choices, and update controls, or run:
 
 ```sh
 ./install.sh --help
-./install.sh --dry-run
-./install.sh --no-update                   # install the local checkout without pulling
-./install.sh --install-prerequisites       # allow missing prerequisite installation
-./install.sh --no-install-prerequisites    # print manual instructions instead
-./install.sh --no-install-audio --no-install-nerd-font
-./install.sh --yes --ai off                # unattended setup, including missing prerequisites
-./install.sh --ai copilot                  # no Ollama installation
-./install.sh --ai off                      # language tools without AI
-./install.sh --no-shell                    # do not edit zsh configuration
-./install.sh --skip-bootstrap              # links/shell integration only
-./install.sh --ollama-models-dir /mnt/ml/ollama
-./install.sh --ollama-models-dir "$HOME/models" --model qwen2.5-coder:1.5b
-./install.sh --tmux-sessionizer "$HOME/scripts/tmux-sessionizer"
 ```
 
-Ollama setup asks for its models directory on an interactive terminal. It reuses
-installed Ollama and existing models, downloads only missing models, and keeps
-model files outside this repository. Maya's chosen store is `/mnt/ml/ollama`.
-Installation is repeatable; unrelated existing config directories/launchers are
-never overwritten. Edited shell/sessionizer files get dated backups.
-
-Rerun the same one-command installer to update the existing repository in place.
-Running `./install.sh` inside the checkout also pulls the latest `master` before
-setup and reloads the updated installer. Updates use `git pull --ff-only`; local
-edits, another branch, or divergent history stop the update with instructions.
-No changes are reset, rebased, or automatically stashed. Use `--no-update` to
-install the local version without pulling. Personal configuration is preserved.
-An existing destination must be a maya-nvim checkout with the expected origin;
-unrelated folders are never reused.
+Rerun the installer to update the same checkout and repeat setup; your personal configuration is preserved.
 
 ## Personal configuration
 
@@ -154,32 +109,16 @@ uninstalling unless you explicitly want to remove them.
 
 ## Daily use
 
-The dashboard picks a Pokémon sound from a tiny local Lua bank on startup.
-No network request or external command is needed.
+Press Space for which-key. `Space f` finds files, `Space e` opens the explorer,
+`Space st` searches text, and `Space w` saves. `H`/`L` switch buffers;
+`Space c` closes one and `Space bo` closes all others.
 
-Space opens which-key. `Space f` finds files, `Space e` toggles the explorer,
-`Space st` searches text, `Space w` saves, `Space c` closes a buffer, and `H`/`L`
-switch buffers. `Space bo` closes all other buffers/tab pages, with native
-confirmation for unsaved edits. `Space od` opens the current directory in the desktop file
-manager. `Space Ld` opens this README; `Space Lc` opens `init.lua`.
+Files format on save and reload after external changes; unsaved edits use native
+conflict handling. Launching `mvim` without file arguments restores the folder's
+saved files and tabs when enabled.
 
-Starting `mvim` with no file arguments restores the last buffers, tab pages, splits, and
-cursor positions for that folder. Explicit file arguments take priority.
-`Space bs` saves a session and `Space br` restores it manually. Session files
-live in maya-nvim’s state directory; unsaved text is not saved into sessions.
-Native swap recovery remains available after crashes.
-
-Formatting runs on save. `Space bW` saves without formatting. Current-line Git
-blame shows author, date, and commit summary; `Space gB` toggles it and `Space gL`
-shows full blame.
-
-Clean buffers follow external changes within about a second, without switching
-buffers. Modified buffers keep Maya's edits and use Neovim's native conflict
-warning. `Space bd` / `:MayaDiffDisk` opens a native diff against a disk snapshot.
-
-Python uses **Ruff + ty**. Language servers and parsers install on first opening
-a supported filetype, including Rust. `:MayaTools` retries failed installations;
-`:Mason` manages tools. See [language tooling](docs/LANGUAGES.md).
+See [keybindings](docs/KEYBINDINGS.md), [language tools](docs/LANGUAGES.md), and
+[sessions and troubleshooting](docs/MAINTENANCE.md) for more.
 
 ## AI suggestions
 

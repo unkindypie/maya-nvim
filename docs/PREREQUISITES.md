@@ -13,6 +13,69 @@ Ubuntu 24.04+ is recommended; older distro releases may lack Python 3.11 or the
 runtime libraries needed by official Neovim binaries. Unsupported systems receive
 manual instructions. Homebrew installation is manual: https://brew.sh.
 
+## Prerequisites and versions
+
+Setup normally installs missing prerequisites automatically. Use this table and
+the manual commands below if installation fails.
+
+| Prerequisite                       | Required version            | Automatic installation                                                                        |
+| ---------------------------------- | --------------------------- | --------------------------------------------------------------------------------------------- |
+| Bash and curl                      | System version              | Bash is required to start; missing curl can be installed by the local installer               |
+| Python                             | 3.11+                       | System package; existing older versions are preserved                                         |
+| Git, tar, unzip, CA certificates   | System versions             | System packages when missing                                                                  |
+| Neovim                             | 0.12+; tested/pinned 0.12.5 | Verified user-local download when absent                                                      |
+| tree-sitter CLI                    | 0.26.1+                     | Verified user-local 0.26.1 download when absent                                               |
+| Node.js and npm                    | Node 22+                    | Verified user-local Node 22.23.3 with npm when Node is absent; system package for missing npm |
+| C compiler and ripgrep             | System versions             | System compiler tools and `ripgrep` packages                                                  |
+| Python virtual-environment support | Matches selected Python     | Distro package when missing                                                                   |
+| Audio player                       | Optional                    | Offer mpv if no supported player exists and sound is enabled                                  |
+| Nerd Font                          | Optional                    | Offer user-local FantasqueSansMono Nerd Font 3.4.0; select it in terminal settings yourself   |
+| Ollama / zstd                      | Optional local AI           | Reuse existing Ollama; install zstd only if a Linux binary download needs it                  |
+
+Fresh installs ask about sound, saved tabs, and local Ollama AI. Linux Ollama
+automatic startup needs a working systemd user session; macOS users install/start
+Ollama separately. Declining optional audio/font setup does not block the editor.
+
+## Installer options
+
+Run these commands inside your maya-nvim checkout:
+
+```sh
+./install.sh --dry-run
+./install.sh --no-update                   # install the local checkout without pulling
+./install.sh --install-prerequisites       # allow missing prerequisite installation
+./install.sh --no-install-prerequisites    # print manual instructions instead
+./install.sh --no-install-audio --no-install-nerd-font
+./install.sh --yes --ai off                # unattended setup, including missing prerequisites
+./install.sh --ai copilot                  # no Ollama installation
+./install.sh --ai off                      # language tools without AI
+./install.sh --no-shell                    # do not edit zsh configuration
+./install.sh --skip-bootstrap              # links/shell integration only
+./install.sh --ollama-models-dir /mnt/ml/ollama
+./install.sh --ollama-models-dir "$HOME/models" --model qwen2.5-coder:1.5b
+./install.sh --tmux-sessionizer "$HOME/scripts/tmux-sessionizer"
+```
+
+For sound and session preferences, use `--pokemon-sound-on-start` /
+`--no-pokemon-sound-on-start` and `--reopen-tabs` / `--no-reopen-tabs` when creating
+a new personal config. Explicit optional-component flags are `--install-audio`
+and `--install-nerd-font`, with their `--no-install-*` counterparts.
+
+Ollama setup asks for its models directory on an interactive terminal. It reuses
+installed Ollama and existing models, downloads only missing models, and keeps
+model files outside this repository. Maya's chosen store is `/mnt/ml/ollama`.
+Installation is repeatable; unrelated existing config directories/launchers are
+never overwritten. Edited shell/sessionizer files get dated backups.
+
+Rerun the same one-command installer to update the existing repository in place.
+Running `./install.sh` inside the checkout also pulls the latest `master` before
+setup and reloads the updated installer. Updates use `git pull --ff-only`; local
+edits, another branch, or divergent history stop the update with instructions.
+No changes are reset, rebased, or automatically stashed. Use `--no-update` to
+install the local version without pulling. Personal configuration is preserved.
+An existing destination must be a maya-nvim checkout with the expected origin;
+unrelated folders are never reused.
+
 ## Manual package commands
 
 These are fallback examples. Install only packages reported missing by setup;
