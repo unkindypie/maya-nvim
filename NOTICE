@@ -13,8 +13,8 @@ maya-nvim code and configuration are licensed under GNU GPL version 3;
 see LICENSE. LunarVim-derived adaptations retain the attribution above.
 
 Pokemon cries are retrieved through https://pokeapi.co/ from
-https://github.com/PokeAPI/cries and cached locally. Pokemon assets belong to
-Nintendo and the respective Pokemon rights holders (The Pokemon Company,
+https://github.com/PokeAPI/cries and cached locally. Pokémon assets are the
+property of Nintendo and the respective Pokémon rights holders (The Pokemon Company,
 Game Freak, and Creatures). Pokemon character names are trademarks of Nintendo.
 These assets are not covered by this project's GPL-3.0 license. maya-nvim grants
 no ownership of, or license to, those assets. Downloaded cries are cached locally
