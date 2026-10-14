@@ -105,7 +105,7 @@ class InstallerTest(unittest.TestCase):
             env = dict(os.environ, HOME=str(home), XDG_CONFIG_HOME=str(home / 'config space'))
             sessionizer = home / 'sessionizer'
             sessionizer.write_text("discover_directories() {\n    printf '%s\\n' \"$HOME/scripts\" \"$HOME/notes\"\n}\n")
-            command = [str(ROOT / 'install.sh'), '--skip-bootstrap', '--ai', 'off', '--tmux-sessionizer', str(sessionizer)]
+            command = [str(ROOT / 'install.sh'), '--no-update', '--skip-bootstrap', '--ai', 'off', '--tmux-sessionizer', str(sessionizer)]
             before = sessionizer.read_text()
             subprocess.run(command + ['--dry-run'], env=env, check=True, capture_output=True)
             self.assertFalse((home / '.zshrc').exists())

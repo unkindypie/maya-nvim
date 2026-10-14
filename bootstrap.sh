@@ -103,13 +103,78 @@ maya_base_prerequisites() {
   done
 }
 
+maya_check_checkout() {
+  local destination=$1 origin top
+  if [[ ! -d "$destination" || ! -e "$destination/.git" ]]; then
+    echo "Refusing unrelated destination: $destination is not a maya-nvim Git checkout." >&2
+    return 1
+  fi
+  top=$(git -C "$destination" rev-parse --show-toplevel) || return 1
+  if [[ "$(cd -- "$destination" && pwd -P)" != "$(cd -- "$top" && pwd -P)" ]]; then
+    echo "Refusing destination inside another Git checkout: $destination" >&2
+    return 1
+  fi
+  origin=$(git -C "$destination" config --get remote.origin.url) || return 1
+  case "$origin" in
+    https://github.com/unkindypie/maya-nvim|https://github.com/unkindypie/maya-nvim.git|git@github.com:unkindypie/maya-nvim.git|ssh://git@github.com/unkindypie/maya-nvim.git) ;;
+    *) echo "Refusing unrelated origin: $origin" >&2; return 1 ;;
+  esac
+}
+
+maya_update_repo() {
+  local destination=$1 arg dry=0 skip=0 branch changes
+  shift
+  for arg in "$@"; do
+    case "$arg" in
+      --dry-run) dry=1 ;;
+      --no-update|--help|-h) skip=1 ;;
+    esac
+  done
+  # Local source archives remain installable without Git metadata.
+  if [[ ! -e "$destination/.git" ]]; then return 0; fi
+  if [[ $skip -eq 1 ]]; then return 0; fi
+  if ! command -v git >/dev/null 2>&1; then
+    maya_base_prerequisites clone "$@" || return 1
+  fi
+  maya_check_checkout "$destination" || return 1
+  if [[ $dry -eq 1 ]]; then
+    printf 'Would update the existing checkout with: git -C %q pull --ff-only --no-rebase --no-autostash origin master\n' "$destination"
+    return 0
+  fi
+  branch=$(git -C "$destination" symbolic-ref --quiet --short HEAD) || branch='detached HEAD'
+  changes=$(git -C "$destination" status --porcelain --untracked-files=normal) || return 1
+  if [[ "$branch" != master || -n "$changes" ]]; then
+    echo "Cannot update $destination: use a clean master checkout (found $branch; local changes are preserved)." >&2
+    printf 'Inspect: git -C %q status\n' "$destination" >&2
+    echo 'Commit or stash changes yourself and switch to master, then rerun; or use --no-update to install the local version.' >&2
+    return 1
+  fi
+  if ! git -C "$destination" -c pull.rebase=false -c merge.autoStash=false -c rebase.autoStash=false pull --ff-only --no-rebase --no-autostash origin master; then
+    echo 'Update failed. Check connectivity, repository permissions, or divergent local commits. No reset, rebase, or automatic stash was performed.' >&2
+    printf 'Run manually: git -C %q pull --ff-only --no-rebase --no-autostash origin master\n' "$destination" >&2
+    echo 'Then rerun setup, or use --no-update to install the existing local version.' >&2
+    return 1
+  fi
+}
+
 maya_bootstrap() {
   local destination=${MAYA_NVIM_INSTALL_DIR:-"$HOME/maya-nvim"} arg dry=0
   for arg in "$@"; do if [[ "$arg" == --dry-run ]]; then dry=1; fi; done
   if [[ -e "$destination" || -L "$destination" ]]; then
-    echo "Destination already exists: $destination" >&2
-    echo 'Run its install.sh, or set MAYA_NVIM_INSTALL_DIR to a new directory.' >&2
-    return 1
+    if [[ ! -d "$destination" || ! -e "$destination/.git" ]]; then
+      echo "Refusing unrelated destination: $destination" >&2
+      return 1
+    fi
+    if [[ $dry -eq 1 ]]; then
+      printf 'Would validate and update the existing maya-nvim checkout at %s, then run setup.\n' "$destination"
+      return 0
+    fi
+    maya_base_prerequisites clone "$@" || return 1
+    maya_check_checkout "$destination" || return 1
+    maya_update_repo "$destination" "$@" || return 1
+    export MAYA_NVIM_REPO_UPDATED
+    MAYA_NVIM_REPO_UPDATED=$(cd -- "$destination" && pwd -P)
+    exec bash "$destination/install.sh" "$@"
   fi
   if [[ $dry -eq 1 ]]; then
     maya_base_prerequisites clone "$@" || true
@@ -122,6 +187,8 @@ maya_bootstrap() {
     echo 'Rerun the original bootstrap command with the same flags after correcting the error.' >&2
     return 1
   fi
+  export MAYA_NVIM_REPO_UPDATED
+  MAYA_NVIM_REPO_UPDATED=$(cd -- "$destination" && pwd -P)
   exec bash "$destination/install.sh" "$@"
 }
 

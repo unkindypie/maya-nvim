@@ -15,7 +15,7 @@ Homebrew**. Managed downloads support **x86-64 and ARM64**. Prerequisite install
 is tested in Fedora 44 and Ubuntu 24.04 containers; macOS and the other Linux
 package-manager paths are covered by command-plan tests, not full system tests.
 
-One-command installation (clones into `~/maya-nvim`, then runs setup):
+One-command installation (clones into `~/maya-nvim`, or updates that checkout, then runs setup):
 
 ```sh
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/unkindypie/maya-nvim/master/bootstrap.sh)"
@@ -77,6 +77,7 @@ Ollama separately. Declining optional audio/font setup does not block the editor
 ```sh
 ./install.sh --help
 ./install.sh --dry-run
+./install.sh --no-update                   # install the local checkout without pulling
 ./install.sh --install-prerequisites       # allow missing prerequisite installation
 ./install.sh --no-install-prerequisites    # print manual instructions instead
 ./install.sh --no-install-audio --no-install-nerd-font
@@ -95,6 +96,15 @@ installed Ollama and existing models, downloads only missing models, and keeps
 model files outside this repository. Maya's chosen store is `/mnt/ml/ollama`.
 Installation is repeatable; unrelated existing config directories/launchers are
 never overwritten. Edited shell/sessionizer files get dated backups.
+
+Rerun the same one-command installer to update the existing repository in place.
+Running `./install.sh` inside the checkout also pulls the latest `master` before
+setup and reloads the updated installer. Updates use `git pull --ff-only`; local
+edits, another branch, or divergent history stop the update with instructions.
+No changes are reset, rebased, or automatically stashed. Use `--no-update` to
+install the local version without pulling. Personal configuration is preserved.
+An existing destination must be a maya-nvim checkout with the expected origin;
+unrelated folders are never reused.
 
 ## Personal configuration
 

@@ -1,5 +1,7 @@
 # Changelog
 
+- Update existing maya-nvim checkouts on installer reruns with fast-forward-only pulls, reload the new installer, and support `--no-update`.
+
 - Automatically install missing prerequisites after confirmation, with isolated verified tools, optional audio/fonts, and actionable manual recovery.
 - Validate fresh prerequisite installation and idempotent reruns in Fedora and Ubuntu containers.
 

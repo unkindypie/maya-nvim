@@ -40,7 +40,7 @@ printf 'answer:%s\\n' "$answer"
             sentinel.write_text('keep this')
             result = subprocess.run(['bash', str(ROOT / 'bootstrap.sh')], env=env, capture_output=True, text=True)
             self.assertNotEqual(result.returncode, 0)
-            self.assertIn('Destination already exists', result.stderr)
+            self.assertIn('local changes are preserved', result.stderr)
             self.assertEqual(sentinel.read_text(), 'keep this')
             alternate = home / 'another clone'
             result = subprocess.run(['bash', str(ROOT / 'bootstrap.sh'), '--yes'],

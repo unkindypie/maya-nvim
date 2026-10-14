@@ -2,6 +2,13 @@
 
 ## Checks and updates
 
+`./install.sh` updates a clean `master` checkout from origin with a fast-forward-only
+pull, reloads the updated installer, and reruns setup. The one-command bootstrap
+also reuses and updates its existing destination. Use `--no-update` to keep the
+current revision, or `--dry-run` to inspect the plan without fetching. Dirty trees,
+other branches, unrelated origins, divergence, and network failures stop the
+update without discarding work; resolve the reported issue or opt out of updating.
+
 ```sh
 python3 -m unittest discover -s tests -p 'test_*.py' -v
 bash -n bootstrap.sh install.sh bin/mvim

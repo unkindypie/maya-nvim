@@ -31,6 +31,7 @@ def managed(text, body):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--dry-run', action='store_true')
+    parser.add_argument('--no-update', action='store_true', help='install the current local checkout without pulling master')
     parser.add_argument('--yes', '-y', action='store_true', help='use defaults without interactive questions')
     parser.add_argument('--pokemon-sound-on-start', action=argparse.BooleanOptionalAction, default=None)
     parser.add_argument('--reopen-tabs', action=argparse.BooleanOptionalAction, default=None)
