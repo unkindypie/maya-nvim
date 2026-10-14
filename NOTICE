@@ -1,0 +1,10 @@
+maya-nvim contains configuration and keybinding adaptations from LunarVim 1.4.0:
+https://github.com/LunarVim/LunarVim
+LunarVim contributors; distributed under GNU GPL version 3.
+
+Sources consulted: lua/lvim/keymappings.lua, config/settings.lua,
+core/which-key.lua, core/telescope.lua, lsp/config.lua, and Maya's personal config.
+The application does not load or depend on the installed LunarVim runtime.
+
+Plugin repositories listed in Lua specs and lazy-lock.json retain their own
+copyright notices and licenses; plugin source is not vendored here.

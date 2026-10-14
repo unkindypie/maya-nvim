@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -euo pipefail
+export NVIM_APPNAME=maya-nvim
+exec nvim "$@"

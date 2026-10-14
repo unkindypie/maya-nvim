@@ -1,0 +1,50 @@
+# Supporting maya-nvim
+
+## Purpose and boundaries
+
+Maintain Maya's Neovim 0.12.5 configuration for Kitty and tmux. Familiar LunarVim
+keybindings matter; implementations may change for reliability and maintenance.
+Use `master`. Do not modify existing LunarVim files, launcher, or plugin store.
+Every invocation and check must set `NVIM_APPNAME=maya-nvim` (use `bin/mvim`).
+
+## Structure
+
+Keep `init.lua` small. Editor defaults belong in `options.lua`; mappings in
+`keymaps.lua`; plugin specs in `plugins/`; tools and filetype mappings in
+`languages.lua`; AI provider controls in `ai.lua`. Prefer supported Neovim APIs
+and documented plugin APIs. Do not patch private LSP tables or add distribution
+compatibility shims. Keep language metadata in one inventory.
+
+## Workflow
+
+1. Read the relevant module and upstream documentation before changing APIs.
+2. Preserve user changes; update documentation with changed defaults/mappings.
+3. Format Lua with StyLua and check Python/shell syntax.
+4. Run relevant tests below. A plugin update requires startup and integration checks.
+5. Commit coherent validated changes on master. Commit the plugin lockfile.
+
+Do not commit credentials, AI state, model blobs, generated parsers, logs, or
+machine-specific shell configuration. AI preferences live under
+`stdpath('state')/ai.json`. Never silently switch a local AI request to a cloud
+provider. Keep exactly one suggestion backend enabled.
+
+## Checks
+
+```sh
+python3 -m unittest discover -s tests -p 'test_installer.py' -v
+bash -n install.sh bin/mvim
+MAYA_NVIM_NO_INSTALL=1 MAYA_NVIM_NO_AI=1 bin/mvim --headless '+lua assert(vim.g.mapleader == " ")' +qa
+# Real project tests require pynvim (install it in a disposable uv environment).
+.local/test-env/bin/python tests/integration.py
+.local/test-env/bin/python tests/advanced.py
+```
+
+`MAYA_NVIM_NO_INSTALL=1` disables automatic tool downloads during isolated
+checks. `MAYA_NVIM_NO_AI=1` disables automatic AI activation. Tests must preserve
+existing project files; temporary fixtures must be removed even on failure.
+External-change tests must verify unsaved edits survive, not just clean reloads.
+Document interactive checks and unverified prerequisites honestly.
+
+The vita-sdl repository has its own AGENTS.md and pre-existing uncommitted work.
+Read its rules before touching it; do not stage unrelated edits. Editor metadata
+must describe native Linux compilation, never Docker `/workspace` paths.
