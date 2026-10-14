@@ -3,10 +3,10 @@ local started = false
 
 local function player()
   local commands = {
-    { "mpv", "--no-config", "--no-video", "--really-quiet" },
-    { "ffplay", "-nodisp", "-autoexit", "-loglevel", "quiet" },
-    { "pw-play" },
-    { "paplay" },
+    { "mpv", "--no-config", "--no-video", "--really-quiet", "--volume=50" },
+    { "ffplay", "-nodisp", "-autoexit", "-loglevel", "quiet", "-volume", "50" },
+    { "pw-play", "--volume=0.5" },
+    { "paplay", "--volume=32768" },
   }
   for _, command in ipairs(commands) do
     if vim.fn.executable(command[1]) == 1 then

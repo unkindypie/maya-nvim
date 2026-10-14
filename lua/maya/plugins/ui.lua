@@ -56,12 +56,7 @@ return {
           grep = { hidden = true },
           explorer = {
             jump = { close = true },
-            actions = {
-              maya_open = function(...)
-                require("maya.explorer").open(...)
-              end,
-            },
-            win = { list = { keys = { ["<Tab>"] = "maya_open", ["<CR>"] = "select_and_next" } } },
+            win = { list = { keys = { ["<Tab>"] = "confirm", ["<CR>"] = "select_and_next" } } },
           },
         },
         win = {

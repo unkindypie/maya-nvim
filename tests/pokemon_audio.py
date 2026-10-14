@@ -50,6 +50,7 @@ assert(#calls == 1, "only one sound per launch")
 ''', temp)
                 wait(nvim, '#calls == 3')
                 self.assertEqual(nvim.exec_lua('return calls[3][1]'), 'mpv')
+                self.assertTrue(nvim.exec_lua('return vim.tbl_contains(calls[3], "--volume=50")'))
                 self.assertEqual(nvim.exec_lua('return calls[3][#calls[3]]'), str(Path(temp) / 'pokemon-cries/pikachu.ogg'))
                 nvim.exec_lua('''
 package.loaded["maya.pokemon_audio"] = nil

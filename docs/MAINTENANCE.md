@@ -61,7 +61,8 @@ not a spoken recording of the dashboard quote. Cached `.ogg` files live under
 `stdpath('cache')/pokemon-cries`; repeat launches play from cache without network
 access. The first available player is used: `mpv`, `ffplay`, `pw-play`, or `paplay`.
 Downloads require `curl`. Missing tools, offline requests, and playback failures
-are quiet. Headless launches skip audio, and each launch plays at most once.
+are quiet. Playback uses 50% volume without changing the system volume. Headless
+launches skip audio, and each launch plays at most once.
 
 To disable it, set `vim.g.maya_pokemon_sound = false` in the `setup` function of
 your personal `~/.config/mvim/init.lua`, or launch with `MAYA_NVIM_NO_SOUND=1`.

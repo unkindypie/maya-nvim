@@ -1,5 +1,7 @@
 # Changelog
 
+- Reduce Pokémon cry playback to 50% volume and close Explorer when Tab opens a file.
+
 - Play the dashboard Pokémon's cry asynchronously through PokéAPI, with local caching.
 - License original code under MIT while retaining third-party terms and Pokémon asset attribution.
 
