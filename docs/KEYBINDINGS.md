@@ -95,5 +95,6 @@ Formatter steps from the same tool share one short name (for example,
 health report, `m` for Mason, or `q`/Escape to close.
 
 Explorer shows hidden and Git-ignored files by default. The search bar shows
-a small `i` hint: press `i` from the file list to search. `H` toggles hidden files; `I` toggles ignored files. Lowercase
+a small `i` hint: press `i` from the file list to search. The header shows
+`? - help` as a reminder of Explorer’s help shortcut. `H` toggles hidden files; `I` toggles ignored files. Lowercase
 `h` collapses a directory or moves to and collapses its parent.

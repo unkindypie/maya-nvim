@@ -74,6 +74,7 @@ return {
           files = { hidden = true },
           grep = { hidden = true },
           explorer = {
+            title = "Explorer · ? - help",
             hidden = true,
             ignored = true,
             toggles = { hidden = false, ignored = false },
