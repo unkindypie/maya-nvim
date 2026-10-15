@@ -87,3 +87,6 @@ language servers, `Lint` lists configured linters, and `Fmt` lists available
 formatters selected for formatting. Empty groups are hidden; buffers with
 `vim.b.maya_noformat = true` hide `Fmt`. Ruff diagnostics appear under `LSP`
 because Ruff runs as a language server.
+
+Formatter steps from the same tool share one short name (for example,
+`ruff_format` and `ruff_organize_imports` appear as `Fmt: ruff`).

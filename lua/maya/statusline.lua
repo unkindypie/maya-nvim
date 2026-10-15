@@ -1,5 +1,13 @@
 local M = {}
 
+-- Multiple Conform steps can belong to the same tool.
+local formatter_labels = {
+  ruff_format = "ruff",
+  ruff_organize_imports = "ruff",
+  ruff_fix = "ruff",
+  clang_format = "clang-format",
+}
+
 -- Read buffer-local providers, without loading plugins during dashboard redraws.
 function M.tools()
   local buf = vim.api.nvim_get_current_buf()
@@ -38,7 +46,7 @@ function M.tools()
   if conform and not vim.b[buf].maya_noformat then
     local names = {}
     for _, formatter in ipairs(conform.list_formatters_to_run(buf)) do
-      names[#names + 1] = formatter.name
+      names[#names + 1] = formatter_labels[formatter.name] or formatter.name
     end
     add("Fmt", names)
   end

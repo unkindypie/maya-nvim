@@ -32,6 +32,12 @@ def main():
             status = nvim.exec_lua('return require("maya.statusline").tools()')
             assert 'LSP: bashls' in status, status
             assert 'Fmt: shfmt' in status and 'prettier' not in status, status
+            python = root / 'check.py'
+            python.write_text('value = 1\n')
+            nvim.command('edit ' + str(python))
+            wait(nvim, 'require("maya.statusline").tools():find("Fmt: ruff", 1, true) ~= nil')
+            status = nvim.exec_lua('return require("maya.statusline").tools()')
+            assert status.split('Fmt: ')[1] == 'ruff', status
             nvim.command('enew')
             assert nvim.exec_lua('return require("maya.statusline").tools()') == ''
             print('PASS buffer-local LSP, linter, formatter status and disabled formatting', flush=True)
