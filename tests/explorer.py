@@ -2,6 +2,7 @@
 
 from pathlib import Path
 import tempfile
+import time
 import subprocess
 import unittest
 from integration import start, wait, stop
@@ -35,9 +36,12 @@ class ExplorerTest(unittest.TestCase):
                     """(function()
  local found = {}
  for _, item in ipairs(explorer.list.items) do found[vim.fn.fnamemodify(item.file, ':t')] = true end
- return found['.hidden'] and found['ignored.txt']
+ return found['.hidden'] and found['ignored.txt'] and found['folder'] and found['file.txt']
 end)()""",
                 )
+                time.sleep(
+                    0.3
+                )  # Let the initial asynchronous Git status refresh settle.
                 nvim.exec_lua("""for i,item in ipairs(explorer.list.items) do
  if item.dir and item.file:match("/folder$") then explorer.list:move(i,true,true); break end
 end""")
