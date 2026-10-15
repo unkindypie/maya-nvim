@@ -66,9 +66,10 @@ Rerun the installer to update the same checkout and repeat setup; your personal 
 Use `~/.config/mvim/init.lua` to extend the managed configuration without editing
 this repository (`$XDG_CONFIG_HOME/mvim` when XDG_CONFIG_HOME is set). Installation
 creates a commented example if the file does not already exist. `Space LC`
-opens it; `Space Lc` still opens the managed entry point.
+opens it. `Space Lu` pulls the latest maya-nvim changes and syncs plugins.
 
 ```lua
+---@type MayaConfig
 return {
   theme = "catppuccin/nvim", -- Optional; defaults to our transparent Catppuccin Frappé.
   pokemon_sound_on_start = true, -- Play a Pokémon cry.

@@ -28,6 +28,8 @@ uv pip install --python .local/test-env/bin/python pynvim
 .local/test-env/bin/python tests/pokemon_audio.py
 .local/test-env/bin/python tests/markdown_preview.py
 .local/test-env/bin/python tests/swap_recovery.py
+.local/test-env/bin/python tests/update.py
+.local/test-env/bin/python tests/config_completion.py
 ```
 
 Tests for Maya's existing Python/C++ projects require those projects. Advanced
@@ -187,3 +189,12 @@ swap: recover unsaved edits, open the disk version read-only, or skip for now.
 Session restoration continues with other files. No swap is deleted automatically.
 After recovery, review and save your buffer; use native `:recover` for additional
 recovery files. Headless invocations retain Neovim's native swap handling.
+
+## Personal config completion
+
+Place `---@type MayaConfig` immediately above `return {` in
+`~/.config/mvim/init.lua`. New installer examples include this annotation.
+LuaLS loads the config schema, Neovim option types, and lazy.nvim plugin types
+for completion and hover help, including nested theme fields. The annotation is
+optional and existing unannotated configs still work. Arbitrary plugin-specific
+`opts` remain controlled by each plugin's types.

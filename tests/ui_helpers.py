@@ -81,7 +81,12 @@ local found=false
 for _,sound in ipairs(bank) do if header:find(sound,1,true) then found=true end end
 assert(found, "dashboard sound must come from the local bank")
 """)
+        nvim.exec_lua("""local select=vim.ui.select
+vim.ui.select=function(items,opts,callback)
+ if opts.prompt:match("^Recovery") then callback(items[2]) else select(items,opts,callback) end
+end""")
         nvim.command("edit! " + str(ROOT / "README.md"))
+        wait(nvim, 'vim.api.nvim_buf_get_name(0):match("/README.md$") ~= nil')
         nvim.current.window.cursor = (2, 0)
         nvim.input("k")
         text = wait(

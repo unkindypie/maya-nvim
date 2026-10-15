@@ -17,6 +17,11 @@ compatibility shims. Keep language metadata in one inventory. Personal overrides
 `user.lua` from `$XDG_CONFIG_HOME/mvim`; never overwrite that directory during
 updates or commit a user’s personal configuration into this repository.
 
+Keep configuration changes and new features backward compatible: existing
+personal configs must keep working when new settings are omitted. Supply safe
+defaults, preserve saved preferences, and document migrations. Remove or rename
+settings/keybindings only when explicitly requested or with a compatible alias.
+
 ## Workflow
 
 Enable the repository's Markdown/Python formatting hook after cloning:
@@ -52,6 +57,8 @@ MAYA_NVIM_NO_INSTALL=1 MAYA_NVIM_NO_AI=1 bin/mvim --headless '+lua assert(vim.g.
 .local/test-env/bin/python tests/pokemon_audio.py
 .local/test-env/bin/python tests/markdown_preview.py
 .local/test-env/bin/python tests/swap_recovery.py
+.local/test-env/bin/python tests/update.py
+.local/test-env/bin/python tests/config_completion.py
 ```
 
 `MAYA_NVIM_NO_INSTALL=1` disables automatic tool downloads during isolated

@@ -188,7 +188,18 @@ function M.setup()
   vim.lsp.config("*", { capabilities = caps })
   vim.lsp.config("lua_ls", {
     settings = {
-      Lua = { diagnostics = { globals = { "vim", "Snacks" } }, telemetry = { enable = false } },
+      Lua = {
+        diagnostics = { globals = { "vim", "Snacks" } },
+        telemetry = { enable = false },
+        workspace = {
+          checkThirdParty = false,
+          library = {
+            vim.env.VIMRUNTIME .. "/lua",
+            vim.fn.stdpath("config") .. "/lua",
+            vim.fn.stdpath("data") .. "/lazy/lazy.nvim/lua",
+          },
+        },
+      },
     },
   })
   vim.lsp.config("jsonls", {

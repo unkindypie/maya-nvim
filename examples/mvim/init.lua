@@ -1,5 +1,6 @@
 -- Personal overrides. Restart mvim after editing this file.
 -- Lua modules can live in lua/mvim/ and be loaded with require("mvim.name").
+---@type MayaConfig
 return {
   theme = "catppuccin/nvim", -- Optional; defaults to our transparent Catppuccin Frappé.
   pokemon_sound_on_start = true, -- Play the dashboard Pokemon's cry.
