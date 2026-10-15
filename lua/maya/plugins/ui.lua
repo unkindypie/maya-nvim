@@ -74,6 +74,8 @@ return {
           files = { hidden = true },
           grep = { hidden = true },
           explorer = {
+            hidden = true,
+            ignored = true,
             jump = { close = true },
             actions = {
               maya_open = function(picker, item, action)

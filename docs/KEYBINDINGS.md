@@ -93,3 +93,5 @@ Formatter steps from the same tool share one short name (for example,
 
 `Space li` opens a rounded buffer-local LSP panel. Press `h` for the full
 health report, `m` for Mason, or `q`/Escape to close.
+
+Explorer shows hidden and Git-ignored files by default.
