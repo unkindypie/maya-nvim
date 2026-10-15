@@ -1,7 +1,8 @@
 -- Personal overrides. Restart mvim after editing this file.
 -- Lua modules can live in lua/mvim/ and be loaded with require("mvim.name").
 return {
-  pokemon_sound_on_start = true, -- Play the dashboard Pokemon's cry at 50% volume.
+  pokemon_sound_on_start = true, -- Play the dashboard Pokemon's cry.
+  pokemon_sound_on_start_volume_percentage = 50, -- 0–100; 0 mutes playback.
   reopen_tabs = true, -- Restore this folder's files, tabs, and splits on startup.
   options = {
     -- relativenumber = true,

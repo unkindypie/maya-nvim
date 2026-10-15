@@ -87,6 +87,7 @@ The personal config at `~/.config/mvim/init.lua` includes these defaults:
 ```lua
 return {
   pokemon_sound_on_start = true,
+  pokemon_sound_on_start_volume_percentage = 50, -- 0–100; 0 mutes playback.
   reopen_tabs = true,
   -- Other options, plugins, and setup can also go here.
 }
@@ -105,7 +106,8 @@ not a spoken recording of the dashboard quote. Cached `.ogg` files live under
 `stdpath('cache')/pokemon-cries`; repeat launches play from cache without network
 access. The first available player is used: `mpv`, `ffplay`, `pw-play`, or `paplay`.
 Downloads require `curl`. Missing tools, offline requests, and playback failures
-are quiet. Playback uses 50% volume without changing the system volume. Headless
+are quiet. Playback defaults to 50% volume without changing the system volume. Set
+`pokemon_sound_on_start_volume_percentage` to a number from 0 to 100 to adjust it. Headless
 launches skip audio, and each launch plays at most once.
 
 To disable it, set `pokemon_sound_on_start = false` in your personal config's

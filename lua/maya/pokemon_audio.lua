@@ -1,12 +1,12 @@
 local M = {}
 local started = false
 
-local function player()
+local function player(volume)
   local commands = {
-    { "mpv", "--no-config", "--no-video", "--really-quiet", "--volume=50" },
-    { "ffplay", "-nodisp", "-autoexit", "-loglevel", "quiet", "-volume", "50" },
-    { "pw-play", "--volume=0.5" },
-    { "paplay", "--volume=32768" },
+    { "mpv", "--no-config", "--no-video", "--really-quiet", "--volume=" .. volume },
+    { "ffplay", "-nodisp", "-autoexit", "-loglevel", "quiet", "-volume", tostring(volume) },
+    { "pw-play", "--volume=" .. volume / 100 },
+    { "paplay", "--volume=" .. math.floor(65536 * volume / 100 + 0.5) },
   }
   for _, command in ipairs(commands) do
     if vim.fn.executable(command[1]) == 1 then
@@ -19,6 +19,7 @@ function M.play(quote)
   if
     started
     or not require("maya.user").get("pokemon_sound_on_start")
+    or require("maya.user").get("pokemon_sound_on_start_volume_percentage") == 0
     or vim.g.maya_pokemon_sound == false
     or vim.env.MAYA_NVIM_NO_SOUND == "1"
   then
@@ -30,7 +31,7 @@ function M.play(quote)
   end
   started = true
   local name = quote:match("%- ([%a]+) %(c%)$")
-  local command = player()
+  local command = player(require("maya.user").get("pokemon_sound_on_start_volume_percentage"))
   if not name or not command then
     return
   end

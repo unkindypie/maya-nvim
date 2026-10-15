@@ -1,6 +1,10 @@
 -- Optional personal configuration, separate from the managed repository.
 local M = { config = {} }
-local defaults = { pokemon_sound_on_start = true, reopen_tabs = true }
+local defaults = {
+  pokemon_sound_on_start = true,
+  pokemon_sound_on_start_volume_percentage = 50,
+  reopen_tabs = true,
+}
 function M.get(key)
   if M.config[key] ~= nil then
     return M.config[key]
@@ -43,12 +47,18 @@ function M.load()
     plugins = "table",
     setup = "function",
     pokemon_sound_on_start = "boolean",
+    pokemon_sound_on_start_volume_percentage = "number",
     reopen_tabs = "boolean",
   }) do
     if config[key] ~= nil and type(config[key]) ~= kind then
       report(file, key .. " must be a " .. kind)
       return
     end
+  end
+  local volume = config.pokemon_sound_on_start_volume_percentage
+  if volume ~= nil and (volume ~= volume or volume < 0 or volume > 100) then
+    report(file, "pokemon_sound_on_start_volume_percentage must be between 0 and 100")
+    return
   end
   M.config = config
 end
