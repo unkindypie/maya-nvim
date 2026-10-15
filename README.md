@@ -10,7 +10,7 @@ Installation is one command, with guided questions and automatic setup of missin
 prerequisites. Existing tools are kept; incompatible versions receive manual
 instructions.
 
-## 💫 Install
+## 🌸 Install
 
 Supported systems: **Fedora, Debian/Ubuntu, Arch, openSUSE,** and **macOS with
 Homebrew**. Managed downloads support **x86-64** and **ARM64**.
@@ -62,7 +62,7 @@ See [installer options](docs/PREREQUISITES.md#installer-options) for custom setu
 
 Rerun the installer to update the same checkout and repeat setup; your personal configuration is preserved.
 
-## 🌸 Personal configuration
+## 💫 Personal configuration
 
 Use `~/.config/mvim/init.lua` to extend the managed configuration without editing
 this repository (`$XDG_CONFIG_HOME/mvim` when XDG_CONFIG_HOME is set). Installation
