@@ -70,7 +70,7 @@ opens it; `Space Lc` still opens the managed entry point.
 
 ```lua
 return {
-  theme = "catppuccin-frappe", -- Also: tokyonight-moon, kanagawa-wave, or a built-in theme.
+  theme = "catppuccin/nvim", -- Optional; defaults to our transparent Catppuccin Frappé.
   pokemon_sound_on_start = true, -- Play a Pokémon cry.
   pokemon_sound_on_start_volume_percentage = 50, -- 0–100; 0 mutes playback.
   reopen_tabs = true, -- Restore this folder's files, tabs, and splits.
@@ -91,32 +91,42 @@ return {
 }
 ```
 
-Set `theme = "tokyonight-moon"` (or `"tokyonight-storm"`, `"tokyonight-night"`,
-`"tokyonight-day"`) to automatically install [TokyoNight](https://github.com/folke/tokyonight.nvim).
-Catppuccin variants and [Kanagawa](https://github.com/rebelot/kanagawa.nvim)
-(`"kanagawa-wave"`, `"kanagawa-dragon"`, `"kanagawa-lotus"`) work the same way.
-Built-in colorschemes such as `"habamax"` need no download. Restart to apply;
-the status line follows the selected theme. Theme plugin pins use your personal lockfile.
+`theme` is optional. Omitting it keeps the current transparent Catppuccin Frappé.
+New installations include `theme = "catppuccin/nvim"`; existing configs are preserved.
+Catppuccin is the only bundled theme. To use another theme, enter its actual
+GitHub repository (`owner/repository`), for example:
 
-To extend a theme's settings, use a table instead of a string:
+```lua
+theme = "folke/tokyonight.nvim",
+```
+
+Only the selected repository is installed, if missing. The colorscheme name is
+inferred from the repository name (for example, `tokyonight.nvim` → `tokyonight`).
+If its colorscheme has a different name or you want to extend its settings, use:
 
 ```lua
 theme = {
-  name = "catppuccin-mocha",
+  plugin = "author/theme.nvim",
+  name = "my-colorscheme",
+  module = "theme", -- Include the setup module when supplying opts.
+  opts = {},
+},
+```
+
+To extend the default theme:
+
+```lua
+theme = {
+  plugin = "catppuccin/nvim",
+  name = "catppuccin-frappe",
   opts = { transparent_background = false },
 },
 ```
 
-For another theme, specify its repository and optional setup module:
-
-```lua
-theme = {
-  name = "my-colorscheme",
-  plugin = "author/theme.nvim",
-  module = "theme", -- Required if supplying opts; omit for colorscheme-only plugins.
-  opts = {},
-},
-```
+Restart to apply. The status line follows the selected theme, and extra theme
+plugin pins use your personal lockfile. Built-in Neovim colorscheme names such
+as `"habamax"` work without downloading anything. Unknown colorscheme names
+fall back to Catppuccin with a notification.
 
 Use lowercase `true` / `false`. The installer asks about sound and tab restoration
 when creating a new config; reinstalling preserves your existing file.

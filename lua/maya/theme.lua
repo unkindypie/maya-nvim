@@ -1,27 +1,37 @@
 local M = {}
-local presets = {
-  catppuccin = { plugin = "catppuccin/nvim", module = "catppuccin" },
-  tokyonight = { plugin = "folke/tokyonight.nvim", module = "tokyonight" },
-  kanagawa = { plugin = "rebelot/kanagawa.nvim", module = "kanagawa" },
-}
-
 function M.resolve(value)
   local theme = type(value) == "string" and { name = value } or vim.deepcopy(value)
-  if type(theme) ~= "table" or type(theme.name) ~= "string" or theme.name == "" then
-    return nil, "theme must be a colorscheme name or a table with name"
+  if type(theme) ~= "table" then
+    return nil, "theme must be a repository, colorscheme name, or table"
   end
-  for key, kind in pairs({ plugin = "string", module = "string", opts = "table" }) do
+  for key, kind in pairs({ name = "string", plugin = "string", module = "string", opts = "table" }) do
     if theme[key] ~= nil and type(theme[key]) ~= kind then
       return nil, "theme." .. key .. " must be a " .. kind
     end
   end
-  local family = theme.name:match("^[^-]+")
-  local preset = presets[family]
-  if preset then
-    theme.plugin = theme.plugin or preset.plugin
-    theme.module = theme.module or preset.module
+  if theme.name and theme.name:find("/", 1, true) then
+    theme.plugin = theme.plugin or theme.name
+    theme.name = nil
   end
-  if theme.plugin and theme.plugin ~= "catppuccin/nvim" and theme.opts and not theme.module then
+  if theme.plugin then
+    if not theme.plugin:match("^[%w_.-]+/[%w_.-]+$") then
+      return nil, "theme.plugin must use owner/repository format"
+    end
+    if theme.plugin == "catppuccin/nvim" then
+      theme.name = theme.name or "catppuccin-frappe"
+      theme.module = theme.module or "catppuccin"
+    else
+      theme.name = theme.name
+        or theme.plugin:match("/([^/]+)$"):gsub("%.nvim$", ""):gsub("^nvim%-", "")
+    end
+  elseif theme.name and theme.name:match("^catppuccin") then
+    theme.plugin = "catppuccin/nvim"
+    theme.module = "catppuccin"
+  end
+  if not theme.name or theme.name == "" then
+    return nil, "theme needs a repository or colorscheme name"
+  end
+  if theme.plugin and theme.opts and not theme.module then
     return nil, "theme.module is required when supplying opts for a custom plugin"
   end
   return theme

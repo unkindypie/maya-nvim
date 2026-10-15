@@ -1,7 +1,7 @@
 -- Personal overrides. Restart mvim after editing this file.
 -- Lua modules can live in lua/mvim/ and be loaded with require("mvim.name").
 return {
-  theme = "catppuccin-frappe", -- Also: tokyonight-moon, kanagawa-wave, or a built-in theme.
+  theme = "catppuccin/nvim", -- Optional; defaults to our transparent Catppuccin Frappé.
   pokemon_sound_on_start = true, -- Play the dashboard Pokemon's cry.
   pokemon_sound_on_start_volume_percentage = 50, -- 0–100; 0 mutes playback.
   reopen_tabs = true, -- Restore this folder's files, tabs, and splits on startup.

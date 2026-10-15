@@ -1,7 +1,7 @@
 -- Optional personal configuration, separate from the managed repository.
 local M = { config = {} }
 local defaults = {
-  theme = "catppuccin-frappe",
+  theme = "catppuccin/nvim",
   pokemon_sound_on_start = true,
   pokemon_sound_on_start_volume_percentage = 50,
   reopen_tabs = true,

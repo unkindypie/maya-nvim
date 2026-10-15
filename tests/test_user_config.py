@@ -27,6 +27,14 @@ assert(require("maya.user").get("reopen_tabs")==true)
         )
 
     def test_theme_selection_and_options(self):
+        self.launch(
+            "return {}",
+            'assert(vim.g.colors_name=="catppuccin-frappe"); assert(require("lazy.core.config").plugins["tokyonight.nvim"]==nil); assert(require("lazy.core.config").plugins["kanagawa.nvim"]==nil)',
+        )
+        self.launch(
+            'return {theme="catppuccin/nvim"}',
+            'assert(vim.g.colors_name=="catppuccin-frappe")',
+        )
         self.launch('return {theme="habamax"}', 'assert(vim.g.colors_name=="habamax")')
         self.assertTrue(
             self.launch(
@@ -36,8 +44,8 @@ assert(require("maya.user").get("reopen_tabs")==true)
         )
         self.assertTrue(
             self.launch(
-                'return {theme="tokyonight-moon"}',
-                'assert(vim.g.colors_name=="tokyonight-moon"); assert(require("lazy.core.config").plugins["tokyonight.nvim"])',
+                'return {theme="folke/tokyonight.nvim"}',
+                'assert(vim.g.colors_name:match("^tokyonight")); assert(require("lazy.core.config").plugins["tokyonight.nvim"])',
             )
         )
         self.assertTrue(
@@ -48,7 +56,7 @@ assert(require("maya.user").get("reopen_tabs")==true)
         )
         self.launch(
             "return {theme={opts={}}}",
-            'assert(require("maya.user").get("theme")=="catppuccin-frappe")',
+            'assert(require("maya.user").get("theme")=="catppuccin/nvim")',
         )
         self.launch(
             'return {theme="missing-theme-for-test"}',
