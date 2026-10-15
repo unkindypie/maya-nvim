@@ -168,7 +168,7 @@ def ask(question):
             return True
         if answer in ("n", "no"):
             return False
-        print("Please answer yes or no.")
+        print("🔔 Please answer yes or no.")
 
 
 def manager(system=None, os_release=None):
@@ -251,27 +251,27 @@ class Prerequisites:
         return ask(label) if sys.stdin.isatty() else False
 
     def recovery(self, label, error, commands, optional=False):
-        print(f"\n{label}: {error}", file=sys.stderr)
+        print(f"\n🔔 {label}: {error}", file=sys.stderr)
         for command in commands:
             print(
-                "Run: "
+                "🔔 Run: "
                 + (shlex.join(command) if isinstance(command, list) else command),
                 file=sys.stderr,
             )
-        print("Then rerun: " + self.retry, file=sys.stderr)
+        print("🔔 Then rerun: " + self.retry, file=sys.stderr)
         if isinstance(error, PermissionError):
             print(
-                "Check ownership and write access to the path above. Do not run the whole installer with sudo.",
+                "🔔 Check ownership and write access to the path above. Do not run the whole installer with sudo.",
                 file=sys.stderr,
             )
             if error.filename:
                 parent = str(Path(error.filename).parent)
                 print(
-                    "Inspect: " + shlex.join(["ls", "-ld", parent, error.filename]),
+                    "🔔 Inspect: " + shlex.join(["ls", "-ld", parent, error.filename]),
                     file=sys.stderr,
                 )
                 print(
-                    "Check write access: " + shlex.join(["test", "-w", parent]),
+                    "🔔 Check write access: " + shlex.join(["test", "-w", parent]),
                     file=sys.stderr,
                 )
         if optional:
@@ -346,7 +346,7 @@ class Prerequisites:
                 else False
             )
         for command in commands:
-            print("Proposed command: " + shlex.join(command))
+            print("🌟 Proposed command: " + shlex.join(command))
         if self.args.dry_run:
             return False
         if not self.permitted(kind, "Install missing " + kind + "?"):
@@ -378,7 +378,7 @@ class Prerequisites:
                 error, subprocess.CalledProcessError
             ):
                 print(
-                    "If the error reports stale mirrors/packages, review and run sudo pacman -Syu manually before retrying. Setup never performs that system upgrade.",
+                    "🔔 If the error reports stale mirrors/packages, review and run sudo pacman -Syu manually before retrying. Setup never performs that system upgrade.",
                     file=sys.stderr,
                 )
             return self.recovery("Installing " + kind, error, commands, optional)
@@ -459,7 +459,7 @@ class Prerequisites:
             url, digest, version = self.artifact(tool)
         except RuntimeError as error:
             if self.args.dry_run:
-                print(error)
+                print(f"🔔 {error}")
                 return
             self.recovery(tool, error, [GUIDES[tool]])
             return
@@ -574,7 +574,7 @@ class Prerequisites:
         while True:
             problems = self.incompatible()
             if problems:
-                print("\n".join(problems), file=sys.stderr)
+                print("🔔 " + "\n🔔 ".join(problems), file=sys.stderr)
                 commands = [
                     [
                         sys.executable,
@@ -716,7 +716,7 @@ class Prerequisites:
                 if shutil.which("fc-cache"):
                     subprocess.run(["fc-cache", "-f", str(destination)], check=True)
             print(
-                "🌟 Select FantasqueSansM Nerd Font Mono in your terminal settings, then reopen the terminal."
+                "🔔 Select FantasqueSansM Nerd Font Mono in your terminal settings, then reopen the terminal."
             )
         except (
             OSError,
@@ -761,7 +761,7 @@ class Prerequisites:
             if platform.system() == "Darwin":
                 if self.args.dry_run:
                     print(
-                        "Ollama: install/start separately on macOS: https://ollama.com/download/mac; ollama serve"
+                        "🔔 Ollama: install/start separately on macOS: https://ollama.com/download/mac; ollama serve"
                     )
                     return
                 if self.recovery(
@@ -774,7 +774,7 @@ class Prerequisites:
                 if not shutil.which("systemctl"):
                     if self.args.dry_run:
                         print(
-                            "Ollama: start a server manually; no systemd user service is available."
+                            "🔔 Ollama: start a server manually; no systemd user service is available."
                         )
                         return
                     if self.recovery(
@@ -826,7 +826,7 @@ def main():
     elif args.tool:
         p.managed(args.tool)
         print(
-            "To explicitly select this copy: export PATH="
+            "🔔 To explicitly select this copy: export PATH="
             + shlex.quote(str(p.root / "bin"))
             + ':"$PATH"'
         )
@@ -838,5 +838,5 @@ if __name__ == "__main__":
     try:
         main()
     except (OSError, RuntimeError) as error:
-        print(error, file=sys.stderr)
+        print(f"🔔 {error}", file=sys.stderr)
         sys.exit(1)

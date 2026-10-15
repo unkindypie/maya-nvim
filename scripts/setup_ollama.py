@@ -161,7 +161,7 @@ WantedBy=default.target
 
     def ensure(name):
         if name not in available:
-            print("Downloading missing model: " + name, flush=True)
+            print("🌟 Downloading missing model: " + name, flush=True)
             api("/api/pull", {"name": name, "stream": False}, timeout=1800)
             available.add(name)
 

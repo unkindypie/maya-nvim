@@ -139,10 +139,10 @@ def main():
     print("💫 maya-nvim setup")
     args.ai = choose_ai(args, state)
     for target, source in links:
-        print(f"Link {target} -> {source}")
+        print(f"🌟 Link {target} -> {source}")
     for path, _ in edits:
-        print(f"Update managed block: {path}")
-    print(f"Create personal config example if missing: {personal / 'init.lua'}")
+        print(f"🌟 Update managed block: {path}")
+    print(f"🌟 Create personal config example if missing: {personal / 'init.lua'}")
     if args.dry_run:
         if not args.skip_bootstrap:
             prerequisites.optional(sound=sound_enabled(args, personal_init))
@@ -177,7 +177,7 @@ def main():
     if personal_text is not None:
         personal_init.write_text(personal_text)
     else:
-        print(f"Keeping existing preferences: {personal_init}")
+        print(f"🌟 Keeping existing preferences: {personal_init}")
     stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S-%f")
     for path, text in edits:
         if path.exists() and path.read_text() == text:
@@ -272,7 +272,7 @@ def ask_boolean(question):
             return True
         if answer in ("n", "no"):
             return False
-        print("Please answer yes or no.")
+        print("🔔 Please answer yes or no.")
 
 
 if __name__ == "__main__":
@@ -281,15 +281,15 @@ if __name__ == "__main__":
             main()
             break
         except (OSError, RuntimeError, subprocess.CalledProcessError) as error:
-            print(f"Installation stopped: {error}", file=sys.stderr)
+            print(f"🔔 Installation stopped: {error}", file=sys.stderr)
             if isinstance(error, PermissionError):
                 print(
-                    "Check ownership and write access to the reported path; do not run the whole installer with sudo.",
+                    "🔔 Check ownership and write access to the reported path; do not run the whole installer with sudo.",
                     file=sys.stderr,
                 )
                 if error.filename:
                     print(
-                        "Inspect: "
+                        "🔔 Inspect: "
                         + shlex.join(
                             [
                                 "ls",
@@ -301,12 +301,12 @@ if __name__ == "__main__":
                         file=sys.stderr,
                     )
                     print(
-                        "Check write access: "
+                        "🔔 Check write access: "
                         + shlex.join(["test", "-w", str(Path(error.filename).parent)]),
                         file=sys.stderr,
                     )
             print(
-                "Rerun: "
+                "🔔 Rerun: "
                 + shlex.join(["bash", str(ROOT / "install.sh"), *sys.argv[1:]]),
                 file=sys.stderr,
             )
