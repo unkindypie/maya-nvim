@@ -5,28 +5,62 @@ local function settings()
     return vim.json.decode(table.concat(vim.fn.readfile(file), "\n"))
   end)
   return ok and value
-    or { provider = "off", model = "qwen2.5-coder:7b", endpoint = "http://127.0.0.1:11434" }
+    or { provider = "off", model = "qwen2.5-coder:3b-base", endpoint = "http://127.0.0.1:11434" }
 end
 function M.status()
   return M.provider == "ollama" and ("󰚩 " .. M.model)
     or (M.provider == "copilot" and " Copilot" or "")
 end
+function M.notify_status()
+  local lines
+  if M.provider == "ollama" then
+    lines = {
+      "Provider: Ollama (local)",
+      "Model: " .. (M.model or "qwen2.5-coder:3b-base"),
+      "Server: " .. (M.endpoint or "http://127.0.0.1:11434"),
+      "Automatic suggestions in this buffer: "
+        .. (vim.b.minuet_virtual_text_auto_trigger and "on" or "off"),
+      "Tab: accept · Ctrl-]: dismiss · Ctrl-L / Alt-[: next / previous",
+      "Space ao: reload saved local model · Space ax: turn AI off",
+    }
+  elseif M.provider == "copilot" then
+    lines = {
+      "Provider: GitHub Copilot (cloud)",
+      "Authentication/status: :Copilot auth / :Copilot status",
+      "Tab: accept · Ctrl-]: dismiss · Space ax: turn AI off",
+    }
+  else
+    lines = {
+      "AI suggestions: off",
+      "Normal editor completion is still available.",
+      "Space ao: Ollama · Space ac: GitHub Copilot",
+    }
+  end
+  vim.notify(
+    table.concat(lines, "\n"),
+    vim.log.levels.INFO,
+    { title = "AI status", timeout = 10000 }
+  )
+end
+
 function M.select(provider, persist)
   if not vim.tbl_contains({ "ollama", "copilot", "off" }, provider) then
     error("Choose ollama, copilot, or off")
   end
   if M.provider == "ollama" and M.initialized.ollama then
-    vim.cmd("Minuet virtualtext disable")
+    vim.b.minuet_virtual_text_auto_trigger = false
     require("minuet.virtualtext").action.dismiss()
   end
-  if M.provider == "copilot" and M.initialized.copilot then
+  if M.provider == "copilot" and M.initialized.copilot and provider ~= "copilot" then
     vim.cmd("Copilot disable")
   end
+  local previous_model, previous_endpoint = M.model, M.endpoint
   M.provider = provider
   local opts = settings()
-  M.model = opts.model or "qwen2.5-coder:7b"
+  M.model = opts.model or "qwen2.5-coder:3b-base"
+  M.endpoint = opts.endpoint or "http://127.0.0.1:11434"
   if provider == "ollama" then
-    if not M.initialized.ollama then
+    if not M.initialized.ollama or previous_model ~= M.model or previous_endpoint ~= M.endpoint then
       require("minuet").setup({
         provider = "openai_fim_compatible",
         n_completions = 1,
@@ -57,7 +91,7 @@ function M.select(provider, persist)
               return "ollama"
             end,
             name = "Ollama",
-            end_point = (opts.endpoint or "http://127.0.0.1:11434") .. "/v1/completions",
+            end_point = M.endpoint .. "/v1/completions",
             model = M.model,
             optional = {
               max_tokens = 56,
@@ -70,7 +104,7 @@ function M.select(provider, persist)
       M.initialized.ollama = true
       vim.b.minuet_virtual_text_auto_trigger = true
     else
-      vim.cmd("Minuet virtualtext enable")
+      vim.b.minuet_virtual_text_auto_trigger = true
     end
   elseif provider == "copilot" then
     if not M.initialized.copilot then
@@ -99,7 +133,9 @@ function M.select(provider, persist)
     opts.provider = provider
     vim.fn.mkdir(vim.fn.stdpath("state"), "p")
     vim.fn.writefile({ vim.json.encode(opts) }, vim.fn.stdpath("state") .. "/ai.json")
-    vim.notify("AI: " .. provider)
+    local label = provider == "ollama" and ("Ollama · " .. M.model)
+      or (provider == "copilot" and "GitHub Copilot" or "Off")
+    vim.notify("AI: " .. label, vim.log.levels.INFO, { title = "AI suggestions" })
   end
 end
 function M.accept()

@@ -207,3 +207,9 @@ In insert-mode completion, Down selects the first suggestion and subsequent
 presses move down; Up moves back. Arrow navigation dismisses the current
 Copilot/Ollama suggestion. Enter or Tab accepts the selected completion. With
 no completion selected, Tab retains AI acceptance and snippet/indent fallbacks.
+
+Native quickfix and location-list result windows (including multiple `gd` results)
+close with `q`, returning to the file window.
+
+`Space as` shows AI provider/model/server and controls for 10 seconds. `Space ao`
+selects Ollama or reloads its saved local model without noisy disable/enable notices.

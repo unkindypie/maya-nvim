@@ -113,3 +113,24 @@ Installer tests verify that existing personal configuration is not overwritten.
 
 Explorer key tests verify Tab expands directories, opens files without closing
 or losing focus, and Enter opens the selected file and closes the sidebar.
+
+## 2026-10-15: GPU-aware setup and Qwen 3B Base
+
+On Maya's RTX 3060 Laptop GPU (6 GiB), installed `qwen2.5-coder:3b-base` in the
+existing Ollama store and selected it without removing other models. With a
+2,048-token context, the short native FIM benchmark measured **2.93 s** after
+unloading the runner and **0.049 s median** across three warmed runs. Ollama
+reported **2,085,974,179 bytes** allocated on GPU, with the model fully on GPU.
+These are short benchmark timings, not end-to-end editor latency or quality scores.
+
+Streaming `/v1/completions` produced syntax-valid temporary Python, Lua, and C
+completion fixtures (about 0.06–0.08 s warmed). An unconstrained first C fixture
+exceeded its 32-token budget; the constrained expression fixture completed and
+passed GCC syntax checking. A real mvim Minuet backend request also returned
+`return a + b` using the saved 3B Base model. Raw reports remain in local state,
+outside Git.
+
+Automated checks cover NVIDIA/AMD detection, unknown and shared memory, menu
+selection, Copilot/skip avoiding Ollama setup, preservation of saved models, and
+`q` closing native quickfix/location-list results. AI reselection reloads the
+saved model with one notification; status includes provider details for 10 seconds.

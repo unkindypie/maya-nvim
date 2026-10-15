@@ -19,6 +19,34 @@ def main():
             "Unexpected lualine configuration warning"
         )
         print("PASS lualine startup without configuration notices", flush=True)
+        original_window = nvim.current.window.handle
+        nvim.funcs.setqflist(
+            [
+                {
+                    "text": "definition result",
+                    "bufnr": nvim.current.buffer.number,
+                    "lnum": 1,
+                }
+            ]
+        )
+        nvim.command("copen")
+        nvim.input("q")
+        wait(nvim, f"vim.api.nvim_get_current_win() == {original_window}")
+        nvim.funcs.setloclist(
+            0,
+            [
+                {
+                    "text": "reference result",
+                    "bufnr": nvim.current.buffer.number,
+                    "lnum": 1,
+                }
+            ],
+        )
+        nvim.command("lopen")
+        nvim.input("q")
+        wait(nvim, f"vim.api.nvim_get_current_win() == {original_window}")
+        print("PASS q closes quickfix and location-list results only", flush=True)
+
         with tempfile.TemporaryDirectory(prefix="maya-statusline-") as temp:
             root = Path(temp)
             markdown = root / "preview.md"

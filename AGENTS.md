@@ -22,6 +22,10 @@ personal configs must keep working when new settings are omitted. Supply safe
 defaults, preserve saved preferences, and document migrations. Remove or rename
 settings/keybindings only when explicitly requested or with a compatible alias.
 
+Keep repository small from any commited artifacts, too big images, etc. If
+image is replaced, make sure to delete it from version history to increase speed of git clone.
+Don't commit any not needed large artifacts.
+
 ## Workflow
 
 Enable the repository's Markdown/Python formatting hook after cloning:
@@ -60,6 +64,7 @@ MAYA_NVIM_NO_INSTALL=1 MAYA_NVIM_NO_AI=1 bin/mvim --headless '+lua assert(vim.g.
 .local/test-env/bin/python tests/update.py
 .local/test-env/bin/python tests/config_completion.py
 .local/test-env/bin/python tests/completion_keys.py
+.local/test-env/bin/python tests/ai_status.py
 ```
 
 `MAYA_NVIM_NO_INSTALL=1` disables automatic tool downloads during isolated

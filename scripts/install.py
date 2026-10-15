@@ -15,6 +15,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 from prerequisites import Prerequisites, add_arguments
+from ai_setup import choose, detect_gpu, recommended_model
 
 BEGIN, END = "# >>> maya-nvim >>>", "# <<< maya-nvim <<<"
 
@@ -74,7 +75,7 @@ def main():
     parser.add_argument("--ollama-models-dir", type=Path)
     parser.add_argument(
         "--model",
-        help="Ollama model override; otherwise reuse Qwen 7B or install Qwen 1.5B",
+        help="Ollama model override; otherwise preserve saved selection or recommend Qwen 3B Base (1.5B below 4 GB VRAM)",
     )
     add_arguments(parser)
     args = parser.parse_args()
@@ -220,8 +221,19 @@ def main():
                 command += ["--model", args.model]
             subprocess.run(command, check=True)
         else:
+            if args.ai == "copilot":
+                print(
+                    "🌺 GitHub Copilot selected. Run :Copilot auth in mvim to sign in."
+                )
             state.mkdir(parents=True, exist_ok=True)
-            (state / "ai.json").write_text(json.dumps({"provider": args.ai}))
+            try:
+                preferences = json.loads((state / "ai.json").read_text())
+                if not isinstance(preferences, dict):
+                    preferences = {}
+            except (OSError, ValueError):
+                preferences = {}
+            preferences["provider"] = args.ai
+            (state / "ai.json").write_text(json.dumps(preferences))
     print(
         "🌟 Installed. Open a new zsh or run ~/.local/bin/mvim. LunarVim is unchanged."
     )
@@ -244,22 +256,41 @@ def sound_enabled(args, personal_init):
 
 
 def choose_ai(args, state):
-    if args.ai is not None:
-        return args.ai
+    explicit_model = getattr(args, "model", None)
+    requested = args.ai
+    saved = {}
     try:
-        saved = json.loads((state / "ai.json").read_text()).get("provider")
-        if saved in ("ollama", "copilot", "off"):
-            return saved
-    except (OSError, ValueError, AttributeError):
+        saved = json.loads((state / "ai.json").read_text())
+        if not isinstance(saved, dict):
+            saved = {}
+    except (OSError, ValueError):
         pass
+    if requested is None and explicit_model:
+        requested = "ollama"
     if args.skip_bootstrap or args.dry_run:
-        return "off"
-    if sys.stdin.isatty() and not args.yes:
-        print(
-            "🌺 Local AI can install Ollama, start a user service, and download a missing Qwen model."
+        return requested or (
+            saved.get("provider")
+            if saved.get("provider") in ("ollama", "copilot", "off")
+            else "off"
         )
-        return "ollama" if ask_boolean("Enable local AI with Ollama?") else "off"
-    return "ollama" if args.yes else "off"
+    if requested is None and saved.get("provider") in ("ollama", "copilot", "off"):
+        if saved["provider"] == "ollama" and isinstance(saved.get("model"), str):
+            args.model = saved["model"]
+        return saved["provider"]
+    if requested in ("copilot", "off"):
+        return requested
+    if explicit_model:
+        return "ollama"
+    if requested == "ollama" and isinstance(saved.get("model"), str) and saved["model"]:
+        args.model = saved["model"]
+        return "ollama"
+    if sys.stdin.isatty() and not args.yes:
+        provider, args.model = choose()
+        return provider
+    if requested == "ollama" or args.yes:
+        args.model = recommended_model(detect_gpu())
+        return "ollama"
+    return "off"
 
 
 def ask_boolean(question):

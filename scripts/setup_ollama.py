@@ -9,10 +9,15 @@ import platform
 import shutil
 import statistics
 import subprocess
+import sys
 import tempfile
 import time
 import urllib.request
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from ai_setup import detect_gpu, recommended_model
 
 ENDPOINT = "http://127.0.0.1:11434"
 
@@ -155,9 +160,22 @@ WantedBy=default.target
             flush=True,
         )
     available = {m["name"] for m in api("/api/tags")["models"]}
-    model = args.model or (
-        "qwen2.5-coder:7b" if "qwen2.5-coder:7b" in available else "qwen2.5-coder:1.5b"
+    state = (
+        Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local/state"))
+        / "maya-nvim"
     )
+    try:
+        saved = json.loads((state / "ai.json").read_text())
+        saved_model = saved.get("model") if isinstance(saved, dict) else None
+    except (OSError, ValueError):
+        saved_model = None
+    hardware = detect_gpu()
+    model = (
+        args.model
+        or (saved_model if isinstance(saved_model, str) and saved_model else None)
+        or recommended_model(hardware)
+    )
+    print(f"🌺 Local model: {model}; hardware: {hardware}")
 
     def ensure(name):
         if name not in available:
@@ -174,34 +192,27 @@ WantedBy=default.target
             "stream": False,
             "options": {"num_ctx": 2048, "num_predict": 32, "temperature": 0},
         }
-        api("/api/generate", data)  # cold load is excluded from interactive latency
+        api("/api/generate", {"model": name, "keep_alive": 0})
+        cold_start = time.monotonic()
+        api("/api/generate", data)
+        cold_seconds = time.monotonic() - cold_start
         times = []
         for _ in range(3):
             start = time.monotonic()
             result = api("/api/generate", data)
             times.append(time.monotonic() - start)
-        return times, result.get("response", "")
+        return times, result.get("response", ""), cold_seconds
 
     ensure(model)
-    try:
-        times, sample = benchmark(model)
-    except Exception:
-        if args.model or model == "qwen2.5-coder:1.5b":
-            raise
-        times, sample = [999], ""
-    if (
-        not args.model
-        and model != "qwen2.5-coder:1.5b"
-        and statistics.median(times) > 2
-    ):
-        api("/api/generate", {"model": model, "keep_alive": 0})
-        model = "qwen2.5-coder:1.5b"
-        ensure(model)
-        times, sample = benchmark(model)
-    state = (
-        Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local/state"))
-        / "maya-nvim"
-    )
+    times, sample, cold_seconds = benchmark(model)
+    if not sample.strip():
+        raise RuntimeError(
+            "Ollama returned an empty completion; previous AI preferences are kept"
+        )
+    if statistics.median(times) > 2:
+        print(
+            "🔔 Completion benchmark exceeded two seconds. Consider --model qwen2.5-coder:1.5b-base; the selected model is kept."
+        )
     state.mkdir(parents=True, exist_ok=True)
     (state / "ai.json").write_text(
         json.dumps(
@@ -218,6 +229,8 @@ WantedBy=default.target
     gpu = api("/api/ps")
     report = {
         "model": model,
+        "hardware": hardware,
+        "cold_seconds": cold_seconds,
         "warm_seconds": times,
         "median_seconds": statistics.median(times),
         "sample": sample,

@@ -31,6 +31,7 @@ uv pip install --python .local/test-env/bin/python pynvim
 .local/test-env/bin/python tests/update.py
 .local/test-env/bin/python tests/config_completion.py
 .local/test-env/bin/python tests/completion_keys.py
+.local/test-env/bin/python tests/ai_status.py
 ```
 
 Tests for Maya's existing Python/C++ projects require those projects. Advanced
@@ -71,18 +72,17 @@ formatting already completed for the other language may remain staged.
 
 ## Optional local AI during installation
 
-On a fresh interactive installation, the installer asks
-`Enable local AI with Ollama? [Y/n]` and explains the possible server/model
-downloads. Enter enables local AI; `n` skips Ollama installation and leaves AI
-off. `--ai ollama`, `--ai copilot`, and `--ai off` explicitly select a provider
-without asking. Existing AI selections are preserved on reinstall unless
-overridden with `--ai`.
+Fresh interactive installations offer a model menu with a GPU-aware default,
+GitHub Copilot, and **Skip Ollama models installation**. The default local model
+is Qwen2.5-Coder 3B Base, or 1.5B Base below 4 GiB detected VRAM. Copilot and skip
+choices install no Ollama/models. Missing detection tools do not block setup.
+Existing provider/model preferences survive reruns. Use `--ai` and `--model` to
+override them; see [AI setup](AI.md) for details.
 
-The choice is saved in maya-nvim's existing state `ai.json`, also used by
-`:MayaAI`; no additional personal-config variable is needed. Ollama setup reuses
-a running server or an installed executable and downloads only missing models.
-Noninteractive fresh installs default to AI off; `--yes` accepts local AI on a
-fresh full install. Dry runs and `--skip-bootstrap` do not ask or install AI.
+The choice is saved in `ai.json`, also used by `:MayaAI`; no additional personal
+config setting is required. Noninteractive fresh installs leave AI off unless
+`--yes`, `--ai ollama`, or `--model` is passed. Dry runs and link-only installs
+perform no AI installation.
 
 ## Pokémon dashboard audio
 

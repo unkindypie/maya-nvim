@@ -2,29 +2,28 @@
 
 Hi. I'm Maya and it's my Neovim config/distro. 🎀
 
-A standalone Neovim 0.12.5 setup for Mac and Linux: **LunarVim muscle memory**, transparent
-**Catppuccin Frappé**, modern language tools, **local AI**(optional), and **safe collaboration** with
+A standalone Neovim 0.12.5+ setup for Mac and Linux. Inspired by LunarVim, uses transparent
+**Catppuccin Frappé**, modern language tools, **local AI** (optional), and **safe collaboration** with
 **external editors** such as Codex or Claude Code. Launch with **`mvim`**. Isolated from other nvim distros.
 
 Installation is one command, with guided questions and automatic setup of missing
-prerequisites. Existing tools are kept; incompatible versions receive manual
-instructions.
+prerequisites and instructions for conflicts.
 
 ## 🌸 Install
 
 Supported systems: **Fedora, Debian/Ubuntu, Arch, openSUSE,** and **macOS with
-Homebrew**. Managed downloads support **x86-64** and **ARM64**.
+Homebrew**. Must work on both **x86-64** and **ARM64**.
 
-**One-command installation** (clones into `~/maya-nvim`, or updates that checkout, then runs setup):
+**One-command installation** (clones into `~/maya-nvim`, or updates if ran again):
 
 ```sh
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/unkindypie/maya-nvim/master/bootstrap.sh)"
 ```
 
 The command itself needs Bash and curl. The bootstrap can install missing prerequisites or shows install command on failure.
-System packages may require a sudo password. Homebrew on macOS must already be installed.
+System packages may require a sudo password. **Homebrew on macOS must already be installed.**
 
-To chagnge install dir add this at the start of the install script install command
+To chagnge install dir add this at the start of the install command
 (before `bash ` separated by a space):
 `MAYA_NVIM_INSTALL_DIR="$HOME/your_path/maya-nvim"`
 
@@ -157,12 +156,27 @@ Files format on save and reload after external changes; unsaved edits use native
 conflict handling. Launching `mvim` without file arguments restores the folder's
 saved files and tabs when enabled.
 
-See [keybindings](docs/KEYBINDINGS.md), [language tools](docs/MANGUAGES.md), and
+See [keybindings](docs/KEYBINDINGS.md), [language tools](docs/LANGUAGES.md), and
 [sessions and troubleshooting](docs/MAINTENANCE.md) for more.
 
 ## 🌺 AI suggestions
 
 Ollama and GitHub Copilot are selectable backends; only one is active:
+
+Setup offers local models, **GitHub Copilot**, or **Skip Ollama models installation**
+(AI off; normal editor completion stays available). It recommends **Qwen2.5-Coder
+3B Base**, or **1.5B Base below 4 GB detected VRAM**. No extra detection packages
+are needed. Saved choices are preserved on reruns; `--model NAME` overrides them.
+
+| Ollama model              | Suggested GPU VRAM |
+| ------------------------- | ------------------ |
+| `qwen2.5-coder:1.5b-base` | 2–4 GB             |
+| `qwen2.5-coder:3b-base`   | 4–6 GB; default    |
+| `qwen2.5-coder:7b-base`   | Prefer 8 GB+       |
+
+These are estimates for short completion contexts, not hard minimums. Context
+size and other GPU applications affect memory needs. Custom model tags are also
+accepted; choose a model supporting fill-in-the-middle completion.
 
 ```vim
 :MayaAI ollama
@@ -172,7 +186,7 @@ Ollama and GitHub Copilot are selectable backends; only one is active:
 
 Use `Space ao/ac/ax` for the same actions. GitHub authentication is through
 `:Copilot auth`. Local server failure never silently switches to GitHub.
-Tab accepts a visible AI suggestion first, otherwise navigates completion,
+Tab accepts a selected completion first, then a visible AI suggestion; otherwise it navigates completion,
 jumps/expands snippets, or inserts a normal Tab. Ctrl-J/K navigate completion,
 Ctrl-L cycles AI forward, Alt-[ cycles backwards, and Ctrl-] dismisses it.
 Enter accepts a selected completion; it does not automatically select one.

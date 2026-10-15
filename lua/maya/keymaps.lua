@@ -215,7 +215,7 @@ for key, provider in pairs({ o = "ollama", c = "copilot", x = "off" }) do
   end, "AI: " .. provider)
 end
 leader("as", function()
-  vim.notify(require("maya.ai").status())
+  require("maya.ai").notify_status()
 end, "AI status")
 local dap = {
   t = "toggle_breakpoint",
@@ -253,3 +253,16 @@ leader("bo", U.close_others, "Close all others (buffers/tabs)")
 leader("Mc", function()
   vim.cmd.edit(vim.fn.fnameescape(require("maya.user").path .. "/init.lua"))
 end, "Edit personal configuration")
+
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = "qf",
+  group = vim.api.nvim_create_augroup("MayaQuickfixKeys", { clear = true }),
+  callback = function(ev)
+    vim.keymap.set(
+      "n",
+      "q",
+      "<cmd>close<cr>",
+      { buffer = ev.buf, silent = true, desc = "Close results" }
+    )
+  end,
+})

@@ -52,7 +52,7 @@ Run these commands inside your maya-nvim checkout:
 ./install.sh --no-shell                    # do not edit zsh configuration
 ./install.sh --skip-bootstrap              # links/shell integration only
 ./install.sh --ollama-models-dir /mnt/ml/ollama
-./install.sh --ollama-models-dir "$HOME/models" --model qwen2.5-coder:1.5b
+./install.sh --ollama-models-dir "$HOME/models" --model qwen2.5-coder:1.5b-base
 ./install.sh --tmux-sessionizer "$HOME/scripts/tmux-sessionizer"
 ```
 
