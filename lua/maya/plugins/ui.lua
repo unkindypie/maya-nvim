@@ -39,6 +39,7 @@ return {
       heading = { backgrounds = { "MayaMarkdownBackground" } },
       code = {
         disable_background = true,
+        highlight_border = false,
         highlight = "MayaMarkdownBackground",
       },
     },
