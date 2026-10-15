@@ -41,6 +41,30 @@ The authoritative mappings are in `lua/maya/keymaps.lua` and `plugins/completion
 | `Ctrl-arrows`, `Alt-j/k`                 | Resize windows, move lines/selections                                                   |
 | `gc`, `gcc`, `Space /`                   | Native comments / line / selection                                                      |
 
+## Explorer keybindings
+
+Open Explorer with `Space e`. These shortcuts apply in the file list unless noted.
+
+| Keys                           | Action                                                                                  |
+| ------------------------------ | --------------------------------------------------------------------------------------- |
+| `Enter` or `Tab`               | Open a file and close Explorer, or expand/collapse a folder; also works in search input |
+| `s`                            | Toggle selection and move to the next item                                              |
+| `a` or `n`                     | New file; end the name with `/` to create a folder                                      |
+| `d`                            | Delete the current or selected files                                                    |
+| `r`                            | Rename the current file                                                                 |
+| `c` / `m`                      | Copy / move the current or selected files                                               |
+| `y` / `p`                      | Yank paths / paste files                                                                |
+| `j` / `k` or arrow keys        | Move down / up                                                                          |
+| `h`                            | Collapse a folder or its parent                                                         |
+| `Backspace`                    | Go to the parent directory                                                              |
+| `i`                            | Focus search input                                                                      |
+| `Escape` in search insert mode | Leave typing mode                                                                       |
+| `H` / `I`                      | Toggle hidden / Git-ignored files                                                       |
+| `P`                            | Toggle file preview                                                                     |
+| `u`                            | Refresh files                                                                           |
+| `?`                            | Open compact help; `?`, `q`, or Escape closes the help panel                            |
+| `q`                            | Close Explorer                                                                          |
+
 Current-line Git blame aligns to the right edge of the editor window. Long
 author/date/commit text is shortened to fit beside the file content.
 
