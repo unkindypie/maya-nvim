@@ -15,6 +15,33 @@ class ExplorerTest(unittest.TestCase):
     def test_enter_opens_and_s_toggles_multiselection(self):
         self.check_open_and_selection("\r")
 
+    def test_tab_and_enter_open_from_search_input(self):
+        for key in ("\t", "\r"):
+            with (
+                self.subTest(key=key),
+                tempfile.TemporaryDirectory(prefix="maya-explorer-input-") as temp,
+            ):
+                file = Path(temp) / "file.txt"
+                file.write_text("Maya\n")
+                nvim = start()
+                try:
+                    nvim.ui_attach(110, 35, rgb=True)
+                    nvim.exec_lua("_G.explorer=Snacks.explorer({cwd=...})", temp)
+                    wait(nvim, "explorer and #explorer.list.items == 2")
+                    time.sleep(0.3)
+                    nvim.exec_lua("""for i, item in ipairs(explorer.list.items) do
+ if item.file:match("/file.txt$") then explorer.list:move(i,true,true); break end
+end""")
+                    nvim.input("i")
+                    wait(
+                        nvim, "vim.api.nvim_get_current_win() == explorer.input.win.win"
+                    )
+                    nvim.input(key)
+                    wait(nvim, "explorer.closed")
+                    self.assertEqual(nvim.current.buffer.name, str(file))
+                finally:
+                    stop(nvim)
+
     def check_open_and_selection(self, open_key):
         with tempfile.TemporaryDirectory(prefix="maya-explorer-") as temp:
             root = Path(temp)

@@ -89,6 +89,12 @@ return {
               end,
             },
             win = {
+              input = {
+                keys = {
+                  ["<Tab>"] = { "maya_open", mode = { "i", "n" } },
+                  ["<CR>"] = { "maya_open", mode = { "i", "n" } },
+                },
+              },
               list = {
                 keys = {
                   ["<Tab>"] = "maya_open",
