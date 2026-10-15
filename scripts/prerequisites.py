@@ -687,7 +687,7 @@ class Prerequisites:
                 "Font detection is unavailable; a Nerd Font may already be installed."
             )
         print(
-            "💫 Optional FantasqueSansMono Nerd Font 3.4.0 (user-local; terminal selection is manual)."
+            "🌺 Optional FantasqueSansMono Nerd Font 3.4.0 (user-local; terminal selection is manual)."
         )
         if not self.permitted("nerd_font", "Install FantasqueSansMono Nerd Font?"):
             return

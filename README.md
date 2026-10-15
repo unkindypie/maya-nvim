@@ -62,7 +62,7 @@ See [installer options](docs/PREREQUISITES.md#installer-options) for custom setu
 
 Rerun the installer to update the same checkout and repeat setup; your personal configuration is preserved.
 
-## 🌠 Personal configuration
+## 🌸 Personal configuration
 
 Use `~/.config/mvim/init.lua` to extend the managed configuration without editing
 this repository (`$XDG_CONFIG_HOME/mvim` when XDG_CONFIG_HOME is set). Installation
@@ -122,7 +122,7 @@ saved files and tabs when enabled.
 See [keybindings](docs/KEYBINDINGS.md), [language tools](docs/LANGUAGES.md), and
 [sessions and troubleshooting](docs/MAINTENANCE.md) for more.
 
-## 🌠 AI suggestions
+## 🌺 AI suggestions
 
 Ollama and GitHub Copilot are selectable backends; only one is active:
 
@@ -142,7 +142,7 @@ Enter accepts a selected completion; it does not automatically select one.
 Details: [AI setup](docs/AI.md), [keybindings and migration](docs/KEYBINDINGS.md),
 [maintenance/troubleshooting](docs/MAINTENANCE.md), [validation](docs/VALIDATION.md).
 
-## 💫 Configuration map
+## 🌠 Configuration map
 
 | Location                 | Responsibility                                      |
 | ------------------------ | --------------------------------------------------- |

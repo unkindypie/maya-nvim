@@ -142,7 +142,7 @@ def main():
         print(f"🌟 Link {target} -> {source}")
     for path, _ in edits:
         print(f"🌟 Update managed block: {path}")
-    print(f"🌟 Create personal config example if missing: {personal / 'init.lua'}")
+    print(f"🌸 Create personal config example if missing: {personal / 'init.lua'}")
     if args.dry_run:
         if not args.skip_bootstrap:
             prerequisites.optional(sound=sound_enabled(args, personal_init))
@@ -177,7 +177,7 @@ def main():
     if personal_text is not None:
         personal_init.write_text(personal_text)
     else:
-        print(f"🌟 Keeping existing preferences: {personal_init}")
+        print(f"🌸 Keeping existing preferences: {personal_init}")
     stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S-%f")
     for path, text in edits:
         if path.exists() and path.read_text() == text:
@@ -256,7 +256,7 @@ def choose_ai(args, state):
         return "off"
     if sys.stdin.isatty() and not args.yes:
         print(
-            "💫 Local AI can install Ollama, start a user service, and download a missing Qwen model."
+            "🌺 Local AI can install Ollama, start a user service, and download a missing Qwen model."
         )
         return "ollama" if ask_boolean("Enable local AI with Ollama?") else "off"
     return "ollama" if args.yes else "off"
@@ -265,7 +265,11 @@ def choose_ai(args, state):
 def ask_boolean(question):
     while True:
         try:
-            answer = input("🌠 " + question + " [Y/n] ").strip().lower()
+            answer = (
+                input(("🌺 " if "Ollama" in question else "🌸 ") + question + " [Y/n] ")
+                .strip()
+                .lower()
+            )
         except EOFError:
             return True
         if answer in ("", "y", "yes"):

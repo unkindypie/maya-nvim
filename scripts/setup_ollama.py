@@ -99,7 +99,7 @@ def main():
     models = args.models_dir
     if models is None and os.isatty(0) and not args.yes:
         models = Path(
-            input(f"🌠 Ollama models directory [{default}]: ").strip() or default
+            input(f"🌸 Ollama models directory [{default}]: ").strip() or default
         )
     models = (models or default).expanduser().resolve()
     models.mkdir(parents=True, exist_ok=True)
@@ -161,7 +161,7 @@ WantedBy=default.target
 
     def ensure(name):
         if name not in available:
-            print("🌟 Downloading missing model: " + name, flush=True)
+            print("🌺 Downloading missing model: " + name, flush=True)
             api("/api/pull", {"name": name, "stream": False}, timeout=1800)
             available.add(name)
 
