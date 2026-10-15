@@ -42,6 +42,35 @@ end""")
                 finally:
                     stop(nvim)
 
+    def test_curated_help_and_new_file_aliases(self):
+        with tempfile.TemporaryDirectory(prefix="maya-explorer-help-") as temp:
+            nvim = start()
+            try:
+                nvim.ui_attach(110, 35, rgb=True)
+                nvim.exec_lua("_G.explorer=Snacks.explorer({cwd=...})", temp)
+                wait(nvim, "explorer and #explorer.list.items == 1")
+                time.sleep(0.3)
+                nvim.input("?")
+                wait(nvim, 'vim.api.nvim_win_get_config(0).relative == "editor"')
+                text = "\n".join(nvim.current.buffer[:])
+                self.assertIn("Enter or Tab", text)
+                self.assertIn("a or n", text)
+                self.assertNotIn("autopairs", text)
+                self.assertNotIn("<CR>", text)
+                self.assertLess(text.index("Open file"), text.index("Navigation"))
+                nvim.input("q")
+                wait(nvim, "vim.api.nvim_get_current_win() == explorer.list.win.win")
+                for key in ("a", "n"):
+                    nvim.exec_lua("""explorer.list:move(1,true,true)
+Snacks.input=function(opts,callback) _G.add_file=callback end
+_G.add_file=nil""")
+                    nvim.input(key)
+                    wait(nvim, "add_file ~= nil")
+                    nvim.exec_lua("add_file(...)", key + ".txt")
+                    self.assertTrue((Path(temp) / (key + ".txt")).is_file())
+            finally:
+                stop(nvim)
+
     def check_open_and_selection(self, open_key):
         with tempfile.TemporaryDirectory(prefix="maya-explorer-") as temp:
             root = Path(temp)

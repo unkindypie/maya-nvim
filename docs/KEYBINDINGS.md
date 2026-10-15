@@ -50,7 +50,7 @@ Insert mode shows raw text for editing; rendering does not change file contents.
 
 Picker input retains Ctrl-N/P selection, Ctrl-J/K history, Enter open, Ctrl-Q
 quickfix. Explorer uses its current supported controls (`?` for help), l
-open, h parent, and `a/d/r` add/delete/rename. Tab or Enter expands/collapses a directory
+open, h parent, and `a` or `n` to add, `d` to delete, `r` to rename. Tab or Enter expands/collapses a directory
 or opens a file in the main window and closes Explorer, including from the search input. `s` toggles
 selection of a file or directory and moves to the next item, keeping Explorer
 open for multi-selection actions such as copy, move, or delete.
@@ -98,3 +98,6 @@ Explorer shows hidden and Git-ignored files by default. The search bar shows
 a small `i` hint: press `i` from the file list to search. The header shows
 `? - help` as a reminder of Explorer’s help shortcut. `H` toggles hidden files; `I` toggles ignored files. Lowercase
 `h` collapses a directory or moves to and collapses its parent.
+
+Explorer `?` opens a compact help panel with grouped shortcuts and common file
+actions first. Press `?`, `q`, or Escape to close the panel.

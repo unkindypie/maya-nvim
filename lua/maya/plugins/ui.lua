@@ -81,6 +81,9 @@ return {
             prompt = "i  ",
             jump = { close = true },
             actions = {
+              maya_help = function()
+                require("maya.explorer_help").open()
+              end,
               maya_open = function(picker, item, action)
                 local actions = require("snacks.explorer.actions").actions
                 if item and item.dir and item.open then
@@ -95,6 +98,7 @@ return {
                 keys = {
                   ["<Tab>"] = { "maya_open", mode = { "i", "n" } },
                   ["<CR>"] = { "maya_open", mode = { "i", "n" } },
+                  ["?"] = { "maya_help", mode = "n" },
                 },
               },
               list = {
@@ -102,6 +106,8 @@ return {
                   ["<Tab>"] = "maya_open",
                   ["<CR>"] = "maya_open",
                   ["s"] = "select_and_next",
+                  ["n"] = "explorer_add",
+                  ["?"] = "maya_help",
                 },
               },
             },
