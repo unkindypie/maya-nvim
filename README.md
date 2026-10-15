@@ -1,10 +1,10 @@
 # 🌙 maya-nvim
 
-Hi. I'm Maya and it's my Neovim config/distro.
+Hi. I'm Maya and it's my Neovim config/distro. 🎀
 
 A standalone Neovim 0.12.5 setup for Mac and Linux: **LunarVim muscle memory**, transparent
-**Catppuccin Frappé**, modern language tools, **local AI**, and **safe collaboration** with
-**external editors** such as **Codex** or **Claude Code**. Launch with **`mvim`**. Isolated from other nvim distros.
+**Catppuccin Frappé**, modern language tools, **local AI**(optional), and **safe collaboration** with
+**external editors** such as Codex or Claude Code. Launch with **`mvim`**. Isolated from other nvim distros.
 
 Installation is one command, with guided questions and automatic setup of missing
 prerequisites. Existing tools are kept; incompatible versions receive manual
@@ -21,15 +21,14 @@ Homebrew**. Managed downloads support **x86-64** and **ARM64**.
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/unkindypie/maya-nvim/master/bootstrap.sh)"
 ```
 
-The command itself needs Bash and curl. The bootstrap can install missing Git
-and Python; setup detects the remaining prerequisites or shows install command on failure.
+The command itself needs Bash and curl. The bootstrap can install missing prerequisites or shows install command on failure.
 System packages may require a sudo password. Homebrew on macOS must already be installed.
 
-To choose another directory add this ENV at the start of the install script install command
-(before `bash` separated by a space):
-`MAYA_NVIM_INSTALL_DIR="$HOME/projects/maya-nvim"`
+To chagnge install dir add this at the start of the install script install command
+(before `bash ` separated by a space):
+`MAYA_NVIM_INSTALL_DIR="$HOME/your_path/maya-nvim"`
 
-Alternatively, clone this repository anywhere (Maya uses `~/maya-nvim`), then:
+Alternatively, clone this repository anywhere (Maya uses `~/maya-nvim`), then run:
 
 ```sh
 ./install.sh
@@ -71,6 +70,7 @@ opens it; `Space Lc` still opens the managed entry point.
 
 ```lua
 return {
+  theme = "catppuccin-frappe", -- Also: tokyonight-moon, kanagawa-wave, or a built-in theme.
   pokemon_sound_on_start = true, -- Play a Pokémon cry.
   pokemon_sound_on_start_volume_percentage = 50, -- 0–100; 0 mutes playback.
   reopen_tabs = true, -- Restore this folder's files, tabs, and splits.
@@ -91,6 +91,33 @@ return {
 }
 ```
 
+Set `theme = "tokyonight-moon"` (or `"tokyonight-storm"`, `"tokyonight-night"`,
+`"tokyonight-day"`) to automatically install [TokyoNight](https://github.com/folke/tokyonight.nvim).
+Catppuccin variants and [Kanagawa](https://github.com/rebelot/kanagawa.nvim)
+(`"kanagawa-wave"`, `"kanagawa-dragon"`, `"kanagawa-lotus"`) work the same way.
+Built-in colorschemes such as `"habamax"` need no download. Restart to apply;
+the status line follows the selected theme. Theme plugin pins use your personal lockfile.
+
+To extend a theme's settings, use a table instead of a string:
+
+```lua
+theme = {
+  name = "catppuccin-mocha",
+  opts = { transparent_background = false },
+},
+```
+
+For another theme, specify its repository and optional setup module:
+
+```lua
+theme = {
+  name = "my-colorscheme",
+  plugin = "author/theme.nvim",
+  module = "theme", -- Required if supplying opts; omit for colorscheme-only plugins.
+  opts = {},
+},
+```
+
 Use lowercase `true` / `false`. The installer asks about sound and tab restoration
 when creating a new config; reinstalling preserves your existing file.
 
@@ -101,7 +128,7 @@ use `enabled = false`. For larger setups, put modules in `lua/mvim/` and use
 Personal `ftplugin/` and `after/` directories are supported too. Restart mvim to
 apply changes. Configuration errors are reported without discarding defaults.
 
-When personal plugin specs are present, their lockfile is
+When personal plugin specs or theme extensions are present, their lockfile is
 `~/.config/mvim/lazy-lock.json`, initially copied from the repository's lockfile.
 It is independent afterwards: plugin updates/restore use that local lockfile.
 To adopt newer repository pins, back up or remove the personal lockfile and

@@ -26,6 +26,35 @@ assert(require("maya.user").get("reopen_tabs")==true)
 """,
         )
 
+    def test_theme_selection_and_options(self):
+        self.launch('return {theme="habamax"}', 'assert(vim.g.colors_name=="habamax")')
+        self.assertTrue(
+            self.launch(
+                'return {theme={name="catppuccin-mocha",opts={transparent_background=false}}}',
+                'assert(vim.g.colors_name=="catppuccin-mocha"); assert(vim.api.nvim_get_hl(0,{name="Normal",link=false}).bg ~= nil)',
+            )
+        )
+        self.assertTrue(
+            self.launch(
+                'return {theme="tokyonight-moon"}',
+                'assert(vim.g.colors_name=="tokyonight-moon"); assert(require("lazy.core.config").plugins["tokyonight.nvim"])',
+            )
+        )
+        self.assertTrue(
+            self.launch(
+                'return {theme={name="kanagawa-wave",plugin="rebelot/kanagawa.nvim",module="kanagawa",opts={transparent=true}}}',
+                'assert(vim.g.colors_name=="kanagawa"); assert(vim.api.nvim_get_hl(0,{name="Normal",link=false}).bg == nil)',
+            )
+        )
+        self.launch(
+            "return {theme={opts={}}}",
+            'assert(require("maya.user").get("theme")=="catppuccin-frappe")',
+        )
+        self.launch(
+            'return {theme="missing-theme-for-test"}',
+            'assert(vim.g.colors_name:match("^catppuccin"))',
+        )
+
     def test_sound_volume(self):
         self.launch(
             "return {pokemon_sound_on_start_volume_percentage=25}",

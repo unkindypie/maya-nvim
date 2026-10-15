@@ -1,6 +1,7 @@
 -- Optional personal configuration, separate from the managed repository.
 local M = { config = {} }
 local defaults = {
+  theme = "catppuccin-frappe",
   pokemon_sound_on_start = true,
   pokemon_sound_on_start_volume_percentage = 50,
   reopen_tabs = true,
@@ -55,6 +56,13 @@ function M.load()
       return
     end
   end
+  if config.theme ~= nil then
+    local theme, err = require("maya.theme").resolve(config.theme)
+    if not theme then
+      report(file, err)
+      return
+    end
+  end
   local volume = config.pokemon_sound_on_start_volume_percentage
   if volume ~= nil and (volume ~= volume or volume < 0 or volume > 100) then
     report(file, "pokemon_sound_on_start_volume_percentage must be between 0 and 100")
@@ -64,7 +72,7 @@ function M.load()
 end
 
 function M.plugins()
-  return M.config.plugins or {}
+  return vim.list_extend(vim.deepcopy(M.config.plugins or {}), require("maya.theme").plugins())
 end
 
 function M.lockfile()

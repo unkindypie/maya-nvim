@@ -26,8 +26,7 @@ return {
       integrations = { blink_cmp = true, snacks = true, gitsigns = true },
     },
     config = function(_, opts)
-      require("catppuccin").setup(opts)
-      vim.cmd.colorscheme("catppuccin")
+      require("maya.theme").setup_default(opts)
     end,
   },
   { "nvim-tree/nvim-web-devicons", lazy = true },
@@ -214,7 +213,7 @@ return {
     event = "VeryLazy",
     dependencies = { "nvim-tree/nvim-web-devicons" },
     opts = {
-      options = { theme = "catppuccin-frappe", globalstatus = true },
+      options = { theme = "auto", globalstatus = true },
       sections = {
         lualine_c = { { "filename", path = 1 } },
         lualine_x = {

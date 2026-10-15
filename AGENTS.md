@@ -11,7 +11,7 @@ Every invocation and check must set `NVIM_APPNAME=maya-nvim` (use `bin/mvim`).
 
 Keep `init.lua` small. Editor defaults belong in `options.lua`; mappings in
 `keymaps.lua`; plugin specs in `plugins/`; tools and filetype mappings in
-`languages.lua`; AI provider controls in `ai.lua`. Prefer supported Neovim APIs
+`languages.lua`; theme selection in `theme.lua`; AI provider controls in `ai.lua`. Prefer supported Neovim APIs
 and documented plugin APIs. Do not patch private LSP tables or add distribution
 compatibility shims. Keep language metadata in one inventory. Personal overrides are loaded by
 `user.lua` from `$XDG_CONFIG_HOME/mvim`; never overwrite that directory during
