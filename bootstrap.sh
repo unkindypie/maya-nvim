@@ -66,13 +66,13 @@ maya_base_prerequisites() {
     echo "Unsupported system $system. Install ${missing[*]} manually and rerun." >&2
     return 1
   fi
-  printf 'Missing prerequisites: %s\n' "${missing[*]}"
+  printf '💫 Missing prerequisites: %s\n' "${missing[*]}"
   if [[ ${#metadata[@]} -gt 0 ]]; then printf 'Proposed command:'; printf ' %q' "${metadata[@]}"; printf '\n'; fi
   printf 'Proposed command:'; printf ' %q' "${command[@]}"; printf '\n'
   if [[ $dry -eq 1 ]]; then return 1; fi
   local answer=''
   if [[ $disabled -eq 0 && $automatic -eq 0 && -t 0 ]]; then
-    read -r -p 'Install missing prerequisites? [Y/n] ' answer || answer=n
+    read -r -p '🌠 Install missing prerequisites? [Y/n] ' answer || answer=n
     case "$answer" in ''|y|Y|yes|YES) automatic=1 ;; esac
   fi
   if [[ $disabled -eq 0 && $automatic -eq 1 ]]; then
@@ -98,7 +98,7 @@ maya_base_prerequisites() {
     if [[ "$system" == Darwin ]]; then echo 'After installing Python, activate Homebrew in PATH (brew shellenv) and rerun.' >&2; fi
     echo 'Then rerun the original installation command with the same flags. Do not run the whole installer with sudo.' >&2
     if [[ ! -t 0 || $automatic -eq 1 || $disabled -eq 1 ]]; then return 1; fi
-    read -r -p 'Run the command above, then press Enter to recheck; q to exit: ' answer || return 1
+    read -r -p '🌠 Run the command above, then press Enter to recheck; q to exit: ' answer || return 1
     if [[ "$answer" == q ]]; then return 1; fi
   done
 }
