@@ -182,7 +182,7 @@ return {
         d = { "Debug", "", "red" },
         g = { "Git", "", "orange" },
         l = { "LSP", "", "blue" },
-        L = { "maya-nvim", "", "purple" },
+        M = { "maya-nvim", "", "purple" },
         p = { "Plugins", "", "yellow" },
         s = { "Search", "", "green" },
         T = { "Treesitter", "", "green" },

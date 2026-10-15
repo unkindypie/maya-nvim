@@ -59,6 +59,7 @@ MAYA_NVIM_NO_INSTALL=1 MAYA_NVIM_NO_AI=1 bin/mvim --headless '+lua assert(vim.g.
 .local/test-env/bin/python tests/swap_recovery.py
 .local/test-env/bin/python tests/update.py
 .local/test-env/bin/python tests/config_completion.py
+.local/test-env/bin/python tests/completion_keys.py
 ```
 
 `MAYA_NVIM_NO_INSTALL=1` disables automatic tool downloads during isolated

@@ -28,10 +28,10 @@ The authoritative mappings are in `lua/maya/keymaps.lua` and `plugins/completion
 | `Space dr/dp/dd/dq`                      | Debug REPL, pause, disconnect, close                                                    |
 | `Space pi/ps/pS/pc/pu/pp/pl/pd`          | Lazy install/sync/show/clean/update/profile/log/debug                                   |
 | `Space sf/sh/sH/sM/sr/sR/sk/sC/sl/sp/sP` | Files/help/highlights/man/recent/registers/keymaps/commands/resume/colors/projects      |
-| `Space Lc`                               | Edit personal `~/.config/mvim/init.lua`                                                 |
-| `Space Ld/Lf/Lg/Lk/Li/LI`                | Docs, find/grep config, keymaps, health, changelog                                      |
-| `Space Lr/Lu`                            | Restart instructions, update maya-nvim (pull + Lazy sync)                               |
-| `Space Lld/Lll/Lln`                      | Mason/LSP/Neovim logs                                                                   |
+| `Space Mc`                               | Edit personal `~/.config/mvim/init.lua`                                                 |
+| `Space Md/Mf/Mg/Mk/Mi/MI`                | Docs, find/grep config, keymaps, health, changelog                                      |
+| `Space Mr/Mu`                            | Restart instructions, update maya-nvim (pull + Lazy sync)                               |
+| `Space Mld/Mll/Mln`                      | Mason/MSP/Neovim logs                                                                   |
 | `Space Ti/Tl`                            | Tree-sitter health, retry current language tooling                                      |
 | `Space od`                               | Desktop file manager at current directory                                               |
 | `Space om`                               | Toggle in-editor Markdown preview                                                       |
@@ -67,7 +67,7 @@ Open Explorer with `Space e`. These shortcuts apply in the file list unless note
 
 ### Customize your keybindings
 
-Edit `~/.config/mvim/init.lua` (`Space Lc`), or
+Edit `~/.config/mvim/init.lua` (`Space Mc`), or
 `$XDG_CONFIG_HOME/mvim/init.lua` if you use a custom config location. Add the
 examples below to the table your config already returns; keep a single
 `return { ... }`, and merge with any existing `setup` or `plugins` entries.
@@ -151,12 +151,12 @@ open for multi-selection actions such as copy, move, or delete.
 
 | LunarVim implementation                              | maya-nvim replacement                                                                   |
 | ---------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| Telescope and its FZF extension                      | Snacks pickers; same leader search/Git/LSP entry points                                 |
+| Telescope and its FZF extension                      | Snacks pickers; same leader search/Git/MSP entry points                                 |
 | NvimTree                                             | Snacks explorer sidebar; internal explorer controls documented via `?`                  |
 | Alpha                                                | Snacks dashboard                                                                        |
 | ToggleTerm                                           | Snacks terminal/lazygit                                                                 |
 | project.nvim                                         | Root detection and Snacks projects picker                                               |
-| nvim-cmp/LuaSnip                                     | Blink/native snippets; familiar completion controls                                     |
+| nvim-cmp/MuaSnip                                     | Blink/native snippets; familiar completion controls                                     |
 | none-ls, Black/isort, Pyright                        | Conform, Ruff + ty                                                                      |
 | neodev                                               | lazydev                                                                                 |
 | indent-blankline, bigfile, illuminate/navic          | Snacks indentation/bigfile; native LSP document highlighting/navigation where available |
@@ -194,10 +194,15 @@ a small `i` hint: press `i` from the file list to search. The header shows
 Explorer `?` opens a compact help panel with grouped shortcuts and common file
 actions first. Press `?`, `q`, or Escape to close the panel.
 
-`Space Lu` updates a clean `master` checkout from `unkindypie/maya-nvim` using a
+`Space Mu` updates a clean `master` checkout from `unkindypie/maya-nvim` using a
 fast-forward pull, then runs `:Lazy sync`. Local edits, a different branch, or a
 diverged history stop the update without resetting or stashing your work. Commit
 or stash changes yourself before retrying. Restart mvim after syncing to load new
 configuration. Lazy sync may change the active plugin lockfile; review those
-changes before a later update. `Space Lc` is the sole edit-config shortcut and
-opens your personal config; the old `Space LC` mapping is removed.
+changes before a later update. `Space Mc` is the sole edit-config shortcut and
+opens your personal config. The maya-nvim group now uses `Space M`.
+
+In insert-mode completion, Down selects the first suggestion and subsequent
+presses move down; Up moves back. Arrow navigation dismisses the current
+Copilot/Ollama suggestion. Enter or Tab accepts the selected completion. With
+no completion selected, Tab retains AI acceptance and snippet/indent fallbacks.

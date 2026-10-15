@@ -30,6 +30,7 @@ uv pip install --python .local/test-env/bin/python pynvim
 .local/test-env/bin/python tests/swap_recovery.py
 .local/test-env/bin/python tests/update.py
 .local/test-env/bin/python tests/config_completion.py
+.local/test-env/bin/python tests/completion_keys.py
 ```
 
 Tests for Maya's existing Python/C++ projects require those projects. Advanced

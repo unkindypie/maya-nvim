@@ -9,11 +9,30 @@ return {
       keymap = {
         preset = "none",
         ["<Tab>"] = {
+          "accept",
           function()
             return require("maya.ai").accept()
           end,
           "select_next",
           "snippet_forward",
+          "fallback",
+        },
+        ["<Down>"] = {
+          function(cmp)
+            if cmp.is_visible() then
+              require("maya.ai").action("dismiss")
+            end
+          end,
+          "select_next",
+          "fallback",
+        },
+        ["<Up>"] = {
+          function(cmp)
+            if cmp.is_visible() then
+              require("maya.ai").action("dismiss")
+            end
+          end,
+          "select_prev",
           "fallback",
         },
         ["<S-Tab>"] = { "select_prev", "snippet_backward", "fallback" },
