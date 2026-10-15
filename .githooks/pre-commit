@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
 set -euo pipefail
 repo=$(git rev-parse --show-toplevel)
-exec python3 "$repo/scripts/format_markdown.py"
+python3 "$repo/scripts/format_markdown.py"
+python3 "$repo/scripts/format_markdown.py" --python

@@ -21,7 +21,7 @@ The authoritative mappings are in `lua/maya/keymaps.lua` and `plugins/completion
 | `Space go/gb/gc/gC`                      | Git status, branches, commits, file commits                                             |
 | `Space la/lf/lr`                         | Code action, format, rename                                                             |
 | `Space ld/lw/lj/lk`                      | Buffer/workspace diagnostics, next/previous diagnostic                                  |
-| `Space li/lI`                            | LSP health, Mason                                                                       |
+| `Space li/lI`                            | LSP info popup, Mason                                                                   |
 | `Space ls/lS/le/lq/ll`                   | Document/workspace symbols, quickfix picker, diagnostic location list, code lens        |
 | `gd/gD/gr/gI/K/gs/gl`                    | Definition, declaration, references, implementation, hover, signature, line diagnostics |
 | `Space dt/dc/di/do/du/dU`                | Breakpoint, continue, step in/over/out, debug UI                                        |
@@ -90,3 +90,6 @@ because Ruff runs as a language server.
 
 Formatter steps from the same tool share one short name (for example,
 `ruff_format` and `ruff_organize_imports` appear as `Fmt: ruff`).
+
+`Space li` opens a rounded buffer-local LSP panel. Press `h` for the full
+health report, `m` for Mason, or `q`/Escape to close.

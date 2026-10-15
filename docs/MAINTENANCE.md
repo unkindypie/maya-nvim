@@ -42,7 +42,7 @@ for version selection and record tool upgrades. Neither Neovim nor system
 packages are explicitly upgraded by this repository. Missing tools can be installed
 with confirmation; see [prerequisite setup and recovery](PREREQUISITES.md).
 
-## Markdown formatting hook
+## Markdown and Python formatting hook
 
 Enable the hook once per clone:
 
@@ -55,12 +55,15 @@ Markdown formatter and project configuration. The hook prefers repository-local
 Prettier, then maya-nvim's Mason installation, then Prettier on PATH. It requires
 Python 3 and Prettier; install the formatter with `:MasonInstall prettier` in mvim
 if needed. It respects `.prettierignore` and does not download tools on commit.
+Staged `.py` files are formatted with `ruff format`, using Ruff on PATH or
+maya-nvim's Mason installation. Install missing Ruff with `:MasonInstall ruff`
+or `pipx install ruff`. Ruff reads the project's formatting configuration.
 
 Fully staged files are also updated in the working tree. For partially staged
 files, only the staged version is formatted; unstaged text stays untouched, so
 the remaining working-tree diff may include formatting differences. Unstaged
-Markdown files are left alone. A formatter error stops the commit before any
-formatted content is staged.
+Markdown and Python files are left alone. A formatter error stops the commit;
+formatting already completed for the other language may remain staged.
 
 ## Optional local AI during installation
 
