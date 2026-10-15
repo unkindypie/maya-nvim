@@ -65,6 +65,74 @@ Open Explorer with `Space e`. These shortcuts apply in the file list unless note
 | `?`                            | Open compact help; `?`, `q`, or Escape closes the help panel                            |
 | `q`                            | Close Explorer                                                                          |
 
+### Customize your keybindings
+
+Edit `~/.config/mvim/init.lua` (`Space LC`), or
+`$XDG_CONFIG_HOME/mvim/init.lua` if you use a custom config location. Add the
+examples below to the table your config already returns; keep a single
+`return { ... }`, and merge with any existing `setup` or `plugins` entries.
+Restart mvim after changing mappings. Personal overrides survive updates.
+
+For normal editor mappings, use `setup`, which runs after mvim's defaults:
+
+```lua
+return {
+  setup = function()
+    vim.keymap.set("n", "<leader>w", "<cmd>write<cr>", { desc = "Save file" })
+    vim.keymap.set("n", "<leader>ee", function()
+      Snacks.explorer()
+    end, { desc = "Explorer" })
+    -- Remove a default mapping (only if it exists):
+    vim.keymap.del("n", "<leader>od")
+  end,
+}
+```
+
+Explorer has buffer-local mappings managed by Snacks. Override those through
+its plugin options instead of global `vim.keymap.set` calls:
+
+```lua
+return {
+  plugins = {
+    {
+      "folke/snacks.nvim",
+      opts = {
+        picker = {
+          sources = {
+            explorer = {
+              win = {
+                list = {
+                  keys = {
+                    ["x"] = "select_and_next", -- Add another selection key.
+                    ["n"] = false, -- Disable n; a still creates files.
+                    ["<Tab>"] = "maya_open", -- Open / expand / collapse.
+                  },
+                },
+                input = {
+                  keys = {
+                    ["<C-o>"] = { "maya_open", mode = { "i", "n" } },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+}
+```
+
+`list` applies to the file tree; `input` applies to the search field.
+Use Neovim key notation such as `<CR>` for Enter, `<Tab>`, and `<C-o>` for
+Ctrl+o. Action names include `maya_open`, `select_and_next`, `explorer_add`,
+`explorer_del`, `explorer_rename`, and `maya_help`. Setting a key to `false`
+disables its plugin mapping. Other keys keep their defaults.
+
+The compact `?` panel describes mvim's defaults, so it does not automatically
+reflect personal remappings. For Snacks' complete list of actual mappings,
+set `["?"] = "toggle_help_list"` in the Explorer `list.keys` table above.
+
 Current-line Git blame aligns to the right edge of the editor window. Long
 author/date/commit text is shortened to fit beside the file content.
 
