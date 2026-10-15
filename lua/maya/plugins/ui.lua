@@ -76,7 +76,8 @@ return {
           explorer = {
             hidden = true,
             ignored = true,
-            toggles = { hidden = "󰈈 Hidden", ignored = " Ignored" },
+            toggles = { hidden = false, ignored = false },
+            prompt = "i  ",
             jump = { close = true },
             actions = {
               maya_open = function(picker, item, action)
