@@ -77,6 +77,12 @@ return {
             title = "Explorer · ? - help",
             hidden = true,
             ignored = true,
+            finder = function(opts, ctx)
+              if not ctx.filter:is_empty() then
+                opts = vim.tbl_extend("force", opts, { hidden = false, ignored = false })
+              end
+              return require("snacks.picker.source.explorer").explorer(opts, ctx)
+            end,
             toggles = { hidden = false, ignored = false },
             prompt = "i  ",
             jump = { close = true },

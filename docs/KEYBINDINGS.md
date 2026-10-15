@@ -186,7 +186,8 @@ Formatter steps from the same tool share one short name (for example,
 `Space li` opens a rounded buffer-local LSP panel. Press `h` for the full
 health report, `m` for Mason, or `q`/Escape to close.
 
-Explorer shows hidden and Git-ignored files by default. The search bar shows
+Explorer shows hidden and Git-ignored files in the tree by default. Searching
+excludes hidden and Git-ignored paths; clearing the search restores the full tree. The search bar shows
 a small `i` hint: press `i` from the file list to search. The header shows
 `? - help` as a reminder of Explorer’s help shortcut. `H` toggles hidden files; `I` toggles ignored files. Lowercase
 `h` collapses a directory or moves to and collapses its parent.

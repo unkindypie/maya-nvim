@@ -71,6 +71,45 @@ _G.add_file=nil""")
             finally:
                 stop(nvim)
 
+    def test_search_excludes_hidden_and_ignored_but_tree_shows_them(self):
+        with tempfile.TemporaryDirectory(prefix="maya-explorer-search-") as temp:
+            root = Path(temp)
+            subprocess.run(["git", "init", "-q", temp], check=True)
+            (root / ".gitignore").write_text("match_ignored.txt\nignored_dir/\n")
+            for name in ["match_visible.txt", ".match_hidden.txt", "match_ignored.txt"]:
+                (root / name).write_text("test\n")
+            for directory in [".hidden_dir", "ignored_dir"]:
+                (root / directory).mkdir()
+                (root / directory / "match_nested.txt").write_text("test\n")
+            nvim = start()
+            try:
+                nvim.ui_attach(110, 35, rgb=True)
+                nvim.exec_lua("_G.explorer=Snacks.explorer({cwd=...})", temp)
+                visible = """(function()
+ local found={}
+ for _,item in ipairs(explorer.list.items) do found[vim.fn.fnamemodify(item.file,':t')]=true end
+ return found['.match_hidden.txt'] and found['match_ignored.txt'] and found['match_visible.txt']
+end)()"""
+                wait(nvim, visible)
+                time.sleep(0.3)
+                nvim.input("imatch")
+                wait(nvim, "explorer.input.filter.meta.searching == true")
+                wait(
+                    nvim,
+                    """(function()
+ local found=false
+ for _,item in ipairs(explorer.list.items) do
+  if item.file:match('/match_visible.txt$') then found=true end
+  if item.file:match('hidden') or item.file:match('ignored') or item.file:match('nested') then return false end
+ end
+ return found
+end)()""",
+                )
+                nvim.input("<BS>" * 5)
+                wait(nvim, visible)
+            finally:
+                stop(nvim)
+
     def check_open_and_selection(self, open_key):
         with tempfile.TemporaryDirectory(prefix="maya-explorer-") as temp:
             root = Path(temp)
