@@ -28,7 +28,7 @@ The authoritative mappings are in `lua/maya/keymaps.lua` and `plugins/completion
 | `Space dr/dp/dd/dq`                      | Debug REPL, pause, disconnect, close                                                    |
 | `Space pi/ps/pS/pc/pu/pp/pl/pd`          | Lazy install/sync/show/clean/update/profile/log/debug                                   |
 | `Space sf/sh/sH/sM/sr/sR/sk/sC/sl/sp/sP` | Files/help/highlights/man/recent/registers/keymaps/commands/resume/colors/projects      |
-| `Space LC`                               | Edit personal `~/.config/mvim/init.lua`                                                 |
+| `Space Lc`                               | Edit personal `~/.config/mvim/init.lua`                                                 |
 | `Space Ld/Lf/Lg/Lk/Li/LI`                | Docs, find/grep config, keymaps, health, changelog                                      |
 | `Space Lr/Lu`                            | Restart instructions, update maya-nvim (pull + Lazy sync)                               |
 | `Space Lld/Lll/Lln`                      | Mason/LSP/Neovim logs                                                                   |
@@ -67,7 +67,7 @@ Open Explorer with `Space e`. These shortcuts apply in the file list unless note
 
 ### Customize your keybindings
 
-Edit `~/.config/mvim/init.lua` (`Space LC`), or
+Edit `~/.config/mvim/init.lua` (`Space Lc`), or
 `$XDG_CONFIG_HOME/mvim/init.lua` if you use a custom config location. Add the
 examples below to the table your config already returns; keep a single
 `return { ... }`, and merge with any existing `setup` or `plugins` entries.
@@ -199,5 +199,5 @@ fast-forward pull, then runs `:Lazy sync`. Local edits, a different branch, or a
 diverged history stop the update without resetting or stashing your work. Commit
 or stash changes yourself before retrying. Restart mvim after syncing to load new
 configuration. Lazy sync may change the active plugin lockfile; review those
-changes before a later update. `Space LC` is the sole edit-config shortcut and
-opens your personal config; the previous managed-entry shortcut `Space Lc` is removed.
+changes before a later update. `Space Lc` is the sole edit-config shortcut and
+opens your personal config; the old `Space LC` mapping is removed.
