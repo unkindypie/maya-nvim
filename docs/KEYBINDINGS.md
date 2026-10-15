@@ -81,3 +81,9 @@ compatibility shims are not carried over. Snacks search windows resemble
 LunarVim's layout, but are not pixel-identical. Git pickers show history; use
 Lazygit for explicit checkout operations rather than silently checking out a
 commit on selection.
+
+The right status line shows tools for the current buffer: `LSP` lists attached
+language servers, `Lint` lists configured linters, and `Fmt` lists available
+formatters selected for formatting. Empty groups are hidden; buffers with
+`vim.b.maya_noformat = true` hide `Fmt`. Ruff diagnostics appear under `LSP`
+because Ruff runs as a language server.

@@ -16,6 +16,26 @@ def main():
         time.sleep(2.2)  # Lualine reports configuration notices after two seconds.
         assert nvim.funcs.exists(':LualineNotices') == 0, 'Unexpected lualine configuration warning'
         print('PASS lualine startup without configuration notices', flush=True)
+        with tempfile.TemporaryDirectory(prefix='maya-statusline-') as temp:
+            root = Path(temp)
+            markdown = root / 'preview.md'
+            markdown.write_text('# Preview\n')
+            shell = root / 'check.sh'
+            shell.write_text('#!/bin/sh\necho hello\n')
+            nvim.command('edit ' + str(markdown))
+            wait(nvim, 'require("maya.statusline").tools():find("Fmt: prettier", 1, true) ~= nil')
+            nvim.exec_lua('vim.b.maya_noformat = true')
+            assert 'Fmt:' not in nvim.exec_lua('return require("maya.statusline").tools()')
+            nvim.command('edit ' + str(shell))
+            wait(nvim, 'require("maya.statusline").tools():find("Lint: shellcheck", 1, true) ~= nil')
+            wait(nvim, '#vim.lsp.get_clients({bufnr=0}) > 0')
+            status = nvim.exec_lua('return require("maya.statusline").tools()')
+            assert 'LSP: bashls' in status, status
+            assert 'Fmt: shfmt' in status and 'prettier' not in status, status
+            nvim.command('enew')
+            assert nvim.exec_lua('return require("maya.statusline").tools()') == ''
+            print('PASS buffer-local LSP, linter, formatter status and disabled formatting', flush=True)
+
         nvim.command('enew')
         nvim.current.buffer[:] = ['local value = 1']
         nvim.command('setfiletype lua')

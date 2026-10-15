@@ -217,6 +217,9 @@ return {
         lualine_c = { { "filename", path = 1 } },
         lualine_x = {
           function()
+            return require("maya.statusline").tools()
+          end,
+          function()
             return require("maya.ai").status()
           end,
           "encoding",
