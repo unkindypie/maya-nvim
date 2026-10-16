@@ -2104,6 +2104,19 @@ If your setup failed, there are two most likely reasons:
 
 To diagnose issues, set `config.notify = debug` and examine the output.
 
+# Canceling virtual-text requests
+
+`require('minuet.virtualtext').action.cancel()` cancels pending virtual-text
+work and clears suggestions in every buffer. Transport cancellation is best
+effort; a generation counter also invalidates callbacks already queued on the
+main loop. Display and acceptance validate provider/model, generation, buffer,
+changedtick, cursor, mode, and `enable_predicates`. `dismiss()` uses the same
+cancellation behavior. Call `cancel()` before changing an external provider or
+disabling AI. Suggestions are discarded after intervening typing or movement.
+
+A standalone regression check lives in `tests/cancellation.lua`; run with this
+repository on runtimepath using a headless Neovim and `-u NONE`.
+
 # Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.

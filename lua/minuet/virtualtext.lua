@@ -77,6 +77,7 @@ local function reset_ctx(ctx)
     ctx.choice = nil
     ctx.shown_choices = nil
     ctx.last_pos = nil
+    ctx.request = nil
 end
 
 local function stop_timer()
@@ -91,12 +92,30 @@ local function clear_preview()
     api.nvim_buf_del_extmark(0, internal.ns_id, internal.extmark_id)
 end
 
+-- A request identity survives transport cancellation: callbacks may already be queued.
+local function request_is_current(request)
+    local config = require('minuet').config
+    return request ~= nil
+        and request.generation == internal.current_completion_timestamp
+        and request.provider == config.provider
+        and request.model == config.provider_options[config.provider].model
+        and request.endpoint == config.provider_options[config.provider].end_point
+        and api.nvim_buf_is_valid(request.bufnr)
+        and api.nvim_buf_is_loaded(request.bufnr)
+        and api.nvim_get_current_buf() == request.bufnr
+        and api.nvim_buf_get_changedtick(request.bufnr) == request.changedtick
+        and vim.deep_equal(api.nvim_win_get_cursor(0), request.cursor)
+        and vim.fn.mode() == request.mode
+        and request.mode == 'i'
+        and utils.run_hooks_until_failure(config.enable_predicates)
+end
+
 ---@param ctx? minuet.VirtualtextSuggestionContext
 local function get_current_suggestion(ctx)
     ctx = ctx or get_ctx()
 
     local ok, choice = pcall(function()
-        if not vim.fn.mode():match '^[iR]' or not ctx.suggestions or #ctx.suggestions == 0 then
+        if not request_is_current(ctx.request) or not ctx.suggestions or #ctx.suggestions == 0 then
             return nil
         end
 
@@ -168,7 +187,9 @@ end
 ---@param ctx? minuet.VirtualtextSuggestionContext
 local function cleanup(ctx)
     ctx = ctx or get_ctx()
+    internal.current_completion_timestamp = internal.current_completion_timestamp + 1
     stop_timer()
+    require('minuet.backends.common').terminate_all_jobs()
     reset_ctx(ctx)
     clear_preview()
 end
@@ -204,7 +225,11 @@ local function update_suggestion_on_typing(ctx)
 end
 
 local function trigger(bufnr)
-    if bufnr ~= api.nvim_get_current_buf() or vim.fn.mode() ~= 'i' then
+    if
+        bufnr ~= api.nvim_get_current_buf()
+        or vim.fn.mode() ~= 'i'
+        or not utils.run_hooks_until_failure(require('minuet').config.enable_predicates)
+    then
         return
     end
 
@@ -215,11 +240,20 @@ local function trigger(bufnr)
     local context = utils.get_context(utils.make_cmp_context())
 
     local provider = require('minuet.backends.' .. config.provider)
-    local timestamp = uv.now()
-    internal.current_completion_timestamp = timestamp
+    internal.current_completion_timestamp = internal.current_completion_timestamp + 1
+    local request = {
+        generation = internal.current_completion_timestamp,
+        provider = config.provider,
+        model = config.provider_options[config.provider].model,
+        endpoint = config.provider_options[config.provider].end_point,
+        bufnr = bufnr,
+        changedtick = api.nvim_buf_get_changedtick(bufnr),
+        cursor = api.nvim_win_get_cursor(0),
+        mode = vim.fn.mode(),
+    }
 
     provider.complete(context, function(data)
-        if timestamp ~= internal.current_completion_timestamp then
+        if not request_is_current(request) then
             if data and next(data) then
                 -- Notify if outdated (and non-empty) completion items arrive
                 utils.notify('Completion items arrived, but too late, aborted', 'debug', 'info')
@@ -228,7 +262,8 @@ local function trigger(bufnr)
         end
 
         data = utils.list_dedup(data or {})
-        local ctx = get_ctx()
+        local ctx = get_ctx(bufnr)
+        ctx.request = request
 
         if next(data) then
             ctx.suggestions = data
@@ -289,6 +324,9 @@ local action = {}
 
 action.next = function()
     local ctx = get_ctx()
+    if not request_is_current(ctx.request) then
+        cleanup(ctx)
+    end
 
     -- no suggestion request yet
     if not ctx.suggestions then
@@ -301,6 +339,9 @@ end
 
 action.prev = function()
     local ctx = get_ctx()
+    if not request_is_current(ctx.request) then
+        cleanup(ctx)
+    end
 
     -- no suggestion request yet
     if not ctx.suggestions then
@@ -323,6 +364,7 @@ function action.accept(n_lines)
         return
     end
 
+    local request = ctx.request
     local suggestions = vim.split(suggestion, '\n')
     local remaining_suggestions = {}
 
@@ -360,7 +402,10 @@ function action.accept(n_lines)
     end
 
     vim.schedule(function()
-        api.nvim_buf_set_text(0, line, col, line, col, suggestions)
+        if not request_is_current(request) then
+            return
+        end
+        api.nvim_buf_set_text(request.bufnr, line, col, line, col, suggestions)
         local new_col = #suggestions[#suggestions]
         -- For single-line suggestions, adjust the column position by adding the
         -- current column offset
@@ -396,12 +441,26 @@ function action.accept_line()
     action.accept(1)
 end
 
+---Cancel virtual-text work in all buffers, invalidating even queued callbacks.
+function action.cancel()
+    cleanup()
+    for bufnr, ctx in pairs(internal.context) do
+        reset_ctx(ctx)
+        if api.nvim_buf_is_valid(bufnr) then
+            api.nvim_buf_clear_namespace(bufnr, internal.ns_id, 0, -1)
+        end
+    end
+end
+
 function action.dismiss()
-    local ctx = get_ctx()
-    cleanup(ctx)
+    action.cancel()
 end
 
 function action.is_visible()
+    if not request_is_current(get_ctx().request) then
+        clear_preview()
+        return false
+    end
     return not not api.nvim_buf_get_extmark_by_id(0, internal.ns_id, internal.extmark_id, { details = false })[1]
 end
 
@@ -452,8 +511,8 @@ end
 function autocmd.on_cursor_moved_i()
     local ctx = get_ctx()
 
-    if update_suggestion_on_typing(ctx) then
-        return
+    if ctx.request and not request_is_current(ctx.request) then
+        cleanup(ctx)
     end
 
     -- we don't cleanup immediately if the completion has arrived but not
