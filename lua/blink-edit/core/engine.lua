@@ -36,6 +36,51 @@ local merge_completion
 
 --- Get or create provider instance
 ---@return BlinkEditProvider
+-- Monotonic identities prevent late transport callbacks from reviving canceled work.
+local generation = 0
+local identities = {}
+local function enabled(bufnr)
+  local cfg = config.get()
+  return vim.g.blink_edit_enabled ~= false
+    and vim.api.nvim_buf_is_valid(bufnr)
+    and vim.api.nvim_buf_is_loaded(bufnr)
+    and vim.api.nvim_get_current_buf() == bufnr
+    and vim.bo[bufnr].buftype == ""
+    and vim.bo[bufnr].modifiable
+    and not vim.bo[bufnr].readonly
+    and config.is_filetype_enabled(vim.bo[bufnr].filetype)
+    and vim.tbl_contains(cfg.trigger_modes, vim.api.nvim_get_mode().mode)
+    and cfg.enabled_predicate(bufnr)
+end
+local function capture_identity(bufnr)
+  generation = generation + 1
+  local cfg = config.get()
+  local identity = {
+    generation = generation,
+    provider = cfg.llm.provider,
+    model = cfg.llm.model,
+    url = cfg.llm.url,
+    bufnr = bufnr,
+    tick = vim.api.nvim_buf_get_changedtick(bufnr),
+    cursor = vim.api.nvim_win_get_cursor(0),
+    mode = vim.api.nvim_get_mode().mode,
+  }
+  identities[bufnr] = identity
+  return identity
+end
+local function current(identity)
+  if not identity or identities[identity.bufnr] ~= identity or not enabled(identity.bufnr) then
+    return false
+  end
+  local cfg = config.get()
+  return cfg.llm.provider == identity.provider
+    and cfg.llm.model == identity.model
+    and cfg.llm.url == identity.url
+    and vim.api.nvim_buf_get_changedtick(identity.bufnr) == identity.tick
+    and vim.deep_equal(vim.api.nvim_win_get_cursor(0), identity.cursor)
+    and vim.api.nvim_get_mode().mode == identity.mode
+end
+
 local function get_provider()
   local cfg = config.get()
   local name = cfg.llm.provider or "sweep"
@@ -634,6 +679,10 @@ end
 ---@param bufnr number
 ---@param snapshot BlinkEditSnapshot
 local function start_request(bufnr, snapshot)
+  if not enabled(bufnr) then
+    return
+  end
+  snapshot.request_identity = capture_identity(bufnr)
   local cfg = config.get()
 
   -- Get baseline (captured on InsertEnter)
@@ -814,6 +863,7 @@ local function on_prefetch_response(bufnr, err, result, metadata, snapshot, prov
   end
 
   prefetch.prediction = {
+    request_identity = snapshot.request_identity,
     predicted_lines = predicted_lines,
     snapshot_lines = snapshot.lines,
     window_start = metadata.window_start,
@@ -907,6 +957,9 @@ end
 ---@param snapshot BlinkEditSnapshot
 ---@param provider BlinkEditProvider
 function on_response(bufnr, err, result, metadata, snapshot, provider)
+  if not current(snapshot.request_identity) then
+    return
+  end
   -- Clear in_flight state
   state.clear_in_flight(bufnr)
 
@@ -1047,6 +1100,7 @@ function on_response(bufnr, err, result, metadata, snapshot, provider)
 
   -- Store prediction with snapshot and predicted lines
   local prediction = {
+    request_identity = snapshot.request_identity,
     predicted_lines = predicted_lines,
     snapshot_lines = snapshot.lines,
     window_start = metadata.window_start,
@@ -1184,6 +1238,9 @@ end
 ---@param bufnr number
 ---@param opts? { force_request?: boolean }
 function M._on_debounce_fired(bufnr, opts)
+  if not enabled(bufnr) then
+    return
+  end
   local cfg = config.get()
   local force_request = opts and opts.force_request
 
@@ -1298,6 +1355,10 @@ end
 --- Cancel pending request for a buffer
 ---@param bufnr number
 function M.cancel(bufnr)
+  identities[bufnr] = nil
+  state.pop_from_stack(bufnr)
+  state.set_prediction(bufnr, nil)
+  context_manager.cancel(bufnr)
   -- Cancel debounce timer
   cancel_debounce(bufnr)
 
@@ -1325,6 +1386,10 @@ end
 ---@param bufnr number
 ---@return boolean success
 function M.accept(bufnr)
+  if not current((state.get_prediction(bufnr) or {}).request_identity) then
+    M.cancel(bufnr)
+    return false
+  end
   local prediction = state.get_prediction(bufnr)
   if not prediction then
     return false
@@ -1408,8 +1473,7 @@ function M.accept(bufnr)
 
     local prefetch = state.get_prefetch(bufnr)
     if prefetch and prefetch.prediction and prefetch.snapshot then
-      local snapshot_match =
-        prefetch.snapshot.window_start == prediction.window_start
+      local snapshot_match = prefetch.snapshot.window_start == prediction.window_start
         and prefetch.snapshot.window_end == prediction.window_end
         and utils.lines_equal(prefetch.snapshot.lines, prediction.snapshot_lines)
       if snapshot_match then
@@ -1585,6 +1649,7 @@ function M.accept(bufnr)
     if vim.g.blink_edit_debug then
       log.debug("Accept: remaining hunks, re-rendering")
     end
+    prediction.request_identity = capture_identity(bufnr)
     render.show(bufnr, prediction)
   else
     if vim.g.blink_edit_debug then
@@ -1596,8 +1661,7 @@ function M.accept(bufnr)
 
     local prefetch = state.get_prefetch(bufnr)
     if prefetch and prefetch.prediction and prefetch.snapshot then
-      local snapshot_match =
-        prefetch.snapshot.window_start == prediction.window_start
+      local snapshot_match = prefetch.snapshot.window_start == prediction.window_start
         and prefetch.snapshot.window_end == prediction.window_end
         and utils.lines_equal(prefetch.snapshot.lines, prediction.snapshot_lines)
       if snapshot_match then
@@ -1626,6 +1690,10 @@ end
 ---@param bufnr number
 ---@return boolean success
 function M.accept_line(bufnr)
+  if not current((state.get_prediction(bufnr) or {}).request_identity) then
+    M.cancel(bufnr)
+    return false
+  end
   local prediction = state.get_prediction(bufnr)
   if not prediction then
     return false
@@ -1641,8 +1709,7 @@ function M.accept_line(bufnr)
 
     local prefetch = state.get_prefetch(bufnr)
     if prefetch and prefetch.prediction and prefetch.snapshot then
-      local snapshot_match =
-        prefetch.snapshot.window_start == prediction.window_start
+      local snapshot_match = prefetch.snapshot.window_start == prediction.window_start
         and prefetch.snapshot.window_end == prediction.window_end
         and utils.lines_equal(prefetch.snapshot.lines, prediction.snapshot_lines)
       if snapshot_match then
@@ -1727,6 +1794,8 @@ end
 --- Reject the current prediction
 ---@param bufnr number
 function M.reject(bufnr)
+  identities[bufnr] = nil
+  context_manager.cancel(bufnr)
   -- Cancel debounce and in-flight
   cancel_debounce(bufnr)
 
@@ -1750,6 +1819,10 @@ end
 ---@param bufnr number
 ---@return boolean
 function M.has_prediction(bufnr)
+  if not current((state.get_prediction(bufnr) or {}).request_identity) then
+    render.clear(bufnr)
+    return false
+  end
   return render.has_visible(bufnr)
 end
 
@@ -1779,6 +1852,7 @@ end
 --- Called on InsertEnter - capture baseline
 ---@param bufnr number
 function M.on_insert_enter(bufnr)
+  M.cancel(bufnr)
   -- Capture baseline (state before user's edits in this insert session)
   state.capture_baseline(bufnr)
 
@@ -1795,6 +1869,7 @@ end
 --- Called on InsertLeave - cleanup
 ---@param bufnr number
 function M.on_insert_leave(bufnr)
+  M.cancel(bufnr)
   -- Cancel in-flight request
   local request_id = state.get_in_flight_request_id(bufnr)
   if request_id then
@@ -1810,6 +1885,10 @@ end
 
 --- Cleanup engine state (called on reset)
 function M.cleanup()
+  for _, bufnr in ipairs(state.get_tracked_buffers()) do
+    M.cancel(bufnr)
+  end
+  identities = {}
   -- Cancel all debounce timers
   for bufnr, _ in pairs(debounce_timers) do
     cancel_debounce(bufnr)

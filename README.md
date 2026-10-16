@@ -471,3 +471,19 @@ Issues and PRs are welcome! This is an alpha project — your feedback helps sha
 ## 📄 License
 
 MIT — see [LICENSE](LICENSE).
+
+## Request lifecycle integration
+
+- `require("blink-edit").cancel()` cancels work in every tracked buffer and
+  invalidates delayed callbacks. `disable()` and `reset()` also cancel work.
+- `trigger({ force = true })` requests a prediction even when the baseline is unchanged.
+- `enabled_predicate = function(bufnr) return true end` and
+  `trigger_modes = { "i", "n" }` gate requests, display, and acceptance.
+- Request identity also checks generation, model/provider/endpoint, buffer,
+  changedtick, cursor, and mode. Canceled responses cannot clear newer requests.
+- LSP references use asynchronous cached requests with per-client encodings.
+  Unloaded files are skipped instead of synchronously loading files while typing.
+- `ui.suppress_lsp_floats = false` leaves LSP/diagnostic handlers untouched.
+
+Standalone lifecycle and LSP-cache regressions are in `tests/cancellation.lua`
+and `tests/context.lua`; run headless with `-u NONE` and this repository on runtimepath.

@@ -17,27 +17,85 @@ local log = require("blink-edit.log")
 -- Silent LSP Request Helper
 -- =============================================================================
 
---- Perform LSP request without triggering progress notifications
---- (Suppresses fidget.nvim, lualine LSP status, etc.)
----@param bufnr number
----@param method string
----@param params table
----@param timeout_ms number
----@return table|nil results
-local function silent_lsp_request(bufnr, method, params, timeout_ms)
-  -- Save current progress handler
-  local old_progress_handler = vim.lsp.handlers["$/progress"]
+local lsp_cache = {}
+local pending = {}
+function M.cancel(bufnr)
+  for _, requests in pairs(pending[bufnr] or {}) do
+    for _, cancel in ipairs(requests) do
+      pcall(cancel)
+    end
+  end
+  pending[bufnr] = nil
+  lsp_cache[bufnr] = nil
+end
 
-  -- Temporarily suppress progress notifications
-  vim.lsp.handlers["$/progress"] = function() end
+-- Return cached results immediately. Refresh per client asynchronously with its encoding.
+local function cached_lsp_request(bufnr, method, timeout_ms)
+  local tick = vim.api.nvim_buf_get_changedtick(bufnr)
+  local cursor = vim.api.nvim_win_get_cursor(0)
+  local key = table.concat({ method, tick, cursor[1], cursor[2] }, ":")
+  lsp_cache[bufnr] = lsp_cache[bufnr] or {}
+  local cache = lsp_cache[bufnr]
+  local entry = cache[key]
+  if entry and vim.uv.now() - entry.time < 2000 then
+    return entry.results
+  end
+  entry = { time = vim.uv.now(), results = {} }
+  -- One entry per method bounds cache size while allowing references/definitions together.
+  for old in pairs(cache) do
+    if old:match("^[^:]+") == method then
+      cache[old] = nil
+    end
+  end
+  cache[key] = entry
+  pending[bufnr] = pending[bufnr] or {}
+  for _, cancel in ipairs(pending[bufnr][method] or {}) do
+    pcall(cancel)
+  end
+  pending[bufnr][method] = {}
+  for _, client in ipairs(vim.lsp.get_clients({ bufnr = bufnr })) do
+    if client:supports_method(method, bufnr) then
+      local params = vim.lsp.util.make_position_params(0, client.offset_encoding)
+      if method == "textDocument/references" then
+        params.context = { includeDeclaration = false }
+      end
+      local done = false
+      local ok, id = client:request(method, params, function(err, result)
+        done = true
+        if
+          err
+          or lsp_cache[bufnr] ~= cache
+          or cache[key] ~= entry
+          or not vim.api.nvim_buf_is_valid(bufnr)
+          or vim.api.nvim_buf_get_changedtick(bufnr) ~= tick
+          or vim.api.nvim_get_current_buf() ~= bufnr
+          or not vim.deep_equal(vim.api.nvim_win_get_cursor(0), cursor)
+        then
+          return
+        end
+        entry.results[client.id] = { result = result }
+      end, bufnr)
+      if ok then
+        local cancel = function()
+          if not done then
+            done = true
+            client:cancel_request(id)
+          end
+        end
+        table.insert(pending[bufnr][method], cancel)
+        vim.defer_fn(cancel, timeout_ms)
+      end
+    end
+  end
+  return entry.results
+end
 
-  -- Make the request
-  local results = vim.lsp.buf_request_sync(bufnr, method, params, timeout_ms)
-
-  -- Restore the original handler
-  vim.lsp.handlers["$/progress"] = old_progress_handler
-
-  return results
+-- Warm references before an idle model request; never wait for the server.
+function M.refresh_lsp(bufnr)
+  local cfg = config.get()
+  if cfg.context.enabled and cfg.context.lsp.enabled then
+    cached_lsp_request(bufnr, "textDocument/references", cfg.context.lsp.timeout_ms)
+  end
 end
 
 local function get_attached_clients(bufnr)
@@ -61,7 +119,7 @@ end
 
 local function client_supports_method(client, method)
   if client.supports_method then
-    return client.supports_method(method)
+    return client:supports_method(method)
   end
 
   local caps = client.server_capabilities or {}
@@ -278,14 +336,17 @@ end
 ---@return string[]|nil lines
 ---@return string|nil filepath
 local function get_lines_for_uri(uri, anchor_line, lines_before, lines_after)
-  local bufnr = vim.uri_to_bufnr(uri)
+  if not uri:match("^file://") then
+    return nil, nil
+  end
+  local bufnr = vim.fn.bufnr(vim.uri_to_fname(uri))
   if not vim.api.nvim_buf_is_valid(bufnr) then
     return nil, nil
   end
 
   -- Load buffer if not loaded
   if not vim.api.nvim_buf_is_loaded(bufnr) then
-    pcall(vim.fn.bufload, bufnr)
+    return nil, nil -- Never load files synchronously on the typing path.
   end
 
   if not vim.api.nvim_buf_is_loaded(bufnr) then
@@ -363,13 +424,7 @@ function M.collect_lsp_locations(
     return {}
   end
 
-  local params = vim.lsp.util.make_position_params()
-  if method == "textDocument/references" then
-    params.context = { includeDeclaration = false }
-  end
-
-  -- Use silent wrapper to avoid progress notifications (fidget.nvim, etc.)
-  local results = silent_lsp_request(bufnr, method, params, timeout_ms)
+  local results = cached_lsp_request(bufnr, method, timeout_ms)
   if not results then
     return {}
   end

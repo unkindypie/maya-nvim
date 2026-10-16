@@ -74,6 +74,8 @@
 ---@field llm BlinkEditLLMConfig
 ---@field backends BlinkEditBackendsConfig
 ---@field mode string
+---@field enabled_predicate fun(bufnr: integer): boolean
+---@field trigger_modes string[]
 ---@field debounce_ms number
 ---@field cancel_in_flight boolean
 ---@field context BlinkEditContextConfig
@@ -181,6 +183,10 @@ local defaults = {
   ---------------------------------------------------------
   -- Timing
   ---------------------------------------------------------
+  enabled_predicate = function()
+    return true
+  end,
+  trigger_modes = { "i", "n" },
   debounce_ms = 100, -- Delay before sending request
   cancel_in_flight = true, -- Cancel TCP when new request queued (faster iteration)
 
@@ -226,14 +232,14 @@ local defaults = {
   ---------------------------------------------------------
   keymaps = {
     insert = {
-      accept = "<Tab>",        -- Accept next hunk
-      accept_line = "<C-j>",   -- Accept first line of multi-line hunk
-      clear = "<C-]>",         -- Dismiss ghost text (stay in insert mode)
-      reject = "<Esc>",        -- Reject and exit insert mode
+      accept = "<Tab>", -- Accept next hunk
+      accept_line = "<C-j>", -- Accept first line of multi-line hunk
+      clear = "<C-]>", -- Dismiss ghost text (stay in insert mode)
+      reject = "<Esc>", -- Reject and exit insert mode
     },
     normal = {
-      accept = "<Tab>",        -- Accept next hunk (only when normal_mode.enabled)
-      accept_line = "<C-j>",   -- Accept first line (only when normal_mode.enabled)
+      accept = "<Tab>", -- Accept next hunk (only when normal_mode.enabled)
+      accept_line = "<C-j>", -- Accept first line (only when normal_mode.enabled)
       -- clear and reject not mapped in normal mode to avoid conflicts
     },
   },

@@ -51,7 +51,9 @@ function M.setup(user_config)
   M._setup_visibility_listeners()
 
   -- Setup LSP float suppression (optional)
-  M._setup_lsp_suppression()
+  if cfg.ui.suppress_lsp_floats then
+    M._setup_lsp_suppression()
+  end
 
   -- Setup autocmds
   M._setup_autocmds()
@@ -366,6 +368,7 @@ local function start_normal_mode_timer(bufnr)
     return
   end
   cancel_normal_mode_timer()
+  require("blink-edit.core.context_manager").refresh_lsp(bufnr)
   local timer = uv.new_timer()
   normal_mode_timer = timer
   local delay = (cfg.normal_mode and cfg.normal_mode.debounce_ms) or cfg.debounce_ms
@@ -466,6 +469,7 @@ function M._setup_autocmds()
     callback = function(args)
       cancel_normal_mode_timer()
       engine.on_insert_leave(args.buf)
+      start_normal_mode_timer(args.buf)
     end,
     desc = "Cleanup blink-edit on insert leave",
   })
@@ -634,7 +638,7 @@ function M._on_cursor_moved_normal(bufnr)
   end
 
   if M.has_prediction() then
-    engine.reject(bufnr)
+    return -- A redundant CursorMoved event must not dismiss a current prediction.
   end
 
   -- Skip special buffer types
@@ -689,7 +693,7 @@ function M.clear()
 end
 
 --- Manually trigger a prediction
-function M.trigger()
+function M.trigger(opts)
   local bufnr = vim.api.nvim_get_current_buf()
   local ft = vim.bo[bufnr].filetype
 
@@ -698,7 +702,19 @@ function M.trigger()
     return
   end
 
-  engine.trigger_now(bufnr)
+  if opts and opts.force then
+    engine.trigger_force(bufnr)
+  else
+    engine.trigger_now(bufnr)
+  end
+end
+
+--- Cancel all queued/in-flight predictions, including buffers no longer current.
+function M.cancel()
+  cancel_normal_mode_timer()
+  for _, bufnr in ipairs(state.get_tracked_buffers()) do
+    engine.cancel(bufnr)
+  end
 end
 
 --- Enable blink-edit
@@ -714,7 +730,7 @@ function M.disable()
   cancel_normal_mode_timer()
   render.set_visibility_listeners(nil)
   remove_all_esc_wrappers()
-  M.reject()
+  M.cancel()
   log.info("Disabled")
 end
 
@@ -770,6 +786,7 @@ end
 
 --- Reset blink-edit (for testing/reconfiguration)
 function M.reset()
+  M.cancel()
   -- Clear autocmds
   pcall(vim.api.nvim_del_augroup_by_name, "BlinkEdit")
 
