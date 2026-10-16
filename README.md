@@ -1,10 +1,17 @@
 # 🌙 maya-nvim
 
 Hi. I'm Maya and it's my Neovim config/distro. 🎀
+I wanted to build something simple and familiar to use, but also modern, fast, flexible, and
+with local type aware AI suggestions (optional but recommended, it uses many custom context collection improvements).
 
-A standalone Neovim 0.12.5+ setup for Mac and Linux. Inspired by LunarVim, uses transparent
-**Catppuccin Frappé**, modern language tools, **local AI** (optional), and **safe collaboration** with
-**external editors** such as Codex or Claude Code. Launch with **`mvim`**. Isolated from other nvim distros.
+## 🌟 Features
+
+It's standalone Neovim 0.12.5+ setup for Mac and Linux with an **easy installation**. Inspired by **LunarVim**,
+uses transparent **Catppuccin Frappé**, modern language tools, **local type aware AI** (optional), and
+**safe collaboration** with **external editors** such as Codex or Claude Code.
+You can define your custom configs at `~/.config/mvim/init.lua`.
+
+Launch with **`mvim`**. Isolated from other nvim distros.
 
 Installation is one command, with guided questions and automatic setup of missing
 prerequisites and instructions for conflicts.
@@ -161,20 +168,26 @@ See [keybindings](docs/KEYBINDINGS.md), [language tools](docs/LANGUAGES.md), and
 
 ## 🌺 AI suggestions
 
-Ollama and GitHub Copilot are selectable backends; only one is active:
+Maya's AI setup is custom for local Ollama use and has an option to go with Copilot
+or no AI suggestions at all.
 
-Setup offers **GitHub Copilot**, **Skip Ollama models installation**, and local
-completion/next-edit presets. Existing choices survive reruns.
+### For local Ollama models installation offeers the following base configs:
 
-| Estimated VRAM | Local preset                                                          |
-| -------------- | --------------------------------------------------------------------- |
-| 2–4 GB         | Sweep 1.5B Q8 alone for insertions and edits; 2 GB may offload to CPU |
-| 6 GB           | Qwen2.5-Coder 1.5B Base Q8 + Sweep                                    |
-| 8 GB+          | Qwen2.5-Coder 7B Base Q4_K_M + Sweep; optional Mellum 4B Q8           |
+| Estimated VRAM | Local preset                                                                  |
+| -------------- | ----------------------------------------------------------------------------- |
+| 2–4 GB         | Single: Sweep 1.5B Q8 alone for insertions and edits; 2 GB may offload to CPU |
+| 6 GB           | Dual: Qwen2.5-Coder 1.5B Base Q8 + Sweep                                      |
+| 8 GB+          | Dual: Qwen2.5-Coder 7B Base Q4_K_M + Sweep; optional Mellum 4B Q8             |
 
-These are estimates; setup checks residency and offers single-model mode if a
-pair cannot fit. Unknown VRAM requires a choice. See [models, flags, and
-compatibility](docs/AI.md) for exact tags and details.
+Local AI can work in 2 modes, Dual and Single. `Space am` opens the local-mode picker:
+**Dual** runs inline completion plus Sweep next edits,
+**Single** runs Sweep only. There is also a **Completion-only** mode for people who has some Ollama models already installed,
+it runs only the saved inline model selected during installation.
+
+These are estimates, real use may be different.
+See [models, flags, and compatibility](docs/AI.md) for exact tags and details.
+
+### Some commands and hotkeys, also accessible from Space + a:
 
 ```vim
 :MayaAI ollama

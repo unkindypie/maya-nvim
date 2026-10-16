@@ -37,7 +37,7 @@ Enable the repository's Markdown/Python formatting hook after cloning:
 4. Run relevant tests below. A plugin update requires startup and integration checks.
 5. Commit coherent validated changes on master. Commit the plugin lockfile.
    Use prefixes like feat: ... or fix: ... or doc: ..., chore: ... in commit
-6. After committing, push master to its configured remote (`git push origin master`).
+6. After committing, if a feature seems to not indroduce big/critical changes - push master to its configured remote (`git push origin master`).
    Never force-push or rewrite remote history without explicit authorization;
    report push failures rather than silently leaving a commit unpushed.
 
