@@ -405,6 +405,11 @@ function action.accept(n_lines)
         if not request_is_current(request) then
             return
         end
+        -- Keep acceptance separate from preceding Insert-mode typing in undo history.
+        vim.cmd 'let &g:undolevels = &g:undolevels'
+        if not request_is_current(request) then
+            return
+        end
         api.nvim_buf_set_text(request.bufnr, line, col, line, col, suggestions)
         local new_col = #suggestions[#suggestions]
         -- For single-line suggestions, adjust the column position by adding the
