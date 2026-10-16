@@ -58,7 +58,8 @@ function M.options(model, endpoint, format)
           format,
           before,
           after,
-          require("maya.ai_context").get(),
+          -- Markdown already appears verbatim around the FIM cursor.
+          require("maya.ai_context").get({ include_source = vim.bo.filetype ~= "markdown" }),
           vim.fn.expand("%:t"),
           vim.bo.filetype
         )

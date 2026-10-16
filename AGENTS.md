@@ -83,6 +83,7 @@ MAYA_NVIM_NO_INSTALL=1 MAYA_NVIM_NO_AI=1 bin/mvim --headless '+lua assert(vim.g.
 .local/test-env/bin/python tests/ai_automatic.py
 .local/test-env/bin/python tests/ai_coordination.py
 .local/test-env/bin/python tests/ai_shared_context.py
+.local/test-env/bin/python tests/ai_markdown_context.py
 # Opt-in real model latency/residency measurement:
 MAYA_NVIM_TEST_OLLAMA=1 .local/test-env/bin/python tests/ai_latency.py
 ```

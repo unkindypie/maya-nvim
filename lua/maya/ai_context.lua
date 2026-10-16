@@ -18,7 +18,8 @@ end
 local function key(buf, tick, cursor)
   return table.concat({ buf, tick, cursor[1], cursor[2] }, ":")
 end
-function M.get()
+---@param opts? {include_source?: boolean}
+function M.get(opts)
   local buf, tick, cursor = identity()
   local entry = cache[key(buf, tick, cursor)]
   if not entry then
@@ -58,7 +59,9 @@ function M.get()
       break
     end
   end
-  parts[#parts + 1] = (entry.source or ""):sub(1, 1000)
+  if not opts or opts.include_source ~= false then
+    parts[#parts + 1] = (entry.source or ""):sub(1, 1000)
+  end
   parts[#parts + 1] = entry.text
   return table.concat(parts, "\n"):gsub("^\n+", ""):sub(1, 6000)
 end

@@ -160,6 +160,10 @@ Delayed or absent replies never block typing or prompt construction.
 Shared context is limited to 6,000 characters. Minuet receives it through its FIM
 prompt hook; Sweep receives an additional source-snippet section through the
 public `source_context` callback. Sweep retains edit history and same-file context.
+Markdown FIM prompts include surrounding prose directly, without also wrapping
+that same source in an HTML-comment LSP preface. Genuine cached LSP hints still
+reach Markdown completions; code completions retain enclosing annotations and
+full type snippets.
 Ollama separately receives a 4,096-token context and a 96-token output cap.
 Sweep receives a 4,096-token context, a 512-token output cap, a 21-line edit
 window, three history entries, and bounded references. Character budgets and
@@ -232,3 +236,12 @@ repository schema in a separate library. Every `MayaConfig` field and all
 TypeScript interface and Python TypedDict fixtures place their schema and nested
 type in separate files and verify both prompts with real language servers.
 These tests verify context delivery; suggestions can still ignore that context.
+
+The Markdown regression captures the native Qwen HTTP request at a blank line
+after an unfinished sentence. It checks that the preceding sentence and suffix
+reach the correct FIM positions exactly once and that genuine semantic hints
+remain available. In a local reproduction with Qwen 1.5B Q8, the duplicated-source
+prompt repeated a prior heading/table in two of three seeded requests; removing
+that redundant source copy produced no section repetitions in those three seeds.
+The previous line was present in both variants. Some responses still contained
+incorrect facts, so this establishes a prompt fix rather than guaranteed prose quality.
