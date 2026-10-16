@@ -6,6 +6,82 @@ from pathlib import Path
 
 DEFAULT_MODEL = "qwen2.5-coder:3b-base"
 SMALL_MODEL = "qwen2.5-coder:1.5b-base"
+QWEN_SMALL = "qwen2.5-coder:1.5b-base-q8_0"
+QWEN_LARGE = "qwen2.5-coder:7b-base-q4_K_M"
+MELLUM = "hf.co/JetBrains/Mellum-4b-sft-all-gguf:Q8_0"
+SWEEP = "hf.co/sweepai/sweep-next-edit-1.5B:Q8_0"
+
+
+def recommended_profile(gpu):
+    memory = gpu.get("vram_mib")
+    if memory is None or memory < 2048:
+        return None
+    if memory < 6144:
+        return {"local_mode": "single", "next_edit_model": SWEEP}
+    return {
+        "local_mode": "dual",
+        "model": QWEN_SMALL if memory < 8192 else QWEN_LARGE,
+        "next_edit_model": SWEEP,
+    }
+
+
+def choose_profile():
+    gpu = detect_gpu()
+    recommended = recommended_profile(gpu)
+    print(f"🌺 AI setup — {gpu}; VRAM tiers are estimates, not guarantees.")
+    print("  1. Sweep single model (2–4 GB; CPU offload may be needed at 2 GB)")
+    print("  2. Qwen 1.5B Q8 + Sweep (6 GB)")
+    print("  3. Qwen 7B Q4_K_M + Sweep (8 GB+)")
+    print("  4. Mellum 4B Q8 + Sweep (8 GB+ alternative)")
+    print("  5. Custom / legacy inline completion only")
+    print("  6. GitHub Copilot (authenticate with :Copilot auth)")
+    print("  7. Skip Ollama models installation (AI off)")
+    default = (
+        None
+        if not recommended
+        else (
+            "1"
+            if recommended["local_mode"] == "single"
+            else "2"
+            if recommended["model"] == QWEN_SMALL
+            else "3"
+        )
+    )
+    while True:
+        try:
+            answer = (
+                input(
+                    "🌠 Choose AI setup"
+                    + (f" [{default}]" if default else " (required)")
+                    + ": "
+                ).strip()
+                or default
+            )
+        except EOFError:
+            raise ValueError(
+                "AI choice required; use --ai off, --ai copilot, or explicit --ai-mode and models"
+            )
+        if answer in ("n", "no"):
+            answer = "7"
+        if answer in ("y", "yes") and default:
+            answer = default
+        if answer == "6":
+            return "copilot", {}
+        if answer == "7":
+            return "off", {}
+        if answer == "1":
+            return "ollama", {"local_mode": "single", "next_edit_model": SWEEP}
+        if answer in ("2", "3", "4"):
+            return "ollama", {
+                "local_mode": "dual",
+                "model": {"2": QWEN_SMALL, "3": QWEN_LARGE, "4": MELLUM}[answer],
+                "next_edit_model": SWEEP,
+            }
+        if answer == "5":
+            name = input("🌸 Ollama model tag: ").strip()
+            if name:
+                return "ollama", {"local_mode": "completion-only", "model": name}
+        print("🔔 Choose a number from 1 to 7.")
 
 
 def detect_gpu():
@@ -15,7 +91,7 @@ def detect_gpu():
         result = subprocess.run(
             [
                 "nvidia-smi",
-                "--query-gpu=name,memory.total",
+                "--query-gpu=name,memory.total,memory.free",
                 "--format=csv,noheader,nounits",
             ],
             capture_output=True,
@@ -24,10 +100,21 @@ def detect_gpu():
             check=True,
         )
         for line in result.stdout.splitlines():
-            name, memory = line.rsplit(",", 1)
+            columns = line.rsplit(",", 2)
+            name, memory = columns[:2]
             memory = int(memory.strip())
             if memory > 0:
-                devices.append({"name": name.strip(), "vram_mib": memory})
+                devices.append(
+                    {
+                        "name": name.strip(),
+                        "vram_mib": memory,
+                        **(
+                            {"free_mib": int(columns[2].strip())}
+                            if len(columns) == 3
+                            else {}
+                        ),
+                    }
+                )
     except (OSError, ValueError, subprocess.SubprocessError):
         pass
     if platform.system() == "Linux":
@@ -39,9 +126,14 @@ def detect_gpu():
                     1024 * 1024
                 )
                 if memory > 0:
-                    devices.append(
-                        {"name": "AMD " + device.parent.name, "vram_mib": memory}
-                    )
+                    info = {"name": "AMD " + device.parent.name, "vram_mib": memory}
+                    try:
+                        info["free_mib"] = memory - int(
+                            (device / "mem_info_vram_used").read_text()
+                        ) // (1024 * 1024)
+                    except (OSError, ValueError, StopIteration):
+                        pass
+                    devices.append(info)
             except (OSError, ValueError):
                 pass
     if devices:

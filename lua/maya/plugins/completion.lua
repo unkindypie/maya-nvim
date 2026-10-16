@@ -55,7 +55,22 @@ return {
   },
   { "windwp/nvim-autopairs", event = "InsertEnter", opts = {} },
   { "folke/lazydev.nvim", ft = "lua", opts = {} },
-  { "milanglacier/minuet-ai.nvim", lazy = true, dependencies = { "nvim-lua/plenary.nvim" } },
+  {
+    url = "https://github.com/unkindypie/maya-nvim.git",
+    name = "minuet-ai.nvim",
+    branch = "fork/minuet-cancel",
+    commit = "fb376cbb88c99080fb44d01c323413108ad7e09a",
+    lazy = true,
+    dependencies = { "nvim-lua/plenary.nvim" },
+  },
+  {
+    -- lazy.nvim identifies specs by URL; use a distinct spelling for this fork branch.
+    url = "https://github.com/unkindypie/maya-nvim",
+    name = "blink-edit.nvim",
+    branch = "fork/blink-edit-async",
+    commit = "06672de18f5ac1f44916ea15bcf90eae77f00dc7",
+    lazy = true,
+  },
   { "zbirenbaum/copilot.lua", lazy = true },
   { "nvim-lua/plenary.nvim", lazy = true },
 }

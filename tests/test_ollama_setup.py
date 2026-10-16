@@ -43,7 +43,10 @@ class OllamaSetupTest(unittest.TestCase):
 
             with (
                 patch.dict(os.environ, {"XDG_STATE_HOME": temp}),
-                patch("sys.argv", ["setup_ollama.py", "--models-dir", temp]),
+                patch(
+                    "sys.argv",
+                    ["setup_ollama.py", "--models-dir", temp, "--model", model],
+                ),
                 patch.object(
                     setup, "detect_gpu", return_value={"name": "test", "vram_mib": 6144}
                 ),

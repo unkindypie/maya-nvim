@@ -217,6 +217,15 @@ end
 leader("as", function()
   require("maya.ai").notify_status()
 end, "AI status")
+leader("an", function()
+  require("maya.ai_next_edit").trigger()
+end, "Request next-edit")
+leader("aa", function()
+  require("maya.ai").accept()
+end, "Accept AI suggestion")
+leader("ad", function()
+  require("maya.ai").action("dismiss")
+end, "Dismiss AI suggestion")
 local dap = {
   t = "toggle_breakpoint",
   b = "step_back",

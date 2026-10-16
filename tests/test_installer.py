@@ -99,11 +99,15 @@ class InstallerTest(unittest.TestCase):
             ):
                 self.assertEqual(installer.choose_ai(args, state), "ollama")
             args.model = None
+            args.ai_mode = None
+            args.next_edit_model = None
             with patch.object(installer.sys.stdin, "isatty", return_value=False):
                 self.assertEqual(installer.choose_ai(args, state), "off")
                 args.yes = True
                 self.assertEqual(installer.choose_ai(args, state), "ollama")
             args.model = None
+            args.ai_mode = None
+            args.next_edit_model = None
             (state / "ai.json").write_text('{"provider":"off"}')
             with patch(
                 "builtins.input",
@@ -111,6 +115,8 @@ class InstallerTest(unittest.TestCase):
             ):
                 self.assertEqual(installer.choose_ai(args, state), "off")
                 args.ai = "copilot"
+                args.model = None
+                args.ai_mode = None
                 self.assertEqual(installer.choose_ai(args, state), "copilot")
             (state / "ai.json").unlink()
             args.ai = None
@@ -136,6 +142,8 @@ class InstallerTest(unittest.TestCase):
                 self.assertEqual(installer.choose_ai(args, state), "ollama")
                 self.assertEqual(args.model, "qwen2.5-coder:3b-base")
                 args.ai = "copilot"
+                args.model = None
+                args.ai_mode = None
                 self.assertEqual(installer.choose_ai(args, state), "copilot")
 
     def test_preference_questions(self):

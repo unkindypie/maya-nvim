@@ -44,7 +44,9 @@ Enable the repository's Markdown/Python formatting hook after cloning:
 Do not commit credentials, AI state, model blobs, generated parsers, logs, or
 machine-specific shell configuration. AI preferences live under
 `stdpath('state')/ai.json`. Never silently switch a local AI request to a cloud
-provider. Keep exactly one suggestion backend enabled.
+provider. Keep one provider active and one suggestion engine active for the current mode.
+Dual local mode coordinates Minuet in Insert mode and Sweep in Normal mode;
+Copilot and AI-off must cancel both local engines.
 
 ## Checks
 
@@ -65,6 +67,8 @@ MAYA_NVIM_NO_INSTALL=1 MAYA_NVIM_NO_AI=1 bin/mvim --headless '+lua assert(vim.g.
 .local/test-env/bin/python tests/config_completion.py
 .local/test-env/bin/python tests/completion_keys.py
 .local/test-env/bin/python tests/ai_status.py
+.local/test-env/bin/python tests/ai_local.py
+.local/test-env/bin/python tests/ai_context.py
 ```
 
 `MAYA_NVIM_NO_INSTALL=1` disables automatic tool downloads during isolated

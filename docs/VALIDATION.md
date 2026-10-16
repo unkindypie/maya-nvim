@@ -134,3 +134,50 @@ Automated checks cover NVIDIA/AMD detection, unknown and shared memory, menu
 selection, Copilot/skip avoiding Ollama setup, preservation of saved models, and
 `q` closing native quickfix/location-list results. AI reselection reloads the
 saved model with one notification; status includes provider details for 10 seconds.
+
+## 2026-10-16: coordinated local completion and next-edit
+
+- Published pinned Minuet and blink-edit fork branches on this repository's
+  remote, retaining upstream history/licenses. Fresh independent lazy.nvim
+  clones load both plugins and their public cancellation APIs. Other plugin
+  pins are unchanged.
+- Fork regressions cover cancellation, transport cancellation, late callbacks,
+  older responses arriving after newer requests, changed buffer/cursor/tick/model
+  identities, scheduled acceptance cancellation, and asynchronous reference caching.
+- Real editor regressions cover rapid Ollama/Copilot/off switching for both
+  local engines, single/dual mode handover, normal idle triggers, native request
+  options, Qwen/Mellum prompt formats, ordinary completion keys, and undo that
+  preserves preceding typed text. LSP hints return immediately from the cache;
+  delayed or invalidated replies are discarded.
+- 65 unit tests pass, including saved-choice migration, unknown VRAM, selective
+  downloads, custom endpoints, failed residency preserving preferences, and
+  Sweep's missing Hugging Face tag alias fallback. Shell/Python syntax, StyLua,
+  startup, and the editor integration suites pass. The integration test now
+  waits for the type diagnostic instead of assuming it precedes Ruff's results.
+- On Maya's RTX 3060 Laptop GPU (6,144 MiB), Qwen 1.5B Base Q8 and Sweep Q8
+  both remain GPU-resident at 4,096 context tokens: approximately 1,745 MiB and
+  1,577 MiB respectively, with about 2,021 MiB free in the measured run. Short
+  warm probe medians were 0.051 s and 0.106 s. These are small cached-prefix
+  probes, not general latency or quality guarantees.
+- Real Minuet generated and accepted `return a + b`; Sweep corrected a Python
+  method-name typo and generated an insertion in single-model Insert mode. Undo
+  restored the preceding user edit. Maya's saved choice now uses the 6 GB dual
+  preset; her previous 3B weights remain available on disk.
+- Native vita-sdl clangd diagnostics, unsaved C++ error detection/clearing, Python
+  Ruff/ty, Rust, debugging, other configured languages, sessions, external file
+  changes, explorer, Markdown rendering, swap recovery, updates, personal-config
+  completion, and existing UI checks pass.
+
+Not verified on physical 2–4 GB or 8 GB+ GPUs, AMD, or macOS. Mellum and the
+7B Q4 preset have prompt/configuration tests but were not downloaded or benchmarked.
+Copilot switching and adapter loading are covered; authenticated cloud inference
+was not tested. Sweep is still an alpha plugin and model predictions can be
+unhelpful; acceptance stays explicit. No upstream PR was submitted.
+
+New checks (the inference test requires the selected Ollama models):
+
+```sh
+.local/test-env/bin/python tests/ai_local.py
+.local/test-env/bin/python tests/ai_context.py
+MAYA_NVIM_TEST_OLLAMA=1 .local/test-env/bin/python tests/ai_inference.py
+```

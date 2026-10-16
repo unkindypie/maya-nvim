@@ -143,6 +143,21 @@ Ollama stays optional. Its Linux binary download needs zstd
 service startup needs a working systemd user session. Existing running servers
 need neither. On macOS, install/start Ollama separately: https://ollama.com/download/mac.
 
+### Local AI arguments
+
+| Argument                                  | Purpose                                                   |
+| ----------------------------------------- | --------------------------------------------------------- |
+| `--ai ollama\|copilot\|off`               | Select the provider                                       |
+| `--ai-mode completion-only\|single\|dual` | Select local engine arrangement                           |
+| `--model TAG`                             | Inline model; alone preserves legacy completion-only mode |
+| `--next-edit-model TAG`                   | Sweep model for single/dual mode                          |
+| `--fim-format qwen\|mellum`               | Explicit prompt format for custom dual models             |
+| `--ollama-models-dir PATH`                | Storage when starting the managed Ollama server           |
+
+Only selected models are downloaded. Missing new settings preserve existing
+choices; unknown VRAM requires explicit local selection in unattended runs.
+See [AI setup](AI.md) for presets, migration, and residency checks.
+
 ## Failures and retry
 
 Failed steps print the error, a recovery command, and the installer command to

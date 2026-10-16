@@ -213,3 +213,16 @@ close with `q`, returning to the file window.
 
 `Space as` shows AI provider/model/server and controls for 10 seconds. `Space ao`
 selects Ollama or reloads its saved local model without noisy disable/enable notices.
+
+### Local next-edit
+
+| Key                   | Action                                                  |
+| --------------------- | ------------------------------------------------------- |
+| `Space an`            | Request Sweep next-edit                                 |
+| `Space aa`            | Accept the current AI suggestion                        |
+| `Space ad` / `Ctrl-]` | Cancel and dismiss                                      |
+| Normal `Tab`          | Accept visible Sweep prediction; otherwise jump forward |
+
+Dual local mode runs Minuet in Insert mode and Sweep on Normal idle. Single
+mode uses Sweep in both modes. Selected ordinary completion takes priority on
+Insert Tab; Enter and arrow navigation keep their existing completion behavior.

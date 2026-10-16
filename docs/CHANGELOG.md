@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-10-16
+
+- Add coordinated local inline completion and Sweep next-edit presets, with
+  backward-compatible saved choices and Copilot/off options.
+- Pin minimal plugin forks with public cancellation, stale-response guards,
+  asynchronous LSP references, and isolated acceptance undo.
+- Add bounded cached LSP hints, native Ollama token limits, GPU-aware setup,
+  selective downloads, and residency checks.
+
 - Update existing maya-nvim checkouts on installer reruns with fast-forward-only pulls, reload the new installer, and support `--no-update`.
 
 - Automatically install missing prerequisites after confirmation, with isolated verified tools, optional audio/fonts, and actionable manual recovery.

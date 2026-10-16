@@ -72,12 +72,11 @@ formatting already completed for the other language may remain staged.
 
 ## Optional local AI during installation
 
-Fresh interactive installations offer a model menu with a GPU-aware default,
-GitHub Copilot, and **Skip Ollama models installation**. The default local model
-is Qwen2.5-Coder 3B Base, or 1.5B Base below 4 GiB detected VRAM. Copilot and skip
-choices install no Ollama/models. Missing detection tools do not block setup.
-Existing provider/model preferences survive reruns. Use `--ai` and `--model` to
-override them; see [AI setup](AI.md) for details.
+Fresh interactive installations offer GPU-aware single/dual local presets,
+GitHub Copilot, and **Skip Ollama models installation**. Unknown VRAM requires
+an explicit choice. Saved provider/model/endpoint preferences survive reruns;
+missing new settings retain legacy completion-only behavior. See
+[AI setup](AI.md) for model tiers, migration, and memory validation.
 
 The choice is saved in `ai.json`, also used by `:MayaAI`; no additional personal
 config setting is required. Noninteractive fresh installs leave AI off unless

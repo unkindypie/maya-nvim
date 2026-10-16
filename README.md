@@ -163,20 +163,18 @@ See [keybindings](docs/KEYBINDINGS.md), [language tools](docs/LANGUAGES.md), and
 
 Ollama and GitHub Copilot are selectable backends; only one is active:
 
-Setup offers local models, **GitHub Copilot**, or **Skip Ollama models installation**
-(AI off; normal editor completion stays available). It recommends **Qwen2.5-Coder
-3B Base**, or **1.5B Base below 4 GB detected VRAM**. No extra detection packages
-are needed. Saved choices are preserved on reruns; `--model NAME` overrides them.
+Setup offers **GitHub Copilot**, **Skip Ollama models installation**, and local
+completion/next-edit presets. Existing choices survive reruns.
 
-| Ollama model              | Suggested GPU VRAM |
-| ------------------------- | ------------------ |
-| `qwen2.5-coder:1.5b-base` | 2–4 GB             |
-| `qwen2.5-coder:3b-base`   | 4–6 GB; default    |
-| `qwen2.5-coder:7b-base`   | Prefer 8 GB+       |
+| Estimated VRAM | Local preset                                                          |
+| -------------- | --------------------------------------------------------------------- |
+| 2–4 GB         | Sweep 1.5B Q8 alone for insertions and edits; 2 GB may offload to CPU |
+| 6 GB           | Qwen2.5-Coder 1.5B Base Q8 + Sweep                                    |
+| 8 GB+          | Qwen2.5-Coder 7B Base Q4_K_M + Sweep; optional Mellum 4B Q8           |
 
-These are estimates for short completion contexts, not hard minimums. Context
-size and other GPU applications affect memory needs. Custom model tags are also
-accepted; choose a model supporting fill-in-the-middle completion.
+These are estimates; setup checks residency and offers single-model mode if a
+pair cannot fit. Unknown VRAM requires a choice. See [models, flags, and
+compatibility](docs/AI.md) for exact tags and details.
 
 ```vim
 :MayaAI ollama
@@ -188,7 +186,10 @@ Use `Space ao/ac/ax` for the same actions. GitHub authentication is through
 `:Copilot auth`. Local server failure never silently switches to GitHub.
 Tab accepts a selected completion first, then a visible AI suggestion; otherwise it navigates completion,
 jumps/expands snippets, or inserts a normal Tab. Ctrl-J/K navigate completion,
-Ctrl-L cycles AI forward, Alt-[ cycles backwards, and Ctrl-] dismisses it.
+Ctrl-L / Alt-[ cycle inline suggestions; Ctrl-] dismisses. `Space an` requests
+next-edit, `Space aa` accepts, and `Space ad` dismisses. Dual mode uses inline
+completion in Insert mode and Sweep on Normal-mode idle; single mode uses Sweep
+for both.
 Enter accepts a selected completion; it does not automatically select one.
 
 Details: [AI setup](docs/AI.md), [keybindings and migration](docs/KEYBINDINGS.md),
