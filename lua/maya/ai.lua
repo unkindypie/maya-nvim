@@ -16,6 +16,7 @@ function M.eligible()
     and vim.api.nvim_buf_get_offset(buf, vim.api.nvim_buf_line_count(buf)) < 262144
 end
 function M.cancel()
+  require("maya.ai_coordinator").cancel()
   require("maya.ai_context").cancel()
   require("maya.ai_next_edit").cancel()
   if M.initialized.ollama then
@@ -53,11 +54,12 @@ function M.notify_status()
       "Next-edit: " .. (M.local_mode ~= "completion-only" and M.next_edit_model or "off"),
       "Server: " .. (M.endpoint or "http://127.0.0.1:11434"),
       "Automatic suggestions in this buffer: " .. (M.eligible() and "on" or "off"),
-      M.local_mode == "dual" and "Insert: Minuet · Normal idle: Sweep"
+      M.local_mode == "dual" and "Insert: Minuet · Insert / Normal idle: Sweep"
         or (M.local_mode == "single" and "Insert / Normal idle: Sweep" or "Insert: Minuet"),
       "Tab: accept · Ctrl-]: dismiss · Space an: request next-edit",
       "Ctrl-L / Alt-[: cycle inline suggestions only",
-      "Space ao: reload saved local model · Space ax: turn AI off",
+      "Space am: choose local mode · Space ao: reload saved local model",
+      "Space ax: turn AI off",
     }
   elseif M.provider == "copilot" then
     lines = {
@@ -69,7 +71,7 @@ function M.notify_status()
     lines = {
       "AI suggestions: off",
       "Normal editor completion is still available.",
-      "Space ao: Ollama · Space ac: GitHub Copilot",
+      "Space ao: Ollama · Space ac: GitHub Copilot · Space am: local mode",
     }
   end
   vim.notify(
@@ -79,12 +81,19 @@ function M.notify_status()
   )
 end
 
-function M.select(provider, persist)
+function M.select(provider, persist, local_mode)
   if not vim.tbl_contains({ "ollama", "copilot", "off" }, provider) then
     error("Choose ollama, copilot, or off")
   end
   local opts = settings()
-  local format = opts.fim_format or require("maya.ai_prompts").format(opts.model or "")
+  if local_mode ~= nil then
+    if not vim.tbl_contains({ "single", "dual", "completion-only" }, local_mode) then
+      error("Choose single, dual, or completion-only")
+    end
+    opts.local_mode = local_mode
+  end
+  local format = opts.fim_format
+    or require("maya.ai_prompts").format(opts.model or "qwen2.5-coder:3b-base")
   if
     provider == "ollama"
     and opts.local_mode == "dual"
@@ -130,16 +139,22 @@ function M.select(provider, persist)
           context_window = M.local_mode == "completion-only" and 512 or 6000,
           duet = { enabled = false },
           request_timeout = 10,
-          debounce = 400,
-          throttle = 1000,
+          debounce = 200,
+          throttle = 0,
           enable_predicates = {
             function()
-              return M.provider == "ollama" and M.local_mode ~= "single" and M.eligible()
+              local cmp = package.loaded["blink.cmp"]
+              return M.provider == "ollama"
+                and M.local_mode ~= "single"
+                and M.eligible()
+                and not (cmp and cmp.get_selected_item())
             end,
           },
           virtualtext = {
-            show_on_completion_menu = false,
-            auto_trigger_ft = { "*" },
+            show_on_completion_menu = true,
+            external_scheduler = true,
+            show_model = true,
+            auto_trigger_ft = {},
             keymap = {
               accept = false,
               accept_line = false,
@@ -174,9 +189,9 @@ function M.select(provider, persist)
           },
         })
         M.initialized.ollama = true
-        vim.b.minuet_virtual_text_auto_trigger = true
+        vim.b.minuet_virtual_text_auto_trigger = false
       else
-        vim.b.minuet_virtual_text_auto_trigger = true
+        vim.b.minuet_virtual_text_auto_trigger = false
       end
     else
       vim.b.minuet_virtual_text_auto_trigger = false
@@ -204,14 +219,37 @@ function M.select(provider, persist)
       vim.cmd("Copilot enable")
     end
   end
+  require("maya.ai_coordinator").activity(true)
   if persist ~= false then
     opts.provider = provider
     vim.fn.mkdir(vim.fn.stdpath("state"), "p")
     vim.fn.writefile({ vim.json.encode(opts) }, vim.fn.stdpath("state") .. "/ai.json")
-    local label = provider == "ollama" and ("Ollama · " .. M.model)
+    local label = provider == "ollama"
+        and ("Ollama · " .. M.local_mode .. " · " .. (M.local_mode == "single" and M.next_edit_model or M.model))
       or (provider == "copilot" and "GitHub Copilot" or "Off")
     vim.notify("AI: " .. label, vim.log.levels.INFO, { title = "AI suggestions" })
   end
+end
+function M.choose_local_mode()
+  local current = settings().local_mode or "completion-only"
+  vim.ui.select({
+    { value = "dual", label = "Dual: inline completion + Sweep next edits" },
+    { value = "single", label = "Single: Sweep only" },
+    { value = "completion-only", label = "Completion-only: inline completion only" },
+  }, {
+    prompt = "Local AI mode",
+    format_item = function(item)
+      return item.label .. (item.value == current and " (saved)" or "")
+    end,
+  }, function(item)
+    if not item then
+      return
+    end
+    local ok, err = pcall(M.select, "ollama", true, item.value)
+    if not ok then
+      vim.notify(tostring(err), vim.log.levels.ERROR, { title = "Local AI mode" })
+    end
+  end)
 end
 function M.accept()
   if M.provider == "ollama" and require("maya.ai_next_edit").accept() then
@@ -221,6 +259,7 @@ function M.accept()
     local action = require("minuet.virtualtext").action
     if action.is_visible() then
       action.accept()
+      require("maya.ai_coordinator").accepted()
       return true
     end
   elseif M.provider == "copilot" and M.initialized.copilot then
@@ -235,9 +274,12 @@ end
 function M.action(name)
   if name == "dismiss" then
     M.cancel()
+    require("maya.ai_coordinator").dismiss()
   end
   if M.provider == "ollama" and M.initialized.ollama and M.local_mode ~= "single" then
-    require("minuet.virtualtext").action[name]()
+    if name ~= "dismiss" then
+      require("maya.ai_coordinator").inline_action(name)
+    end
   elseif M.provider == "copilot" and M.initialized.copilot then
     require("copilot.suggestion")[name]()
   end
@@ -247,27 +289,21 @@ function M.setup()
     return M.provider == "ollama" and M.local_mode == "dual" and M.eligible()
   end)
   local group = vim.api.nvim_create_augroup("MayaAIHandover", { clear = true })
-  vim.api.nvim_create_autocmd(
-    { "InsertEnter", "BufLeave", "LspDetach" },
-    { group = group, callback = M.cancel }
-  )
-  vim.api.nvim_create_autocmd("InsertLeave", {
+  require("maya.ai_coordinator").setup(M)
+  vim.api.nvim_create_autocmd("User", {
     group = group,
+    pattern = "BlinkCmpListSelect",
     callback = function()
-      require("maya.ai_context").cancel()
-      if M.initialized.ollama then
-        require("minuet.virtualtext").action.cancel()
+      local cmp = package.loaded["blink.cmp"]
+      if cmp and cmp.get_selected_item() then
+        M.action("dismiss")
       end
     end,
   })
-  vim.api.nvim_create_autocmd(
-    "User",
-    { group = group, pattern = "BlinkCmpMenuOpen", callback = M.cancel }
-  )
   vim.keymap.set("n", "<Tab>", function()
     if M.provider == "ollama" and require("maya.ai_next_edit").visible() then
       vim.schedule(function()
-        require("maya.ai_next_edit").accept()
+        M.accept()
       end)
       return ""
     end

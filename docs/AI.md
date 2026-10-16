@@ -4,6 +4,11 @@ Choose Ollama, GitHub Copilot, or off with `Space ao/ac/ax` or
 `:MayaAI ollama|copilot|off`. Ordinary Blink/LSP/snippet completion remains
 available with every choice. Local requests never fall back to cloud services.
 `Space as` explains the active models, endpoint, mode, and controls for ten seconds.
+`Space am` opens the local-mode picker: **Dual** runs inline completion plus
+Sweep next edits, **Single** runs Sweep only, and **Completion-only** runs only
+the saved inline model. Choosing a mode activates Ollama immediately and saves
+that choice in `ai.json`, preserving model names, endpoints, and other preferences.
+Canceling the picker keeps the current settings. The picker does not download models.
 
 ## Local presets
 
@@ -97,11 +102,19 @@ Validation measurements are stored separately in `ollama-validation.json`.
 
 ## Editing behavior
 
-Dual mode uses Minuet automatically in Insert mode and Sweep after 800 ms of
-Normal-mode idle. Single mode uses Sweep's next-edit engine for both insertions
-and replacements, including Insert mode; it does not use a fabricated Sweep FIM
-template. Duet is disabled. Special, read-only, unmodifiable, and large buffers
-are excluded.
+Dual mode requests Minuet after 200 ms of Insert-mode inactivity. Sweep becomes
+eligible after 650 ms in Insert or Normal mode, waiting for pending Minuet work
+and any visible preview. A valid preview has no expiry: elapsed time never
+replaces it or launches competing inference. Typing cancels stale work and gives
+Minuet priority. After acceptance, Sweep waits another 650 ms without edits.
+Explicit dismissal suppresses automatic suggestions until the next edit.
+Single mode uses only Sweep; completion-only mode retains the saved Minuet model
+and endpoint. Special, read-only, unmodifiable, and large buffers are excluded.
+
+Personal `MayaConfig` settings `ai_completion_debounce_ms` (default 200) and
+`ai_next_edit_debounce_ms` (default 650) accept milliseconds from 0 to 60000.
+Existing configurations need no migration; saved model and provider preferences
+remain unchanged.
 
 - Tab accepts a selected ordinary completion first, then a valid AI suggestion.
 - Enter retains ordinary selected-completion acceptance.
@@ -109,26 +122,44 @@ are excluded.
 - `Space an` requests next-edit; `Space aa` accepts; `Space ad` dismisses.
 - Ctrl-] dismisses; leaving Insert mode cancels its outstanding request.
 - Ctrl-L / Alt-[ cycle Minuet or Copilot inline suggestions, not Sweep edits.
-- Arrow navigation and the ordinary completion menu cancel AI previews.
+- Selecting an ordinary completion cancels AI previews. An open menu with no
+  selected item can coexist with inline AI; ordinary selected completion keeps
+  priority on Tab.
 
-Acceptance stays explicit and undoable. Provider changes, AI-off, and mode
+Local previews show the generating model's saved identifier in gray at the right
+edge of the editor window. The label follows window resizing and disappears with
+the preview; it is display-only and is never inserted into the document.
+
+Acceptance stays explicit and undoable. Sweep applies accepted edits after the
+completion mapping finishes, rechecking the preview identity before changing text. Provider changes, AI-off, and mode
 handover cancel outgoing requests. Monotonic generations reject late callbacks;
 display and acceptance also check provider, buffer, changedtick, cursor, and
 mode. Old results cannot clear newer requests or overwrite intervening edits.
 
 ## Context and prompt formats
 
-New Minuet presets consume a bounded asynchronous LSP cache for hover types, signatures,
-and up to two definition snippets. Requests target a nearby receiver before
-`.` / `:` / `->` when possible. Missing or slow LSP replies simply leave hints
-absent; typing and prompt construction never wait for them. Entries expire after
-two seconds and invalidated results are discarded. Local file snippets are
-bounded and read asynchronously when not already loaded.
+Both engines consume the same asynchronous, bounded LSP context cache. It checks
+standard hover, signature-help, definition, and type-definition capabilities on
+each attached client and uses that client's position encoding. Lua, TypeScript,
+and Python syntax adapters locate receivers, expressions, and enclosing
+annotations/calls. Incomplete annotated tables, object literals, and dictionaries
+retain their enclosing type anchor even when the syntax tree contains an error.
+The collector follows definitions to their full bounded annotation/declaration
+snippets, then follows referenced field types for up to two additional levels
+and twelve requests. Explicit annotations take priority within the 6,000-character
+budget. Standard didOpen/didClose notifications synchronize temporary referenced
+documents where needed, without opening or modifying user buffers. Source-version
+and annotation-scope checks reject stale context. Semantic information comes
+from LSP responses; unresolved
+expected types are explicitly described as unresolved, with enclosing source
+included as a fallback. Location and LocationLink targets yield bounded snippets.
+Loaded targets use changedticks; disk targets are revalidated asynchronously by
+size and modification time. Valid target snippets can survive nearby source edits.
+Delayed or absent replies never block typing or prompt construction.
 
-Sweep uses blink-edit's references and edit history. Its provider does not ask
-for hover or definitions, so it does not have equivalent type awareness.
-
-New Minuet presets allow 6,000 source characters and 1,500 LSP-hint characters;
+Shared context is limited to 6,000 characters. Minuet receives it through its FIM
+prompt hook; Sweep receives an additional source-snippet section through the
+public `source_context` callback. Sweep retains edit history and same-file context.
 Ollama separately receives a 4,096-token context and a 96-token output cap.
 Sweep receives a 4,096-token context, a 512-token output cap, a 21-line edit
 window, three history entries, and bounded references. Character budgets and
@@ -142,18 +173,62 @@ Native Ollama requests are built through Minuet's documented prompt/transform
 hooks; the OpenAI-compatible endpoint cannot set `num_ctx` directly. See
 [Ollama context-size documentation](https://docs.ollama.com/api/openai-compatibility#setting-the-local-context-size).
 
-## Pinned plugin patches
+## Bundled AI plugins
 
-The forks are hosted as dedicated `fork/minuet-cancel` and
-`fork/blink-edit-async` branches of the maya-nvim remote, separate from `master`.
-Each keeps upstream history and license and adds focused patch commits. This
-requires no separate repositories or GitHub API token. lazy.nvim clones each
-branch as its own named plugin; commit pins prevent accidental branch updates.
+Minuet and blink-edit runtime sources are included in `vendor/` and loaded directly
+through lazy.nvim local `dir` specs. A fresh clone includes the coordination,
+shared-context, cancellation, and model-label hooks. Separate fork clones and
+manual patch application are unnecessary. The two obsolete remote lockfile
+entries are removed; repository revisions now identify the bundled versions.
+Original licenses and snapshot provenance are retained in [vendor/README.md](../vendor/README.md).
+Git histories, images, caches, and model files are excluded.
 
-The Minuet fork exposes public `action.cancel()` and guards request identities.
-The blink-edit fork adds public cancellation, mode predicates, async cached LSP
-references, and stale-response checks. Upstream history and licenses remain
-intact; no private LSP tables or runtime monkey patches are used. Pins belong in
-the plugin specs and lockfile. Fork regression tests cover delayed callbacks and
-request identity changes; maya-nvim tests cover switching, mode handover,
-completion keys, prompts, LSP caching, and undo.
+The plugins expose optional `external_scheduler`, pending/request inspection,
+explicit dismissal notification, and Sweep's cached `source_context(bufnr)` callback.
+Their standalone scheduling remains the default. The shared collector uses
+capability-checked standard LSP methods and each client's position encoding;
+it never selects behavior by server name.
+
+### Local validation (2026-10-16)
+
+Ten warm samples per engine alternated the Qwen 1.5B Q8 and Sweep 1.5B Q8 models
+on the RTX 3060 Laptop GPU (6 GiB), after one warmup per engine. Repeated small
+Python fixtures measured from a programmatic edit notification through debounce
+to a visible preview, polled every 20 ms. These warm repeated prompts benefit
+from server caching; they are not cold-start or large-project estimates.
+
+| Engine | Render median | Render p95 | Request median | Request p95 | Empty/rejected | Failed/timeout |
+| ------ | ------------: | ---------: | -------------: | ----------: | -------------: | -------------: |
+| Qwen   |      271.6 ms |   272.3 ms |        62.0 ms |     67.3 ms |           0/10 |           0/10 |
+| Sweep  |      749.2 ms |   750.2 ms |        88.2 ms |     90.9 ms |           0/10 |           0/10 |
+
+The p95 uses the nearest-rank estimate (the maximum of ten samples). Ollama
+reported both models' full sizes in VRAM throughout warm alternation; NVIDIA
+reported 3,894 MiB used. No eviction or CPU offloading was observed. Defaults
+remain 200/650 ms. `tests/ai_latency.py` reproduces these measurements.
+
+`tests/ai_shared_context.py` uses real lua-language-server, typescript-language-server,
+and ty processes and captures outgoing HTTP payloads for both engines with a
+local deterministic model endpoint. All four semantic capabilities were advertised
+by those servers. Receiver hovers identified `MayaConfig` or `Settings`, and
+source snippets preserved field types and documentation in both final prompts.
+This verifies delivery, not model quality or reliable expected-type resolution
+inside every incomplete table/object literal; that remains best effort and is
+labelled unresolved in enclosing-source fallback context.
+
+Deterministic tests cover both previews surviving 1.4-second pauses, pending
+serialization, acceptance followed by Sweep, dismissal through navigation,
+resumed typing, stale callbacks, provider changes, completion-menu priority,
+undo, delayed/absent LSP replies, LocationLink targets, and changed target versions.
+The 65 Python unit tests pass, as do the general integration and typed-config
+completion checks with normal LSP activation. An initial run with
+`MAYA_NVIM_NO_INSTALL=1` timed out because that flag also skips automatic LSP
+activation; the focused context test starts its servers explicitly.
+
+The annotated-value regression captures both Qwen and Sweep HTTP requests for
+`---@type MayaConfig` followed by an incomplete `theme = `, using the actual
+repository schema in a separate library. Every `MayaConfig` field and all
+`MayaTheme` fields and formatting guidance survive prompt assembly. Equivalent
+TypeScript interface and Python TypedDict fixtures place their schema and nested
+type in separate files and verify both prompts with real language servers.
+These tests verify context delivery; suggestions can still ignore that context.

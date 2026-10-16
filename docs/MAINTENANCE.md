@@ -196,5 +196,9 @@ Place `---@type MayaConfig` immediately above `return {` in
 `~/.config/mvim/init.lua`. New installer examples include this annotation.
 LuaLS loads the config schema, Neovim option types, and lazy.nvim plugin types
 for completion and hover help, including nested theme fields. The annotation is
-optional and existing unannotated configs still work. Arbitrary plugin-specific
+optional and existing unannotated configs still work. For `theme`, a string with
+`/` is a GitHub `owner/repository` and installs that plugin; a string without `/`
+is an already-installed colorscheme name and installs nothing. For example,
+`"catppuccin/nvim"` selects the repository, while `"catppuccin-frappe"` selects a
+colorscheme. A `MayaTheme` table sets `plugin`, `name`, `module`, and `opts` explicitly. Arbitrary plugin-specific
 `opts` remain controlled by each plugin's types.

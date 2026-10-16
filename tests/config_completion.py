@@ -32,6 +32,8 @@ with tempfile.TemporaryDirectory(prefix="maya-config-completion-") as temp:
             "plugins",
             "setup",
             "reopen_tabs",
+            "ai_completion_debounce_ms",
+            "ai_next_edit_debounce_ms",
             "pokemon_sound_on_start",
             "pokemon_sound_on_start_volume_percentage",
         }

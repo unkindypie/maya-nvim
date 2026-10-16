@@ -214,6 +214,9 @@ for key, provider in pairs({ o = "ollama", c = "copilot", x = "off" }) do
     require("maya.ai").select(provider)
   end, "AI: " .. provider)
 end
+leader("am", function()
+  require("maya.ai").choose_local_mode()
+end, "Local AI mode")
 leader("as", function()
   require("maya.ai").notify_status()
 end, "AI status")

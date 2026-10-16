@@ -45,7 +45,16 @@ Do not commit credentials, AI state, model blobs, generated parsers, logs, or
 machine-specific shell configuration. AI preferences live under
 `stdpath('state')/ai.json`. Never silently switch a local AI request to a cloud
 provider. Keep one provider active and one suggestion engine active for the current mode.
-Dual local mode coordinates Minuet in Insert mode and Sweep in Normal mode;
+Dual local mode uses one coordinator: Minuet after 200 ms in Insert mode and
+Sweep after 650 ms in Insert or Normal mode. A valid visible preview owns the
+preview until accepted, dismissed, or invalidated; never replace it on a timer.
+Do not start competing inference while a preview or request is active. Shared
+semantic context uses capability-checked standard LSP requests, never server names;
+syntax adapters only locate anchors. Prompt hooks read cached context without waiting.
+The bundled Minuet and blink-edit sources in `vendor/` are authoritative;
+retain their licenses and provenance, exclude images/history, and test their public hooks.
+Keep semantic collection independent of LSP server names and cover incomplete
+annotated values in Lua, Python, and TypeScript.
 Copilot and AI-off must cancel both local engines.
 
 ## Checks
@@ -68,7 +77,14 @@ MAYA_NVIM_NO_INSTALL=1 MAYA_NVIM_NO_AI=1 bin/mvim --headless '+lua assert(vim.g.
 .local/test-env/bin/python tests/completion_keys.py
 .local/test-env/bin/python tests/ai_status.py
 .local/test-env/bin/python tests/ai_local.py
+.local/test-env/bin/python tests/ai_acceptance_keys.py
 .local/test-env/bin/python tests/ai_context.py
+.local/test-env/bin/python tests/ai_annotations.py
+.local/test-env/bin/python tests/ai_automatic.py
+.local/test-env/bin/python tests/ai_coordination.py
+.local/test-env/bin/python tests/ai_shared_context.py
+# Opt-in real model latency/residency measurement:
+MAYA_NVIM_TEST_OLLAMA=1 .local/test-env/bin/python tests/ai_latency.py
 ```
 
 `MAYA_NVIM_NO_INSTALL=1` disables automatic tool downloads during isolated

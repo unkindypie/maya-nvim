@@ -5,6 +5,8 @@ local defaults = {
   pokemon_sound_on_start = true,
   pokemon_sound_on_start_volume_percentage = 50,
   reopen_tabs = true,
+  ai_completion_debounce_ms = 200,
+  ai_next_edit_debounce_ms = 650,
 }
 function M.get(key)
   if M.config[key] ~= nil then
@@ -50,6 +52,8 @@ function M.load()
     pokemon_sound_on_start = "boolean",
     pokemon_sound_on_start_volume_percentage = "number",
     reopen_tabs = "boolean",
+    ai_completion_debounce_ms = "number",
+    ai_next_edit_debounce_ms = "number",
   }) do
     if config[key] ~= nil and type(config[key]) ~= kind then
       report(file, key .. " must be a " .. kind)
@@ -67,6 +71,13 @@ function M.load()
   if volume ~= nil and (volume ~= volume or volume < 0 or volume > 100) then
     report(file, "pokemon_sound_on_start_volume_percentage must be between 0 and 100")
     return
+  end
+  for _, key in ipairs({ "ai_completion_debounce_ms", "ai_next_edit_debounce_ms" }) do
+    local value = config[key]
+    if value ~= nil and (value ~= value or value < 0 or value > 60000) then
+      report(file, key .. " must be between 0 and 60000")
+      return
+    end
   end
   M.config = config
 end

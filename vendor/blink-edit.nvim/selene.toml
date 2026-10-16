@@ -1,0 +1,7 @@
+std = "vim"
+
+[rules]
+global_usage = "allow"
+undefined_variable = "deny"
+unused_variable = "warn"
+shadowing = "warn"

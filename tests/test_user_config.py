@@ -12,10 +12,12 @@ ROOT = Path(__file__).resolve().parents[1]
 class UserConfigTest(unittest.TestCase):
     def test_simple_preferences(self):
         self.launch(
-            "return {pokemon_sound_on_start=false,reopen_tabs=false}",
+            "return {pokemon_sound_on_start=false,reopen_tabs=false,ai_completion_debounce_ms=250,ai_next_edit_debounce_ms=700}",
             """
 assert(require("maya.user").get("pokemon_sound_on_start")==false)
 assert(require("maya.user").get("reopen_tabs")==false)
+assert(require("maya.user").get("ai_completion_debounce_ms")==250)
+assert(require("maya.user").get("ai_next_edit_debounce_ms")==700)
 """,
         )
         self.launch(
@@ -23,6 +25,8 @@ assert(require("maya.user").get("reopen_tabs")==false)
             """
 assert(require("maya.user").get("pokemon_sound_on_start")==true)
 assert(require("maya.user").get("reopen_tabs")==true)
+assert(require("maya.user").get("ai_completion_debounce_ms")==200)
+assert(require("maya.user").get("ai_next_edit_debounce_ms")==650)
 """,
         )
 

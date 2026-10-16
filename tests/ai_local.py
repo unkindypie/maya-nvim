@@ -15,6 +15,10 @@ local original = vim.fn.stdpath
 vim.fn.stdpath = function(key) return key == "state" and state or original(key) end
 _G.save = function(value) vim.fn.writefile({vim.json.encode(value)}, state .. "/ai.json") end
 local ai = require("maya.ai")
+for _, name in ipairs({"minuet-ai.nvim", "blink-edit.nvim"}) do
+ local plugin=require("lazy.core.config").plugins[name]
+ assert(plugin._.is_local and plugin.dir:find("/vendor/",1,true),"AI plugin is not bundled")
+end
 _G.requests = {}
 package.loaded["blink-edit.backends"] = {
  complete = function(opts, callback) requests[#requests+1] = {opts=opts, callback=callback}; return #requests end,
@@ -27,6 +31,7 @@ ai.select("ollama",false)
 assert(ai.local_mode=="single" and ai.model=="old-custom")
 assert(not ai.initialized.ollama, "single must not load Minuet")
 assert(require("blink-edit.config").get().llm.model=="test-sweep")
+assert(debug.getinfo(require("blink-edit").setup,"S").source:find("/vendor/",1,true))
 assert(vim.fn.maparg("<C-j>","i",false,true).desc~="Accept first line of blink-edit prediction")
 vim.api.nvim_buf_set_lines(0,0,-1,false,{"local value = 1", "print(value)"})
 vim.api.nvim_win_set_cursor(0,{1,0})
@@ -67,6 +72,7 @@ end
         nvim.exec_lua("""
 save({provider="ollama",local_mode="dual",model="qwen2.5-coder:1.5b-base-q8_0",next_edit_model="test-sweep"})
 require("maya.ai").select("ollama",false)
+assert(debug.getinfo(require("minuet").setup,"S").source:find("/vendor/",1,true))
 local options=require("minuet").config.provider_options.openai_fim_compatible
 assert(options.end_point:find("/api/generate",1,true))
 local request=options.transform[1]({body={prompt="test"}})
@@ -81,8 +87,8 @@ assert(not mellum:find("<|fim",1,true))
         wait(nvim, 'vim.fn.mode()=="i"')
         before = nvim.exec_lua("return #requests")
         nvim.exec_lua('require("maya.ai_next_edit").trigger()')
-        assert nvim.exec_lua("return #requests") == before, (
-            "Sweep ran in dual Insert mode"
+        assert nvim.exec_lua("return #requests") == before + 1, (
+            "Sweep did not run in dual Insert mode"
         )
         nvim.exec_lua("""
 _G.inline_callbacks={}
