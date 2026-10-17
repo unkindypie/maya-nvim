@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-10-17
+
+- Add browser HTML preview with `Space hp`/`Space hi` and `:MayaHtmlPreview`,
+  opening the saved file directly without a local server.
+
 ## 2026-10-16
 
 - Add coordinated local inline completion and Sweep next-edit presets, with

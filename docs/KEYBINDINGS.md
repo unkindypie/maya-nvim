@@ -35,11 +35,23 @@ The authoritative mappings are in `lua/maya/keymaps.lua` and `plugins/completion
 | `Space Ti/Tl`                            | Tree-sitter health, retry current language tooling                                      |
 | `Space od`                               | Desktop file manager at current directory                                               |
 | `Space om`                               | Toggle in-editor Markdown preview                                                       |
+| `Space hp/hi`                            | Preview current HTML / index.html in the default browser                                |
 | `Space ao/ac/ax/as`                      | Ollama/Copilot/off/status                                                               |
 | `Ctrl-\`                                 | Floating terminal                                                                       |
 | `Ctrl-h/j/k/l`                           | Window navigation, including terminal mode                                              |
 | `Ctrl-arrows`, `Alt-j/k`                 | Resize windows, move lines/selections                                                   |
 | `gc`, `gcc`, `Space /`                   | Native comments / line / selection                                                      |
+
+### HTML preview
+
+`Space hp` opens the current saved HTML file in the default graphical browser. If
+the current buffer is not a saved HTML file, it falls back to `index.html` in the
+buffer directory or project root. `Space hi` opens `index.html` directly. The
+commands `:MayaHtmlPreview`, `:MayaHtmlPreview index`, and
+`:MayaHtmlPreviewIndex` do the same. The file is opened directly with a `file://`
+URI; no local server is started. Save the buffer first, because the preview shows
+the file on disk. `Space h` remains the clear-search mapping; the longer `hp`/`hi`
+mappings share its prefix, so it can wait for `timeoutlen` before clearing search.
 
 ## Explorer keybindings
 
