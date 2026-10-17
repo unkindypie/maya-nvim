@@ -84,6 +84,22 @@ require("maya.ai").select("off",false)""")
             "queued acceptance survived AI-off"
         )
         assert "E565" not in nvim.command_output("messages")
+        nvim.exec_lua("""local state = require("blink-edit.core.state")
+local render = require("blink-edit.core.render")
+local buf = vim.api.nvim_create_buf(false, true)
+state.set_prediction(buf, { text = "stale preview" })
+vim.api.nvim_buf_delete(buf, { force = true })
+assert(not vim.api.nvim_buf_is_valid(buf))
+local cleared = false
+render.set_visibility_listeners({on_clear = function(b)
+  if b == buf then cleared = true end
+end})
+require("blink-edit").cancel()
+assert(cleared, "wiped buffer cleanup skipped visibility notification")
+assert(not state.has_prediction(buf), "wiped buffer retained prediction")
+render.clear(buf) -- repeated cancellation must also be safe
+render.set_visibility_listeners(nil)
+""")
         print(
             "PASS Insert/Normal Tab acceptance, undo preserves typing, and queued acceptance invalidation"
         )

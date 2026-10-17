@@ -107,7 +107,9 @@ local function show_insertion(bufnr, hunk, window_start, extmark_list)
   table.insert(extmark_list, mark_id)
 
   if vim.g.blink_edit_debug and vim.g.blink_edit_debug >= 2 then
-    log.debug2(string.format("Insertion: %d lines after buffer line %d", #hunk.new_lines, anchor_line))
+    log.debug2(
+      string.format("Insertion: %d lines after buffer line %d", #hunk.new_lines, anchor_line)
+    )
   end
 end
 
@@ -132,7 +134,11 @@ local function show_deletion(bufnr, hunk, window_start, extmark_list)
 
   if vim.g.blink_edit_debug and vim.g.blink_edit_debug >= 2 then
     log.debug2(
-      string.format("Deletion: %d lines starting at buffer line %d", hunk.count_old, window_start + hunk.start_old - 1)
+      string.format(
+        "Deletion: %d lines starting at buffer line %d",
+        hunk.count_old,
+        window_start + hunk.start_old - 1
+      )
     )
   end
 end
@@ -167,7 +173,15 @@ local function show_modification(bufnr, hunk, window_start, extmark_list)
       table.insert(extmark_list, mark_id)
 
       if vim.g.blink_edit_debug and vim.g.blink_edit_debug >= 2 then
-        log.debug2(string.format("Modification: %s at line %d col %d: %q", change.type, lnum + 1, col, change.text))
+        log.debug2(
+          string.format(
+            "Modification: %s at line %d col %d: %q",
+            change.type,
+            lnum + 1,
+            col,
+            change.text
+          )
+        )
       end
     end
   end
@@ -280,8 +294,11 @@ end
 --- Clear all extmarks for a buffer
 ---@param bufnr number
 function M.clear(bufnr)
-  -- Clear all extmarks in our namespace
-  vim.api.nvim_buf_clear_namespace(bufnr, ns, 0, -1)
+  -- Picker previews can be wiped before cancellation reaches their tracked state.
+  -- Still clear bookkeeping and notify listeners when the buffer is already gone.
+  if vim.api.nvim_buf_is_valid(bufnr) then
+    vim.api.nvim_buf_clear_namespace(bufnr, ns, 0, -1)
+  end
   extmarks[bufnr] = nil
 
   -- Clear prediction state
@@ -306,7 +323,12 @@ end
 local function show_model_label(bufnr, prediction)
   local model = prediction.request_identity and prediction.request_identity.model
   local marks = extmarks[bufnr]
-  if not require("blink-edit.config").get().ui.show_model or not model or not marks or #marks == 0 then
+  if
+    not require("blink-edit.config").get().ui.show_model
+    or not model
+    or not marks
+    or #marks == 0
+  then
     return
   end
   local position = vim.api.nvim_buf_get_extmark_by_id(bufnr, ns, marks[1], {})
@@ -518,7 +540,12 @@ function M.show(bufnr, prediction)
     end
   end
 
-  if not first_hunk and prediction.allow_fallback and diff_result.has_changes and #diff_result.hunks > 0 then
+  if
+    not first_hunk
+    and prediction.allow_fallback
+    and diff_result.has_changes
+    and #diff_result.hunks > 0
+  then
     local fallback = diff_result.hunks[1]
     if vim.g.blink_edit_debug then
       log.debug("Render fallback: showing first hunk above cursor")
@@ -622,7 +649,8 @@ local function apply_prediction(bufnr, prediction)
   end
 
   -- Race condition check: verify buffer content still matches snapshot
-  local ok, current = pcall(vim.api.nvim_buf_get_lines, bufnr, window_start - 1, window_start - 1 + #snapshot, false)
+  local ok, current =
+    pcall(vim.api.nvim_buf_get_lines, bufnr, window_start - 1, window_start - 1 + #snapshot, false)
 
   if not ok then
     if vim.g.blink_edit_debug then
