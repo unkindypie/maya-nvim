@@ -53,6 +53,11 @@ URI; no local server is started. Save the buffer first, because the preview show
 the file on disk. `Space h` remains the clear-search mapping; the longer `hp`/`hi`
 mappings share its prefix, so it can wait for `timeoutlen` before clearing search.
 
+Because the page is loaded through `file://`, basic HTML, CSS, and JavaScript can
+be previewed directly, but browser security rules may block ES modules,
+`fetch()`, or other origin-dependent features. This is not a replacement for a
+development server or a framework dev server.
+
 ## Explorer keybindings
 
 Open Explorer with `Space e`. These shortcuts apply in the file list unless noted.
