@@ -21,8 +21,10 @@ function M.resolve(value)
       theme.name = theme.name or "catppuccin-frappe"
       theme.module = theme.module or "catppuccin"
     else
-      theme.name = theme.name
-        or theme.plugin:match("/([^/]+)$"):gsub("%.nvim$", ""):gsub("^nvim%-", "")
+      if not theme.name then
+        theme.name = theme.plugin:match("/([^/]+)$"):gsub("%.nvim$", ""):gsub("^nvim%-", "")
+        theme.inferred_alias = theme.name:match("^(.+)%-nvim$")
+      end
     end
   elseif theme.name and theme.name:match("^catppuccin") then
     theme.plugin = "catppuccin/nvim"
@@ -41,8 +43,11 @@ local function selected()
   return assert(M.resolve(require("maya.user").get("theme")))
 end
 
-local function apply(name)
+local function apply(name, inferred_alias)
   local ok, err = pcall(vim.cmd.colorscheme, name)
+  if not ok and inferred_alias and tostring(err):find("E185:", 1, true) then
+    ok, err = pcall(vim.cmd.colorscheme, inferred_alias)
+  end
   if not ok then
     vim.cmd.colorscheme("catppuccin")
     vim.schedule(function()
@@ -87,7 +92,7 @@ function M.plugins()
         if theme.module then
           require(theme.module).setup(theme.opts or {})
         end
-        apply(theme.name)
+        apply(theme.name, theme.inferred_alias)
       end,
     },
   }

@@ -200,5 +200,9 @@ optional and existing unannotated configs still work. For `theme`, a string with
 `/` is a GitHub `owner/repository` and installs that plugin; a string without `/`
 is an already-installed colorscheme name and installs nothing. For example,
 `"catppuccin/nvim"` selects the repository, while `"catppuccin-frappe"` selects a
-colorscheme. A `MayaTheme` table sets `plugin`, `name`, `module`, and `opts` explicitly. Arbitrary plugin-specific
+colorscheme. Repository names ending in `-nvim` also try the colorscheme name without that
+suffix when the literal name is unavailable: `theme = "savq/melange-nvim"` loads
+`melange`. For repositories with a different colorscheme name, use a `MayaTheme`
+table such as `{ plugin = "savq/melange-nvim", name = "melange" }`. The table
+sets `plugin`, `name`, `module`, and `opts` explicitly. Arbitrary plugin-specific
 `opts` remain controlled by each plugin's types.

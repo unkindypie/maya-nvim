@@ -67,6 +67,33 @@ assert(require("maya.user").get("ai_next_edit_debounce_ms")==650)
             'assert(vim.g.colors_name:match("^catppuccin"))',
         )
 
+    def test_hyphenated_theme_repository(self):
+        self.assertTrue(
+            self.launch(
+                'return {theme="savq/melange-nvim"}',
+                'assert(vim.g.colors_name=="melange")',
+            )
+        )
+        self.assertTrue(
+            self.launch(
+                'return {theme={plugin="savq/melange-nvim",name="melange"}}',
+                'assert(vim.g.colors_name=="melange")',
+            )
+        )
+        self.assertTrue(
+            self.launch(
+                """return {
+ theme="test/compat-nvim",
+ plugins={{dir=vim.env.XDG_CONFIG_HOME.."/mvim/local-theme",name="compat-nvim"}},
+}""",
+                'assert(vim.g.colors_name=="compat-nvim")',
+                {
+                    "local-theme/colors/compat-nvim.lua": 'vim.g.colors_name="compat-nvim"',
+                    "local-theme/colors/compat.lua": 'vim.g.colors_name="compat"',
+                },
+            )
+        )
+
     def test_sound_volume(self):
         self.launch(
             "return {pokemon_sound_on_start_volume_percentage=25}",
