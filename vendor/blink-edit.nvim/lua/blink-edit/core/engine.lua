@@ -353,7 +353,13 @@ local function try_realign_prediction(snapshot_lines, predicted_lines)
         result = new_result
         changed = true
         if vim.g.blink_edit_debug and vim.g.blink_edit_debug >= 2 then
-          log.debug2(string.format("Realign: prepended %d lines (anchor at snapshot line %d)", #prefix, match_idx))
+          log.debug2(
+            string.format(
+              "Realign: prepended %d lines (anchor at snapshot line %d)",
+              #prefix,
+              match_idx
+            )
+          )
         end
       end
     end
@@ -566,7 +572,10 @@ local function build_accept_queue(prediction)
         local old_line = (hunk.old_lines and hunk.old_lines[i]) or ""
         local new_line = (hunk.new_lines and hunk.new_lines[i]) or ""
         if old_line ~= new_line then
-          table.insert(queue, { kind = "replacement", anchor_line = hunk.start_old + i - 1, text = new_line })
+          table.insert(
+            queue,
+            { kind = "replacement", anchor_line = hunk.start_old + i - 1, text = new_line }
+          )
         end
       end
     elseif hunk.type == "replacement" then
@@ -575,7 +584,10 @@ local function build_accept_queue(prediction)
         local old_line = (hunk.old_lines and hunk.old_lines[i]) or ""
         local new_line = (hunk.new_lines and hunk.new_lines[i]) or ""
         if old_line ~= new_line then
-          table.insert(queue, { kind = "replacement", anchor_line = hunk.start_old + i - 1, text = new_line })
+          table.insert(
+            queue,
+            { kind = "replacement", anchor_line = hunk.start_old + i - 1, text = new_line }
+          )
         end
       end
 
@@ -825,6 +837,11 @@ local function on_prefetch_response(bufnr, err, result, metadata, snapshot, prov
     predicted_lines = realigned
   end
 
+  if cfg.prediction_filter and not cfg.prediction_filter(snapshot, predicted_lines, metadata) then
+    state.clear_prefetch(bufnr)
+    return
+  end
+
   local cursor_after = nil
   if cfg.mode == "completion" then
     local merged, after, merge_err = merge_completion(snapshot, predicted_lines)
@@ -1057,6 +1074,11 @@ function on_response(bufnr, err, result, metadata, snapshot, provider)
     cursor_after = after
   end
 
+  if cfg.prediction_filter and not cfg.prediction_filter(snapshot, predicted_lines, metadata) then
+    state.clear_invalid_response(bufnr)
+    return
+  end
+
   local allow_fallback = false
   if cfg.mode ~= "completion" then
     local invalid, reason = is_invalid_prediction(snapshot.lines, predicted_lines)
@@ -1130,7 +1152,11 @@ function on_response(bufnr, err, result, metadata, snapshot, provider)
 
   if vim.g.blink_edit_debug then
     log.debug(
-      string.format("Showing prediction: %d snapshot lines -> %d predicted lines", #snapshot.lines, #predicted_lines)
+      string.format(
+        "Showing prediction: %d snapshot lines -> %d predicted lines",
+        #snapshot.lines,
+        #predicted_lines
+      )
     )
   end
 end
@@ -1268,7 +1294,13 @@ function M._on_debounce_fired(bufnr, opts)
 
   if vim.g.blink_edit_debug then
     local line_count = snapshot and snapshot.lines and #snapshot.lines or 0
-    log.debug(string.format("Debounce fired (force=%s, snapshot_lines=%d)", tostring(force_request), line_count))
+    log.debug(
+      string.format(
+        "Debounce fired (force=%s, snapshot_lines=%d)",
+        tostring(force_request),
+        line_count
+      )
+    )
   end
 
   -- 3. Push to stack (replaces any existing)
@@ -1433,7 +1465,8 @@ function M.accept(bufnr)
       cursor_line = math.max(1, math.min(cursor_line, line_count))
       local cursor_col = 0
       if last_kind == "deletion" then
-        local ok, line_data = pcall(vim.api.nvim_buf_get_lines, bufnr, cursor_line - 1, cursor_line, false)
+        local ok, line_data =
+          pcall(vim.api.nvim_buf_get_lines, bufnr, cursor_line - 1, cursor_line, false)
         local line_content = (ok and line_data[1]) or ""
         local prev_col = prediction.cursor and prediction.cursor[2] or 0
         cursor_col = math.min(prev_col, #line_content)
@@ -1452,10 +1485,16 @@ function M.accept(bufnr)
         local original_text = table.concat(hunk.old_lines or {}, "\n")
         local updated_text = table.concat(hunk.new_lines or {}, "\n")
 
-        local start_old = hunk.count_old > 0 and (prediction.window_start + hunk.start_old - 1) or nil
-        local end_old = hunk.count_old > 0 and (prediction.window_start + hunk.start_old + hunk.count_old - 2) or nil
-        local start_new = hunk.count_new > 0 and (prediction.window_start + hunk.start_new - 1) or nil
-        local end_new = hunk.count_new > 0 and (prediction.window_start + hunk.start_new + hunk.count_new - 2) or nil
+        local start_old = hunk.count_old > 0 and (prediction.window_start + hunk.start_old - 1)
+          or nil
+        local end_old = hunk.count_old > 0
+            and (prediction.window_start + hunk.start_old + hunk.count_old - 2)
+          or nil
+        local start_new = hunk.count_new > 0 and (prediction.window_start + hunk.start_new - 1)
+          or nil
+        local end_new = hunk.count_new > 0
+            and (prediction.window_start + hunk.start_new + hunk.count_new - 2)
+          or nil
 
         local start_line = start_new or start_old
         local end_line = end_new or end_old
@@ -1573,9 +1612,11 @@ function M.accept(bufnr)
         local updated_text = table.concat(hunk.new_lines or {}, "\n")
 
         local start_old = hunk.count_old > 0 and (window_start + hunk.start_old - 1) or nil
-        local end_old = hunk.count_old > 0 and (window_start + hunk.start_old + hunk.count_old - 2) or nil
+        local end_old = hunk.count_old > 0 and (window_start + hunk.start_old + hunk.count_old - 2)
+          or nil
         local start_new = hunk.count_new > 0 and (window_start + hunk.start_new - 1) or nil
-        local end_new = hunk.count_new > 0 and (window_start + hunk.start_new + hunk.count_new - 2) or nil
+        local end_new = hunk.count_new > 0 and (window_start + hunk.start_new + hunk.count_new - 2)
+          or nil
 
         local start_line = start_new or start_old
         local end_line = end_new or end_old
@@ -1640,7 +1681,8 @@ function M.accept(bufnr)
   if cfg.prefetch and cfg.prefetch.enabled and cfg.prefetch.strategy == "n-1" then
     if #remaining_hunks == 1 then
       local target_hunk = remaining_hunks[1]
-      local end_line, end_col = compute_hunk_end_cursor(target_hunk, window_start, prediction.predicted_lines)
+      local end_line, end_col =
+        compute_hunk_end_cursor(target_hunk, window_start, prediction.predicted_lines)
       local prefetch_snapshot = {
         lines = prediction.predicted_lines,
         window_start = prediction.window_start,
@@ -1764,7 +1806,8 @@ function M.accept_line(bufnr)
   cursor_line = math.max(1, math.min(cursor_line, line_count))
   local cursor_col = 0
   if entry.kind == "deletion" then
-    local ok, line_data = pcall(vim.api.nvim_buf_get_lines, bufnr, cursor_line - 1, cursor_line, false)
+    local ok, line_data =
+      pcall(vim.api.nvim_buf_get_lines, bufnr, cursor_line - 1, cursor_line, false)
     local line_content = (ok and line_data[1]) or ""
     local prev_col = prediction.cursor and prediction.cursor[2] or 0
     cursor_col = math.min(prev_col, #line_content)
@@ -1848,7 +1891,9 @@ function M.on_cursor_moved(bufnr)
 
   -- Check if cursor is still within the prediction window
   local start_line = prediction.window_start
-  local end_line = prediction.window_start + math.max(#prediction.snapshot_lines, #prediction.predicted_lines) - 1
+  local end_line = prediction.window_start
+    + math.max(#prediction.snapshot_lines, #prediction.predicted_lines)
+    - 1
 
   -- Allow some tolerance (2 lines above/below)
   if cursor_line < start_line - 2 or cursor_line > end_line + 2 then

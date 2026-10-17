@@ -15,6 +15,11 @@ attribution. Runtime Lua, plugin entry points, formatting guidance, and focused
 fork regression tests are included. Git history, images, caches, and model files
 are excluded.
 
+blink-edit exposes an optional `prediction_filter(snapshot, lines, metadata)`
+callback, applied after response realignment to normal and prefetched results.
+Returning false discards the result without retrying. Standalone defaults accept
+results as before; Maya supplies its conservative local edit filter.
+
 The shared semantic collector lives in `lua/maya/ai_context.lua`. It checks LSP
 capabilities and uses standard hover, signature-help, definition, and type-definition
 methods with each client's position encoding. Language syntax adapters locate

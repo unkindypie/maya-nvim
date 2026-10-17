@@ -79,6 +79,7 @@
 ---@field on_dismiss? fun(bufnr: integer) Called after explicit rejection or clear.
 ---@field external_scheduler boolean Disable automatic requests, retaining edit history.
 ---@field source_context? fun(bufnr: integer): string Cached Sweep source context; must not wait for I/O.
+---@field prediction_filter? fun(snapshot: table, lines: string[], metadata: table): boolean Return false to abstain without retrying; defaults to accepting.
 ---@field debounce_ms number
 ---@field cancel_in_flight boolean
 ---@field context BlinkEditContextConfig
@@ -370,12 +371,18 @@ local function validate_config(cfg)
 
   if not VALID_BACKENDS[cfg.llm.backend] then
     error(
-      string.format("[blink-edit] Invalid llm.backend '%s'. Must be one of: openai, ollama", tostring(cfg.llm.backend))
+      string.format(
+        "[blink-edit] Invalid llm.backend '%s'. Must be one of: openai, ollama",
+        tostring(cfg.llm.backend)
+      )
     )
   end
 
   local provider = cfg.llm.provider
-  if not provider or (not VALID_PROVIDERS[provider] and not (cfg.providers and cfg.providers[provider])) then
+  if
+    not provider
+    or (not VALID_PROVIDERS[provider] and not (cfg.providers and cfg.providers[provider]))
+  then
     error(
       string.format(
         "[blink-edit] Invalid llm.provider '%s'. Must be one of: sweep, generic, zeta, or a custom provider",

@@ -111,6 +111,16 @@ Explicit dismissal suppresses automatic suggestions until the next edit.
 Single mode uses only Sweep; completion-only mode retains the saved Minuet model
 and endpoint. Special, read-only, unmodifiable, and large buffers are excluded.
 
+Sweep may return no preview. Local suggestions are filtered before display:
+edits must stay within three lines of the cursor, affect at most three existing
+nonblank lines, add at most eight lines and grow by at most 1,200 bytes. Hunks
+that remove more nonblank lines than they add are rejected. This deliberately
+suppresses deletion-only edits, truncated response windows and broad rewrites,
+including some legitimate refactors. Rejection does not retry automatically.
+These are conservative bounds, not model confidence or semantic correctness
+checks; small incorrect suggestions can still occur. Type-context collection
+and prompt assembly are unchanged.
+
 Personal `MayaConfig` settings `ai_completion_debounce_ms` (default 200) and
 `ai_next_edit_debounce_ms` (default 650) accept milliseconds from 0 to 60000.
 Existing configurations need no migration; saved model and provider preferences

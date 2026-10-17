@@ -25,6 +25,7 @@ function M.setup(ai)
     backends = { ollama = { num_ctx = 4096 } },
     mode = "next-edit",
     external_scheduler = true,
+    prediction_filter = require("maya.ai_edit_filter").accept,
     on_dismiss = function()
       require("maya.ai_coordinator").dismiss()
     end,

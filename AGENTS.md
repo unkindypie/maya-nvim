@@ -78,6 +78,7 @@ MAYA_NVIM_NO_INSTALL=1 MAYA_NVIM_NO_AI=1 bin/mvim --headless '+lua assert(vim.g.
 .local/test-env/bin/python tests/ai_status.py
 .local/test-env/bin/python tests/ai_local.py
 .local/test-env/bin/python tests/ai_acceptance_keys.py
+.local/test-env/bin/python tests/ai_edit_filter.py
 .local/test-env/bin/python tests/ai_context.py
 .local/test-env/bin/python tests/ai_annotations.py
 .local/test-env/bin/python tests/ai_automatic.py
