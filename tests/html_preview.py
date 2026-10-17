@@ -139,7 +139,7 @@ end
     def test_current_html_with_spaces_and_shell_metacharacters(self):
         project = self.root / "project"
         project.mkdir()
-        name = "page with spaces & 'quotes' $(touch SHOULD_NOT_EXIST).html"
+        name = "página with spaces & 'quotes' $(touch SHOULD_NOT_EXIST).html"
         file = project / name
         file.write_text("<title>Current HTML</title>\n")
         self.open_file(file, project)
