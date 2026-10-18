@@ -65,6 +65,7 @@ return {
       input = { enabled = true },
       notifier = { enabled = true },
       explorer = { enabled = true },
+      lazygit = { win = { width = 0, height = 0, border = "none" } },
       quickfile = { enabled = true },
       statuscolumn = { enabled = true },
       picker = {
