@@ -15,10 +15,12 @@ The authoritative mappings are in `lua/maya/keymaps.lua` and `plugins/completion
 | `Space bW`                               | Save without formatting                                                                 |
 | `Space bd`                               | Native diff of unsaved text against disk snapshot                                       |
 | `Space bs/br`                            | Save/restore this folder's session                                                      |
-| `Space gg/gj/gk`                         | Lazygit, next/previous hunk                                                             |
+| `Space gs/gg`                            | Lazygit (`gg` remains an alias)                                                         |
+| `Space gj/gk`                            | Next/previous hunk                                                                      |
 | `Space gl/gL/gB`                         | Line blame, full blame, inline blame toggle                                             |
-| `Space gp/gr/gR/gs/gu/gd`                | Preview/reset hunk, reset buffer, stage/undo stage, diff                                |
+| `Space gp/gr/gR/gS/gu/gd`                | Preview/reset hunk, reset buffer, stage/undo stage, diff                                |
 | `Space go/gb/gc/gC`                      | Git status, branches, commits, file commits                                             |
+| `Space gS/gs` (Visual mode)              | Stage selected lines (`gs` retains its Visual-mode behavior)                            |
 | `Space la/lf/lr`                         | Code action, format, rename                                                             |
 | `Space ld/lw/lj/lk`                      | Buffer/workspace diagnostics, next/previous diagnostic                                  |
 | `Space li/lI`                            | LSP info popup, Mason                                                                   |

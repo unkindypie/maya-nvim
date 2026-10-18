@@ -99,7 +99,7 @@ local git = {
   p = { "preview_hunk" },
   r = { "reset_hunk" },
   R = { "reset_buffer" },
-  s = { "stage_hunk" },
+  S = { "stage_hunk" },
   u = { "undo_stage_hunk" },
   d = { "diffthis", "HEAD" },
   B = { "toggle_current_line_blame" },
@@ -112,13 +112,15 @@ end
 leader("gL", function()
   require("gitsigns").blame_line({ full = true })
 end, "Full blame")
-leader("gg", function()
-  Snacks.lazygit()
-end, "Lazygit")
+for _, key in ipairs({ "gs", "gg" }) do
+  leader(key, function()
+    Snacks.lazygit()
+  end, "Lazygit")
+end
 for key, name in pairs({ o = "git_status", b = "git_branches", c = "git_log", C = "git_log_file" }) do
   leader("g" .. key, pick(name), (name:gsub("_", " ")))
 end
-for _, action in ipairs({ { "r", "reset_hunk" }, { "s", "stage_hunk" } }) do
+for _, action in ipairs({ { "r", "reset_hunk" }, { "s", "stage_hunk" }, { "S", "stage_hunk" } }) do
   leader("g" .. action[1], function()
     require("gitsigns")[action[2]]({ vim.fn.line("."), vim.fn.line("v") })
   end, action[2], "x")
