@@ -2,6 +2,7 @@
 local M = { config = {} }
 local defaults = {
   theme = "catppuccin/nvim",
+  transparent_background = false,
   pokemon_sound_on_start = true,
   pokemon_sound_on_start_volume_percentage = 50,
   reopen_tabs = true,
@@ -47,6 +48,7 @@ function M.load()
   end
   for key, kind in pairs({
     options = "table",
+    transparent_background = "boolean",
     plugins = "table",
     setup = "function",
     pokemon_sound_on_start = "boolean",
@@ -132,5 +134,6 @@ function M.apply()
       report("setup", err)
     end
   end
+  require("maya.theme").apply_transparency()
 end
 return M

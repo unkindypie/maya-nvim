@@ -100,6 +100,11 @@ return {
 
 `theme` is optional. Omitting it keeps the current transparent Catppuccin Frappé.
 New installations include `theme = "catppuccin/nvim"`; existing configs are preserved.
+Add `transparent_background = true,` to your personal configuration to show the
+terminal background with any theme, including editor gutters and floating windows.
+It reapplies after colorscheme changes and preserves foreground colors and styles.
+Omitting it or setting it to `false` keeps the theme's own behavior. Selected-line,
+tab and statusline backgrounds remain theme-controlled for readability.
 Catppuccin is the only bundled theme. To use another theme, enter its actual
 GitHub repository (`owner/repository`), for example:
 

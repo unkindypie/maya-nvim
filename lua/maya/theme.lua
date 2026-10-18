@@ -1,4 +1,23 @@
 local M = {}
+function M.apply_transparency()
+  if not require("maya.user").get("transparent_background") then
+    return
+  end
+  for _, name in ipairs({
+    "Normal",
+    "NormalNC",
+    "NormalFloat",
+    "FloatBorder",
+    "SignColumn",
+    "FoldColumn",
+    "EndOfBuffer",
+  }) do
+    local hl = vim.api.nvim_get_hl(0, { name = name, link = false })
+    hl.bg = nil
+    hl.ctermbg = nil
+    vim.api.nvim_set_hl(0, name, hl)
+  end
+end
 function M.resolve(value)
   local theme = type(value) == "string" and { name = value } or vim.deepcopy(value)
   if type(theme) ~= "table" then
@@ -61,6 +80,7 @@ function M.setup_default(opts)
   local theme = selected()
   apply((not theme.plugin or theme.plugin == "catppuccin/nvim") and theme.name or "catppuccin")
   local function highlights()
+    M.apply_transparency()
     -- Keep Markdown backgrounds transparent with every colorscheme.
     vim.api.nvim_set_hl(0, "MayaMarkdownBackground", {})
     if not (vim.g.colors_name or ""):match("^catppuccin") then
