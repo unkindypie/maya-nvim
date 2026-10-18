@@ -78,25 +78,26 @@ opens it. `Space Mu` pulls the latest maya-nvim changes and syncs plugins.
 ---@type MayaConfig
 return {
   theme = "catppuccin/nvim", -- Optional; defaults to our transparent Catppuccin Frappé.
+  transparent_background = false, -- Keep the theme's own background behavior.
   pokemon_sound_on_start = true, -- Play a Pokémon cry.
   pokemon_sound_on_start_volume_percentage = 50, -- 0–100; 0 mutes playback.
   reopen_tabs = true, -- Restore this folder's files, tabs, and splits.
+  ai_completion_debounce_ms = 200, -- Insert-mode completion idle delay.
+  ai_next_edit_debounce_ms = 650, -- Sweep next-edit idle delay.
 
-  options = {
-    -- relativenumber = true,
-    -- shiftwidth = 4,
-  },
+  options = {}, -- No personal editor-option overrides.
 
-  plugins = {
-    -- Add plugins or override their settings:
-    -- { "folke/which-key.nvim", opts = { delay = 200 } },
-  },
+  plugins = {}, -- No personal plugin additions or overrides.
 
   setup = function()
-    -- Add custom keybindings or other setup here.
+    -- No custom setup by default; add keybindings or other setup here.
   end,
 }
 ```
+
+The example includes every `MayaConfig` setting at its default behavior. `options`,
+`plugins`, and `setup` are omitted by default; the empty values above have the same
+effect. All settings are optional.
 
 `theme` is optional. Omitting it keeps the current transparent Catppuccin Frappé.
 New installations include `theme = "catppuccin/nvim"`; existing configs are preserved.
