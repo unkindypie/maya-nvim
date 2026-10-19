@@ -241,6 +241,10 @@ return {
         lualine_c = { { "filename", path = 1 } },
         lualine_x = {
           function()
+            local updater = package.loaded["maya.update"]
+            return updater and updater.status() or ""
+          end,
+          function()
             return require("maya.statusline").tools()
           end,
           function()

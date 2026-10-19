@@ -9,6 +9,25 @@ current revision, or `--dry-run` to inspect the plan without fetching. Dirty tre
 other branches, unrelated origins, divergence, and network failures stop the
 update without discarding work; resolve the reported issue or opt out of updating.
 
+Inside mvim, `Space M u` / `:MayaUpdate` performs the fast-forward pull and then
+installs missing plugins and restores the configuration's committed versions.
+Both plugin phases run in fresh background processes, so newly pulled plugin
+specifications are used without hot-reloading the running editor. Existing
+personal-only plugin pins are retained; managed pins come from the pulled
+lockfile. Temporary runtime lockfiles keep the repository clean. A personal
+lockfile is saved only after the final plugin phase succeeds. The two phases
+load independent lock snapshots so installation cannot replace the desired
+managed versions with currently installed versions before restoration.
+
+Progress stays visible in the statusline and notification while running. The
+completion message reports the config revision and plugin result, including
+when the config was already current. Restart after success. `Space M U` /
+`:MayaUpdateStatus` shows the latest result in this session; `:MayaUpdateLog`
+opens the persistent log at `stdpath('state')/maya-update.log`. A failed plugin
+phase does not undo an already completed pull: retry the update after resolving
+the logged cause. Dirty checkouts, including lockfile edits from a previous
+manual `:Lazy update` or `:Lazy sync`, still require deliberate resolution.
+
 ```sh
 python3 -m unittest discover -s tests -p 'test_*.py' -v
 bash -n bootstrap.sh install.sh bin/mvim
@@ -29,6 +48,7 @@ uv pip install --python .local/test-env/bin/python pynvim
 .local/test-env/bin/python tests/markdown_preview.py
 .local/test-env/bin/python tests/swap_recovery.py
 .local/test-env/bin/python tests/update.py
+.local/test-env/bin/python tests/update_plugins.py
 .local/test-env/bin/python tests/config_completion.py
 .local/test-env/bin/python tests/completion_keys.py
 .local/test-env/bin/python tests/ai_status.py

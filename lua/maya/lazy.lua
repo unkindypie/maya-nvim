@@ -22,6 +22,9 @@ require("lazy").setup(specs, {
   performance = { rtp = { paths = vim.fn.isdirectory(user.path) == 1 and { user.path } or {} } },
   change_detection = { notify = false },
   checker = { enabled = false },
-  install = { colorscheme = { "catppuccin", "habamax" } },
+  install = {
+    missing = vim.env.MAYA_NVIM_UPDATE_LOCKFILE == nil,
+    colorscheme = { "catppuccin", "habamax" },
+  },
   ui = { border = "rounded" },
 })

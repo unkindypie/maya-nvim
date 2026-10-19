@@ -33,7 +33,7 @@ The authoritative mappings are in `lua/maya/keymaps.lua` and `plugins/completion
 | `Space sf/sh/sH/sM/sr/sR/sk/sC/sl/sp/sP` | Files/help/highlights/man/recent/registers/keymaps/commands/resume/colors/projects      |
 | `Space Mc`                               | Edit personal `~/.config/mvim/init.lua`                                                 |
 | `Space Md/Mf/Mg/Mk/Mi/MI`                | Docs, find/grep config, keymaps, health, changelog                                      |
-| `Space Mr/Mu`                            | Restart instructions, update maya-nvim (pull + Lazy sync)                               |
+| `Space Mr/Mu/MU`                         | Restart instructions, update config/plugins, last update result                         |
 | `Space Mld/Mll/Mln`                      | Mason/MSP/Neovim logs                                                                   |
 | `Space Ti/Tl`                            | Tree-sitter health, retry current language tooling                                      |
 | `Space od`                               | Desktop file manager at current directory                                               |
@@ -201,11 +201,21 @@ Explorer `?` opens a compact help panel with grouped shortcuts and common file
 actions first. Press `?`, `q`, or Escape to close the panel.
 
 `Space Mu` updates a clean `master` checkout from `unkindypie/maya-nvim` using a
-fast-forward pull, then runs `:Lazy sync`. Local edits, a different branch, or a
+fast-forward pull, then installs missing plugins and restores shipped plugin
+versions in fresh background mvim processes using the pulled configuration.
+The statusline and a persistent progress notification show the current phase;
+the final result distinguishes an updated config, an already-current config,
+and a failure. `Space MU` / `:MayaUpdateStatus` reopens the result;
+`:MayaUpdateLog` opens the saved details. `:MayaUpdate` runs the same update as
+the hotkey. Repeated presses while running show progress without starting again.
+Local edits, a different branch, or a
 diverged history stop the update without resetting or stashing your work. Commit
 or stash changes yourself before retrying. Restart mvim after syncing to load new
-configuration. Lazy sync may change the active plugin lockfile; review those
-changes before a later update. `Space Mc` is the sole edit-config shortcut and
+configuration. The updater keeps the repository lockfile clean, refreshes managed
+pins in personal lockfiles and preserves personal-only plugin entries. Git or
+plugin failures stop the update and include a log pointer; a successful pull is
+not reported as a completed update when plugin synchronization fails.
+`Space Mc` is the sole edit-config shortcut and
 opens your personal config. The maya-nvim group now uses `Space M`.
 
 In insert-mode completion, Down selects the first suggestion and subsequent

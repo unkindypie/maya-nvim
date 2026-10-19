@@ -88,7 +88,7 @@ function M.plugins()
   return vim.list_extend(vim.deepcopy(M.config.plugins or {}), require("maya.theme").plugins())
 end
 
-function M.lockfile()
+local function selected_lockfile()
   local base = vim.fn.stdpath("config") .. "/lazy-lock.json"
   if #M.plugins() == 0 then
     return base
@@ -109,6 +109,14 @@ function M.lockfile()
     end
   end
   return local_lock
+end
+
+function M.lockfile()
+  local target = selected_lockfile()
+  if vim.env.MAYA_NVIM_UPDATE_LOCKFILE then
+    return require("maya.update_plugins").lockfile(target)
+  end
+  return target
 end
 
 function M.apply()

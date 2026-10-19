@@ -72,7 +72,9 @@ Rerun the installer to update the same checkout and repeat setup; your personal 
 Use `~/.config/mvim/init.lua` to extend the managed configuration without editing
 this repository (`$XDG_CONFIG_HOME/mvim` when XDG_CONFIG_HOME is set). Installation
 creates a commented example if the file does not already exist. `Space Mc`
-opens it. `Space Mu` pulls the latest maya-nvim changes and syncs plugins.
+opens it. `Space Mu` pulls the latest maya-nvim changes and synchronizes plugins
+from the new configuration, with visible progress and a completion result.
+`Space MU` shows the last result; `:MayaUpdateLog` opens detailed update logs.
 
 ```lua
 ---@type MayaConfig
