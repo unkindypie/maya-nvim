@@ -257,7 +257,12 @@ return {
     event = { "BufReadPost", "BufNewFile" },
     opts = {
       current_line_blame = true,
-      current_line_blame_opts = { delay = 0, virt_text_pos = "right_align", virt_text_priority = 1 },
+      -- Native right alignment avoids Gitsigns measuring a buffer hidden by a tab switch.
+      current_line_blame_opts = {
+        delay = 0,
+        virt_text_pos = "eol_right_align",
+        virt_text_priority = 1,
+      },
       current_line_blame_formatter = function(_, info)
         local text = string.format(
           "%s, %s — %s",

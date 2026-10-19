@@ -20,6 +20,7 @@ The authoritative mappings are in `lua/maya/keymaps.lua` and `plugins/completion
 | `Space gl/gL/gB`                         | Line blame, full blame, inline blame toggle                                             |
 | `Space gp/gr/gR/gS/gu/gd`                | Preview/reset hunk, reset buffer, stage/undo stage, diff                                |
 | `Space go/gb/gc/gC`                      | Git status, branches, commits, file commits                                             |
+| `Space gv/gV/gq`                         | Changed-file diff tree, compare branch/revision, close diff view                        |
 | `Space gS/gs` (Visual mode)              | Stage selected lines (`gs` retains its Visual-mode behavior)                            |
 | `Space la/lf/lr`                         | Code action, format, rename                                                             |
 | `Space ld/lw/lj/lk`                      | Buffer/workspace diagnostics, next/previous diagnostic                                  |
@@ -137,6 +138,8 @@ set `["?"] = "toggle_help_list"` in the Explorer `list.keys` table above.
 
 Current-line Git blame aligns to the right edge of the editor window. Long
 author/date/commit text is shortened to fit beside the file content.
+Neovim's native `eol_right_align` placement avoids stale-window sizing errors
+when switching into a diff tab.
 
 Markdown files render headings, tables, checkboxes, and code blocks inside the
 buffer. Use `Space om` or `:RenderMarkdown toggle` to switch rendering off/on.
@@ -215,6 +218,35 @@ close with `q`, returning to the file window.
 
 `Space as` shows AI provider/model/server and controls for 10 seconds. `Space ao`
 selects Ollama or reloads its saved local model without noisy disable/enable notices.
+
+### Git diff tree and branch comparisons
+
+`Space gv` opens Diffview with a directory tree of changed files on the left and
+side-by-side diffs on the right. `Space gV` prompts for a Git revision or range;
+cancel or empty input leaves the editor unchanged. `Space gq` closes the view.
+Lazygit remains on `Space gs` / `Space gg`, and `Space gd` keeps its existing
+single-file Gitsigns diff behavior.
+
+| Command                            | Comparison                                                                    |
+| ---------------------------------- | ----------------------------------------------------------------------------- |
+| `:DiffviewOpen`                    | Unstaged changes against the index, with staged changes in a separate section |
+| `:DiffviewOpen main`               | Working copy against the local `main` branch                                  |
+| `:DiffviewOpen origin/main`        | Working copy against the fetched remote-tracking branch                       |
+| `:DiffviewOpen origin/main...HEAD` | Committed branch changes since the common ancestor                            |
+| `:DiffviewOpen main..feature`      | Two committed branch tips                                                     |
+
+Run `git fetch origin` when you need current remote refs; opening a comparison
+does not fetch automatically. Commit-range comparisons exclude uncommitted edits.
+Use `Tab` / `Shift-Tab` to cycle changed files, `Space e` to focus the file tree,
+and `Enter` to select a file. `:DiffviewToggleFiles` toggles the tree.
+Use `:DiffviewFileHistory %` for the current file's commit history.
+
+The pinned upstream Diffview version is verified on Linux with Neovim 0.12.5 for
+file-tree review, branch/range comparisons and preservation of unsaved edits.
+Upstream's last commit is from June 2024; an open
+[Windows/Neovim 0.12 memory-growth report](https://github.com/sindrets/diffview.nvim/issues/613)
+remains unresolved. Short integration checks do not establish long-session memory
+behavior or compatibility with every future Neovim release.
 
 ### Local next-edit
 

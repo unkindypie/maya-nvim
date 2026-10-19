@@ -117,6 +117,15 @@ for _, key in ipairs({ "gs", "gg" }) do
     Snacks.lazygit()
   end, "Lazygit")
 end
+leader("gv", cmd("DiffviewOpen"), "Changed-file diff tree")
+leader("gV", function()
+  vim.ui.input({ prompt = "Compare revision (e.g. origin/main...HEAD): " }, function(revision)
+    if revision and vim.trim(revision) ~= "" then
+      vim.cmd.DiffviewOpen({ args = { vim.trim(revision) } })
+    end
+  end)
+end, "Compare branch or revision")
+leader("gq", cmd("DiffviewClose"), "Close diff view")
 for key, name in pairs({ o = "git_status", b = "git_branches", c = "git_log", C = "git_log_file" }) do
   leader("g" .. key, pick(name), (name:gsub("_", " ")))
 end

@@ -125,7 +125,7 @@ end""")
    for _,mark in ipairs(vim.api.nvim_buf_get_extmarks(0,id,0,-1,{details=true})) do
     local text=vim.inspect(mark[4].virt_text)
     if text:match("Maya") and text:match("2026") then
-     assert(mark[4].virt_text_pos == "right_align", "blame should align with the window's right edge")
+     assert(mark[4].virt_text_pos == "eol_right_align", "blame should align with the window's right edge")
      return text
     end
    end

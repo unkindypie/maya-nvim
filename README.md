@@ -214,6 +214,10 @@ Enter accepts a selected completion; it does not automatically select one.
 Details: [AI setup](docs/AI.md), [keybindings and migration](docs/KEYBINDINGS.md),
 [maintenance/troubleshooting](docs/MAINTENANCE.md), [validation](docs/VALIDATION.md).
 
+Review Git changes in a directory tree with `Space gv` (Diffview). Use `Space gV`
+to compare a branch or revision such as `origin/main...HEAD`, and `Space gq` to
+close the view. Fetch remote refs first when needed. Lazygit remains on `Space gs`.
+
 ## 🌠 Configuration map
 
 | Location                 | Responsibility                                      |

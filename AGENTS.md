@@ -68,6 +68,7 @@ MAYA_NVIM_NO_INSTALL=1 MAYA_NVIM_NO_AI=1 bin/mvim --headless '+lua assert(vim.g.
 .local/test-env/bin/python tests/advanced.py
 .local/test-env/bin/python tests/languages.py
 .local/test-env/bin/python tests/ui_helpers.py
+.local/test-env/bin/python tests/diffview.py
 .local/test-env/bin/python tests/theme_transparency.py
 .local/test-env/bin/python tests/explorer.py
 .local/test-env/bin/python tests/pokemon_audio.py
