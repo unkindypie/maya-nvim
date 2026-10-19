@@ -7,13 +7,26 @@ local function settings()
   return ok and type(value) == "table" and value
     or { provider = "off", model = "qwen2.5-coder:3b-base", endpoint = "http://127.0.0.1:11434" }
 end
-function M.eligible()
+function M.buffer_reason()
   local buf = vim.api.nvim_get_current_buf()
-  return vim.bo[buf].buftype == ""
-    and vim.bo[buf].modifiable
-    and not vim.bo[buf].readonly
-    and vim.api.nvim_buf_line_count(buf) < 10000
-    and vim.api.nvim_buf_get_offset(buf, vim.api.nvim_buf_line_count(buf)) < 262144
+  if vim.bo[buf].buftype ~= "" then
+    return "special buffer: " .. vim.bo[buf].buftype
+  end
+  if not vim.bo[buf].modifiable then
+    return "buffer is not modifiable"
+  end
+  if vim.bo[buf].readonly then
+    return "read-only buffer"
+  end
+  if vim.api.nvim_buf_line_count(buf) >= 10000 then
+    return "buffer has 10,000 or more lines"
+  end
+  if vim.api.nvim_buf_get_offset(buf, vim.api.nvim_buf_line_count(buf)) >= 262144 then
+    return "buffer is 256 KiB or larger"
+  end
+end
+function M.eligible()
+  return M.buffer_reason() == nil
 end
 function M.cancel()
   require("maya.ai_coordinator").cancel()
@@ -53,13 +66,19 @@ function M.notify_status()
       "Inline: " .. (M.local_mode == "single" and "Sweep" or (M.model or "qwen2.5-coder:3b-base")),
       "Next-edit: " .. (M.local_mode ~= "completion-only" and M.next_edit_model or "off"),
       "Server: " .. (M.endpoint or "http://127.0.0.1:11434"),
-      "Automatic suggestions in this buffer: " .. (M.eligible() and "on" or "off"),
-      M.local_mode == "dual" and "Insert: Minuet · Insert / Normal idle: Sweep"
-        or (M.local_mode == "single" and "Insert / Normal idle: Sweep" or "Insert: Minuet"),
-      "Tab: accept · Ctrl-]: dismiss · Space an: request next-edit",
-      "Ctrl-L / Alt-[: cycle inline suggestions only",
-      "Space am: choose local mode · Space ao: reload saved local model",
-      "Space ax: turn AI off",
+      "Automatic local AI: enabled",
+      "Buffer: " .. (M.buffer_reason() or "eligible"),
+      "Now: " .. require("maya.ai_coordinator").status(),
+      M.local_mode == "dual" and "Insert: inline completion · idle: Sweep"
+        or (
+          M.local_mode == "single" and "Insert / Normal idle: Sweep" or "Insert: inline completion"
+        ),
+      "Tab: accept · Ctrl-]: dismiss until next edit",
+      M.local_mode ~= "completion-only" and "Space an: request Sweep next-edit"
+        or "Ctrl-L / Alt-[: request/cycle inline",
+      "Space ao: enable/reload Ollama",
+      "Space am: choose local mode and enable Ollama",
+      "Space ax: disable all AI",
     }
   elseif M.provider == "copilot" then
     lines = {
@@ -71,7 +90,8 @@ function M.notify_status()
     lines = {
       "AI suggestions: off",
       "Normal editor completion is still available.",
-      "Space ao: Ollama · Space ac: GitHub Copilot · Space am: local mode",
+      "Space ao: enable Ollama · Space ac: enable Copilot",
+      "Space am: choose local mode and enable Ollama",
     }
   end
   vim.notify(
@@ -219,7 +239,7 @@ function M.select(provider, persist, local_mode)
       vim.cmd("Copilot enable")
     end
   end
-  require("maya.ai_coordinator").activity(true)
+  require("maya.ai_coordinator").resume()
   if persist ~= false then
     opts.provider = provider
     vim.fn.mkdir(vim.fn.stdpath("state"), "p")
@@ -237,7 +257,7 @@ function M.choose_local_mode()
     { value = "single", label = "Single: Sweep only" },
     { value = "completion-only", label = "Completion-only: inline completion only" },
   }, {
-    prompt = "Local AI mode",
+    prompt = "Local AI mode (selecting enables Ollama)",
     format_item = function(item)
       return item.label .. (item.value == current and " (saved)" or "")
     end,

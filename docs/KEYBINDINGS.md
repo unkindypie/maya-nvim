@@ -226,8 +226,13 @@ no completion selected, Tab retains AI acceptance and snippet/indent fallbacks.
 Native quickfix and location-list result windows (including multiple `gd` results)
 close with `q`, returning to the file window.
 
-`Space as` shows AI provider/model/server and controls for 10 seconds. `Space ao`
-selects Ollama or reloads its saved local model without noisy disable/enable notices.
+`Space as` shows AI provider/model/server, buffer restrictions, scheduler pause
+or request state, and controls for 10 seconds. `Space ao`
+enables Ollama or reloads its saved local model and clears dismissal pauses.
+`Space ax` disables all AI. `Space am` chooses a local mode and enables Ollama;
+single/dual mode is separate from whether AI is enabled. Menu labels state these
+actions explicitly. Dismissing a preview (`Space ad` / `Ctrl-]`) pauses automatic
+suggestions until the next edit, rather than disabling the provider.
 
 ### Git diff tree and branch comparisons
 

@@ -1,6 +1,7 @@
 """AI reselection reloads models quietly; status explains providers and controls."""
 
 import tempfile
+
 from integration import start, stop
 
 with tempfile.TemporaryDirectory(prefix="maya-ai-status-") as temp:
@@ -32,6 +33,17 @@ local status=notices[#notices]
 assert(status.opts.timeout==10000)
 assert(status.message:find("3b-base",1,true) and status.message:find("Server:",1,true))
 assert(status.message:find("Ctrl-]",1,true))
+assert(status.message:find("Automatic local AI: enabled",1,true))
+ai.action("dismiss")
+ai.notify_status()
+assert(notices[#notices].message:find("dismissed; waiting for the next edit",1,true))
+ai.select("ollama",false)
+assert(not require("maya.ai_coordinator").status():find("dismissed",1,true), "explicit enable retained dismissal")
+vim.bo.readonly=true
+ai.notify_status()
+assert(notices[#notices].message:find("read-only buffer",1,true))
+assert(notices[#notices].message:find("unavailable in this buffer",1,true))
+vim.bo.readonly=false
 package.loaded.copilot={setup=function() end}
 vim.api.nvim_create_user_command("Copilot",function() end,{nargs="*",force=true})
 ai.select("copilot",false)
@@ -50,7 +62,7 @@ local function read() return vim.json.decode(table.concat(vim.fn.readfile(file),
 local original_select=vim.ui.select
 local choice="single"
 vim.ui.select=function(items,opts,callback)
- assert(opts.prompt=="Local AI mode" and #items==3)
+ assert(opts.prompt=="Local AI mode (selecting enables Ollama)" and #items==3)
  local selected,marked=nil,0
  for _,item in ipairs(items) do
   local label=opts.format_item(item)
@@ -63,7 +75,9 @@ vim.ui.select=function(items,opts,callback)
  callback(selected)
 end
 local mapping=vim.fn.maparg(" am","n",false,true)
-assert(mapping.desc=="Local AI mode")
+assert(mapping.desc=="Local AI mode (enables Ollama)")
+assert(vim.fn.maparg(" ao","n",false,true).desc=="Enable/reload local AI (Ollama)")
+assert(vim.fn.maparg(" ax","n",false,true).desc=="Disable all AI")
 mapping.callback()
 assert(ai.provider=="ollama" and ai.local_mode=="single")
 local value=read()

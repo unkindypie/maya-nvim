@@ -108,6 +108,13 @@ and any visible preview. A valid preview has no expiry: elapsed time never
 replaces it or launches competing inference. Typing cancels stale work and gives
 Minuet priority. After acceptance, Sweep waits another 650 ms without edits.
 Explicit dismissal suppresses automatic suggestions until the next edit.
+Explicitly enabling/reloading Ollama (`Space ao`) or choosing a local mode
+clears that dismissal pause and restarts scheduling. `Space ax` disables AI;
+it is separate from dismissing one preview or choosing the single/dual mode.
+`Space as` distinguishes provider enablement, buffer eligibility and the current
+scheduler state: waiting for a pause/model, suggestion ready, selected editor
+completion, dismissal, or no suggestion to show. An enabled provider does not
+prove that the endpoint is reachable or that its model returned useful text.
 Single mode uses only Sweep; completion-only mode retains the saved Minuet model
 and endpoint. Special, read-only, unmodifiable, and large buffers are excluded.
 

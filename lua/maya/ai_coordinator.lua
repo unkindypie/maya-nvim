@@ -28,6 +28,44 @@ function M.dismiss()
   M.cancel()
   suppressed = snapshot()
 end
+function M.resume()
+  suppressed = false
+  accepted = false
+  M.activity(true)
+end
+function M.status()
+  if not ai or ai.provider ~= "ollama" then
+    return "local AI is disabled"
+  end
+  if not ai.eligible() then
+    return "unavailable in this buffer"
+  end
+  local cmp = package.loaded["blink.cmp"]
+  if cmp and cmp.get_selected_item() then
+    return "paused for selected editor completion"
+  end
+  if suppressed then
+    return "dismissed; waiting for the next edit"
+  end
+  local qwen, sweep = engines()
+  if (qwen and qwen.is_visible()) or sweep.visible() then
+    return "suggestion ready"
+  end
+  if (qwen and qwen.is_pending and qwen.is_pending()) or sweep.pending() then
+    return "waiting for model response"
+  end
+  local mode = vim.api.nvim_get_mode().mode
+  if mode ~= "i" and mode ~= "n" then
+    return "paused in mode " .. mode
+  end
+  if timer then
+    return "waiting for an editing pause"
+  end
+  if completed then
+    return "idle; no suggestion to show"
+  end
+  return "ready; edit to request a suggestion"
+end
 local function schedule(delay, callback)
   if timer and not timer:is_closing() then
     timer:stop()

@@ -1,9 +1,10 @@
 """Deterministic scheduling, preview ownership, dismissal and late response checks."""
 
 import json
-from pathlib import Path
 import tempfile
 import time
+from pathlib import Path
+
 from integration import start, stop, wait
 
 
@@ -104,8 +105,26 @@ require("maya.ai").select("ollama",false)
         nvim.exec_lua('s[#s](nil,{text="STALE_VISUAL"})')
         time.sleep(0.1)
         assert not nvim.exec_lua('return require("maya.ai_next_edit").visible()')
+        nvim.input("<Esc>")
+        wait(nvim, 'vim.fn.mode()=="n"')
+        nvim.input("A")
+        wait(nvim, 'vim.fn.mode()=="i"')
+        nvim.exec_lua('require("maya.ai").action("dismiss")')
+        before_reload = nvim.exec_lua("return #q")
+        time.sleep(0.3)
+        assert nvim.exec_lua("return #q") == before_reload
+        assert "dismissed" in nvim.exec_lua(
+            'return require("maya.ai_coordinator").status()'
+        )
+        nvim.exec_lua('require("maya.ai").select("ollama",false)')
+        wait(nvim, f"#q=={before_reload + 1}")
+        assert (
+            nvim.exec_lua('return require("maya.ai_coordinator").status()')
+            == "waiting for model response"
+        )
+        nvim.exec_lua('require("maya.ai").select("off",false)')
         print(
-            "PASS pending serialization, both preview owners, acceptance delay, dismissal, resumed typing, stale callbacks AI-off and right-aligned model labels"
+            "PASS pending serialization, preview ownership, dismissal/re-enable, resumed typing, stale callbacks and model labels"
         )
     finally:
         stop(nvim)

@@ -232,17 +232,21 @@ leader("Ti", cmd("checkhealth nvim-treesitter"), "Treesitter health")
 leader("Tl", cmd("MayaTools"), "Install/retry current language tools")
 leader("od", U.open_directory, "Open directory in desktop explorer")
 leader("om", cmd("RenderMarkdown toggle"), "Toggle Markdown preview")
-for key, provider in pairs({ o = "ollama", c = "copilot", x = "off" }) do
+for key, item in pairs({
+  o = { "ollama", "Enable/reload local AI (Ollama)" },
+  c = { "copilot", "Enable GitHub Copilot" },
+  x = { "off", "Disable all AI" },
+}) do
   leader("a" .. key, function()
-    require("maya.ai").select(provider)
-  end, "AI: " .. provider)
+    require("maya.ai").select(item[1])
+  end, item[2])
 end
 leader("am", function()
   require("maya.ai").choose_local_mode()
-end, "Local AI mode")
+end, "Local AI mode (enables Ollama)")
 leader("as", function()
   require("maya.ai").notify_status()
-end, "AI status")
+end, "AI status and pause reason")
 leader("an", function()
   require("maya.ai_next_edit").trigger()
 end, "Request next-edit")
@@ -251,7 +255,7 @@ leader("aa", function()
 end, "Accept AI suggestion")
 leader("ad", function()
   require("maya.ai").action("dismiss")
-end, "Dismiss AI suggestion")
+end, "Dismiss AI until next edit")
 local dap = {
   t = "toggle_breakpoint",
   b = "step_back",
