@@ -3,9 +3,10 @@
 import importlib.util
 import json
 import os
-from pathlib import Path
+import sys
 import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -66,3 +67,62 @@ class OllamaSetupTest(unittest.TestCase):
             state = json.loads((Path(temp) / "maya-nvim/ai.json").read_text())
             self.assertEqual(state["provider"], "ollama")
             self.assertEqual(state["model"], model)
+
+    def test_managed_service_keeps_models_warm(self):
+        model = "qwen2.5-coder:3b-base"
+        tags_calls = 0
+
+        def api(path, data=None, **kwargs):
+            nonlocal tags_calls
+            if path == "/api/tags":
+                tags_calls += 1
+                if tags_calls == 1:
+                    raise OSError("server not started")
+                return {"models": [{"name": model}]}
+            if path == "/api/generate":
+                return {"response": "return a + b"}
+            if path == "/api/ps":
+                return {"models": []}
+            raise AssertionError("Unexpected API request: " + path)
+
+        with tempfile.TemporaryDirectory() as temp:
+            with (
+                patch.dict(
+                    os.environ,
+                    {
+                        "HOME": temp,
+                        "XDG_CONFIG_HOME": temp + "/config",
+                        "XDG_STATE_HOME": temp + "/state",
+                    },
+                ),
+                patch(
+                    "sys.argv",
+                    [
+                        "setup_ollama.py",
+                        "--models-dir",
+                        temp,
+                        "--model",
+                        model,
+                        "--yes",
+                    ],
+                ),
+                patch.object(
+                    setup,
+                    "detect_gpu",
+                    return_value={"name": "test", "vram_mib": 6144},
+                ),
+                patch.object(setup, "api", side_effect=api),
+                patch.object(
+                    setup, "install_binary", return_value=Path("/usr/bin/true")
+                ),
+                patch.object(setup, "run"),
+            ):
+                setup.main()
+
+            service = (
+                Path(temp) / "config/systemd/user/maya-nvim-ollama.service"
+            ).read_text()
+            self.assertIn("Environment=OLLAMA_KEEP_ALIVE=-1", service)
+            self.assertIn("ExecStartPost=-", service)
+            self.assertIn("warm_ollama.py", service)
+            self.assertIn(str(sys.executable), service)

@@ -81,6 +81,12 @@ be installed user-locally on Linux with zstd and a working systemd user session;
 macOS users install/start Ollama separately. See [prerequisites](PREREQUISITES.md).
 No system-wide environment variables are changed.
 
+The managed service sets `OLLAMA_KEEP_ALIVE=-1` and preloads the selected models
+after startup with `scripts/warm_ollama.py`, so the first request is not
+cancelled by the ten-second request timeout while the CPU model loads. This
+keeps the models resident; use single mode or a smaller model if memory is
+tight.
+
 Preferences live in `${XDG_STATE_HOME:-~/.local/state}/maya-nvim/ai.json`, outside
 Git and the personal editor configuration. For example:
 
