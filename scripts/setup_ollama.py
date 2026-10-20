@@ -162,12 +162,18 @@ def main():
         # Escape systemd specifier expansion, and quote spaces in paths.
         quoted_models = json.dumps("OLLAMA_MODELS=" + str(models)).replace("%", "%%")
         quoted_binary = json.dumps(str(binary)).replace("%", "%%")
+        quoted_python = json.dumps(sys.executable).replace("%", "%%")
+        quoted_warm = json.dumps(
+            str(Path(__file__).resolve().with_name("warm_ollama.py"))
+        ).replace("%", "%%")
         service.write_text(f"""# Managed by maya-nvim
 [Unit]
 Description=Maya local Ollama completions
 After=network.target
 [Service]
 ExecStart={quoted_binary} serve
+Environment=OLLAMA_KEEP_ALIVE=-1
+ExecStartPost=-{quoted_python} {quoted_warm}
 Environment={quoted_models}
 Environment=OLLAMA_HOST=127.0.0.1:11434
 Environment=OLLAMA_NO_CLOUD=1
