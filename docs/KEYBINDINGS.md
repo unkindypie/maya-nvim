@@ -143,6 +143,11 @@ when switching into a diff tab.
 
 Markdown files render headings, tables, checkboxes, and code blocks inside the
 buffer. Use `Space om` or `:RenderMarkdown toggle` to switch rendering off/on.
+Long Markdown lines wrap visually at word boundaries, with indentation carried
+onto continuation rows. Wrapping adapts to the window width in both editing and
+preview modes; it does not insert newlines or reformat the file. Other filetypes
+keep their existing no-wrap default. Use `:setlocal nowrap` to disable wrapping
+in the current window, or `:setlocal wrap` to enable it again.
 Insert mode shows raw text for editing; rendering does not change file contents.
 
 Picker input retains Ctrl-N/P selection, Ctrl-J/K history, Enter open, Ctrl-Q

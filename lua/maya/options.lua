@@ -48,6 +48,15 @@ vim.filetype.add({
   pattern = { [".*/hypr/.*%.conf"] = "hyprlang", ["[jt]sconfig.*%.json"] = "jsonc" },
 })
 vim.api.nvim_create_autocmd("FileType", {
+  pattern = "markdown",
+  desc = "Wrap Markdown visually at word boundaries without changing source lines",
+  callback = function()
+    vim.opt_local.wrap = true
+    vim.opt_local.linebreak = true
+    vim.opt_local.breakindent = true
+  end,
+})
+vim.api.nvim_create_autocmd("FileType", {
   pattern = { "hyprlang", "conf", "config" },
   callback = function(ev)
     vim.bo[ev.buf].indentexpr = ""
