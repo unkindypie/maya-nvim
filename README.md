@@ -81,6 +81,7 @@ from the new configuration, with visible progress and a completion result.
 return {
   theme = "catppuccin/nvim", -- Optional; defaults to our transparent Catppuccin Frappé.
   transparent_background = false, -- Keep the theme's own background behavior.
+  codex_ide_context = false, -- Optional native Codex CLI /ide context bridge.
   pokemon_sound_on_start = true, -- Play a Pokémon cry.
   pokemon_sound_on_start_volume_percentage = 50, -- 0–100; 0 mutes playback.
   reopen_tabs = true, -- Restore this folder's files, tabs, and splits.
@@ -100,6 +101,11 @@ return {
 The example includes every `MayaConfig` setting at its default behavior. `options`,
 `plugins`, and `setup` are omitted by default; the empty values above have the same
 effect. All settings are optional.
+
+For native editor context in your existing Codex CLI, set
+`codex_ide_context = true`, restart mvim, then run `/ide` in Codex in the same
+project. `Space ai` shows connection status. See [Codex IDE context](docs/CODEX.md)
+for setup, limits and compatibility.
 
 `theme` is optional. Omitting it keeps the current transparent Catppuccin Frappé.
 New installations include `theme = "catppuccin/nvim"`; existing configs are preserved.

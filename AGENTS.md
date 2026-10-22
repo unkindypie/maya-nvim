@@ -79,6 +79,9 @@ MAYA_NVIM_NO_INSTALL=1 MAYA_NVIM_NO_AI=1 bin/mvim --headless '+lua assert(vim.g.
 .local/test-env/bin/python tests/config_completion.py
 .local/test-env/bin/python tests/completion_keys.py
 .local/test-env/bin/python tests/ai_status.py
+.local/test-env/bin/python tests/codex_ide.py
+# Opt-in real Codex TUI /ide handshake (requires installed, logged-in CLI):
+MAYA_NVIM_TEST_CODEX=1 .local/test-env/bin/python tests/codex_cli_ide.py
 .local/test-env/bin/python tests/ai_local.py
 .local/test-env/bin/python tests/ai_acceptance_keys.py
 .local/test-env/bin/python tests/ai_edit_filter.py

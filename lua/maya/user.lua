@@ -3,6 +3,7 @@ local M = { config = {} }
 local defaults = {
   theme = "catppuccin/nvim",
   transparent_background = false,
+  codex_ide_context = false,
   pokemon_sound_on_start = true,
   pokemon_sound_on_start_volume_percentage = 50,
   reopen_tabs = true,
@@ -49,6 +50,7 @@ function M.load()
   for key, kind in pairs({
     options = "table",
     transparent_background = "boolean",
+    codex_ide_context = "boolean",
     plugins = "table",
     setup = "function",
     pokemon_sound_on_start = "boolean",

@@ -305,6 +305,7 @@ function M.action(name)
   end
 end
 function M.setup()
+  require("maya.codex").setup()
   require("maya.ai_context").setup(function()
     return M.provider == "ollama" and M.local_mode == "dual" and M.eligible()
   end)

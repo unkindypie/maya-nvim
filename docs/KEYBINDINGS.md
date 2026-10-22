@@ -239,6 +239,11 @@ single/dual mode is separate from whether AI is enabled. Menu labels state these
 actions explicitly. Dismissing a preview (`Space ad` / `Ctrl-]`) pauses automatic
 suggestions until the next edit, rather than disabling the provider.
 
+`Space ai` / `:MayaCodexStatus` shows the optional native Codex CLI context
+bridge. Enable `codex_ide_context = true` in your personal config and run `/ide`
+in Codex in the same project. This is separate from inline AI. See
+[Codex IDE context](CODEX.md) for compatibility and selection behavior.
+
 ### Git diff tree and branch comparisons
 
 `Space gv` opens Diffview with a directory tree of changed files on the left and
