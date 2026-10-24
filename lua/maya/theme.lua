@@ -63,6 +63,7 @@ local function selected()
 end
 
 local function apply(name, inferred_alias)
+  M.apply_background()
   local ok, err = pcall(vim.cmd.colorscheme, name)
   if not ok and inferred_alias and tostring(err):find("E185:", 1, true) then
     ok, err = pcall(vim.cmd.colorscheme, inferred_alias)
@@ -75,7 +76,15 @@ local function apply(name, inferred_alias)
   end
 end
 
+function M.apply_background()
+  local background = require("maya.user").get("theme_background")
+  if background ~= "auto" then
+    vim.o.background = background
+  end
+end
+
 function M.setup_default(opts)
+  M.apply_background()
   require("catppuccin").setup(opts)
   local theme = selected()
   apply((not theme.plugin or theme.plugin == "catppuccin/nvim") and theme.name or "catppuccin")

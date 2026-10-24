@@ -6,6 +6,16 @@ nvim = start()
 try:
     nvim.exec_lua("""local user = require("maya.user")
 local theme = require("maya.theme")
+user.config.theme_background = "auto"
+vim.o.background = "light"
+theme.apply_background()
+assert(vim.o.background == "light")
+for _, background in ipairs({"dark", "light"}) do
+  user.config.theme_background = background
+  theme.apply_background()
+  assert(vim.o.background == background)
+end
+user.config.theme_background = "auto"
 user.config.transparent_background = false
 vim.api.nvim_set_hl(0, "Normal", { fg=0x123456, bg=0xabcdef, bold=true, ctermbg=4 })
 theme.apply_transparency()

@@ -80,6 +80,7 @@ from the new configuration, with visible progress and a completion result.
 ---@type MayaConfig
 return {
   theme = "catppuccin/nvim", -- Optional; defaults to our transparent Catppuccin Frappé.
+  theme_background = "auto", -- "dark" or "light"; "auto" preserves existing behavior.
   transparent_background = false, -- Keep the theme's own background behavior.
   codex_ide_context = false, -- Optional native Codex CLI /ide context bridge.
   pokemon_sound_on_start = true, -- Play a Pokémon cry.
@@ -109,6 +110,12 @@ for setup, limits and compatibility.
 
 `theme` is optional. Omitting it keeps the current transparent Catppuccin Frappé.
 New installations include `theme = "catppuccin/nvim"`; existing configs are preserved.
+Set `theme_background = "dark",` or `theme_background = "light",` in
+`~/.config/mvim/init.lua` and restart mvim to select a variant. The default
+`"auto"` preserves existing behavior. The selected theme must support that variant;
+the setting does not recolor themes that only provide one variant. An existing
+`options.background` override takes precedence.
+
 Add `transparent_background = true,` to your personal configuration to show the
 terminal background with any theme, including editor gutters and floating windows.
 It reapplies after colorscheme changes and preserves foreground colors and styles.

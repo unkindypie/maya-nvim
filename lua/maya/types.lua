@@ -11,6 +11,7 @@
 
 ---@class MayaConfig
 ---@field codex_ide_context? boolean Serve read-only open-file and selection context to Codex CLI /ide over its local Unix socket. Default: false. Independent of inline AI providers.
+---@field theme_background? "auto"|"dark"|"light" Select the theme background variant before loading it. Default: "auto" (preserve existing behavior). Requires a theme supporting the selected variant; later options.background overrides it.
 ---@field transparent_background? boolean Clear editor, gutter and floating-window backgrounds to show the terminal background with any theme. Default: false (keep theme behavior).
 ---@field theme? string|MayaTheme A string containing "/" selects and installs a GitHub repository in "owner/repository" format, for example "catppuccin/nvim". A string without "/" selects an already-installed colorscheme, for example "catppuccin-frappe"; it does not install a plugin. For explicit plugin/name/options, use a MayaTheme table. Default: "catppuccin/nvim" (transparent Frappé).
 ---@field pokemon_sound_on_start? boolean Play the dashboard Pokémon cry. Default: true.

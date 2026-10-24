@@ -2,6 +2,7 @@
 local M = { config = {} }
 local defaults = {
   theme = "catppuccin/nvim",
+  theme_background = "auto",
   transparent_background = false,
   codex_ide_context = false,
   pokemon_sound_on_start = true,
@@ -49,6 +50,7 @@ function M.load()
   end
   for key, kind in pairs({
     options = "table",
+    theme_background = "string",
     transparent_background = "boolean",
     codex_ide_context = "boolean",
     plugins = "table",
@@ -63,6 +65,13 @@ function M.load()
       report(file, key .. " must be a " .. kind)
       return
     end
+  end
+  if
+    config.theme_background ~= nil
+    and not vim.tbl_contains({ "auto", "dark", "light" }, config.theme_background)
+  then
+    report(file, 'theme_background must be "auto", "dark", or "light"')
+    return
   end
   if config.theme ~= nil then
     local theme, err = require("maya.theme").resolve(config.theme)
