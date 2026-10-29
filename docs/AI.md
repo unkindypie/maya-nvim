@@ -10,6 +10,9 @@ the saved inline model. Choosing a mode activates Ollama immediately and saves
 that choice in `ai.json`, preserving model names, endpoints, and other preferences.
 Canceling the picker keeps the current settings. The picker does not download models.
 
+For reproducible comparisons and the gates for simplifying this arrangement,
+see [local AI experiments](AI_EXPERIMENTS.md).
+
 ## Local presets
 
 | Estimated dedicated VRAM | Inline completion            | Next-edit     |

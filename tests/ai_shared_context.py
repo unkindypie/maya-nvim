@@ -1,15 +1,21 @@
 """Capture actual HTTP prompts with real LSPs and deterministic model replies."""
 
+import argparse
 import json
 import os
-from pathlib import Path
 import tempfile
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
+
 from integration import start, stop, wait
 
 os.environ["MAYA_NVIM_NO_INSTALL"] = "1"
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("--mode", choices=["dual", "single"], default="dual")
+parser.add_argument("--no-extra-lsp", action="store_true")
+options = parser.parse_args()
 requests = []
 
 
@@ -141,7 +147,7 @@ try:
                 json.dumps(
                     {
                         "provider": "ollama",
-                        "local_mode": "dual",
+                        "local_mode": options.mode,
                         "model": "qwen2.5-coder:1.5b-base-q8_0",
                         "endpoint": f"http://127.0.0.1:{server.server_port}",
                     }
@@ -173,6 +179,10 @@ require("maya.ai").select("ollama",false)
                     if "return {" in source
                     else [],
                 )
+                if options.no_extra_lsp:
+                    nvim.exec_lua(
+                        'require("blink-edit.config").get().context.lsp.enabled=false'
+                    )
                 wait(nvim, "#vim.lsp.get_clients({bufnr=0})>0")
                 time.sleep(2)
                 nvim.current.window.cursor = (len(source.splitlines()), 0)
@@ -191,7 +201,7 @@ require("maya.ai").select("ollama",false)
                     required += [
                         line
                         for line in schema.splitlines()
-                        if line.startswith("---@field") or line.startswith("---@class")
+                        if line.startswith(("---@field", "---@class"))
                     ]
                     required += [
                         "---@class MayaTheme",
@@ -210,23 +220,29 @@ local methods={}; for _,m in ipairs({"hover","signatureHelp","definition","typeD
 methods[m]=c:supports_method("textDocument/"..m,0) end
 out[c.name]=methods end; return out""")
                 before = len(requests)
-                nvim.exec_lua('require("minuet.virtualtext").action.trigger()')
-                deadline = time.monotonic() + 5
-                while len(requests) == before and time.monotonic() < deadline:
-                    time.sleep(0.05)
-                assert len(requests) > before, "No Qwen HTTP request"
-                assert all(token in requests[-1]["prompt"] for token in required)
+                if options.mode == "dual":
+                    nvim.exec_lua('require("minuet.virtualtext").action.trigger()')
+                    deadline = time.monotonic() + 5
+                    while len(requests) == before and time.monotonic() < deadline:
+                        time.sleep(0.05)
+                    assert len(requests) > before, "No Qwen HTTP request"
+                    assert all(token in requests[-1]["prompt"] for token in required)
+                before = len(requests)
                 nvim.exec_lua('require("maya.ai_next_edit").trigger()')
                 deadline = time.monotonic() + 5
-                while len(requests) < before + 2 and time.monotonic() < deadline:
+                while len(requests) < before + 1 and time.monotonic() < deadline:
                     time.sleep(0.05)
-                assert len(requests) >= before + 2, "No Sweep HTTP request"
+                assert len(requests) >= before + 1, "No Sweep HTTP request"
                 assert all(token in requests[-1]["prompt"] for token in required)
                 assert "<|file_sep|>lsp-context.txt" in requests[-1]["prompt"]
                 print(
                     "PASS",
                     name,
-                    "both HTTP prompts contain field/type documentation; capabilities",
+                    "HTTP prompts contain field/type documentation; mode",
+                    options.mode,
+                    "extra LSP",
+                    not options.no_extra_lsp,
+                    "capabilities",
                     caps,
                     flush=True,
                 )

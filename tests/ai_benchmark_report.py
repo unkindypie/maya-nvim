@@ -6,6 +6,8 @@ import math
 import statistics
 from collections import defaultdict
 
+from ai_benchmark import fixtures
+
 
 def latency(values):
     values = sorted(values)
@@ -21,6 +23,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("results")
     args = parser.parse_args()
+    sources = {case["id"]: case["source"] for case in fixtures()}
     groups = defaultdict(list)
     with open(args.results) as stream:
         for line in stream:
@@ -45,6 +48,13 @@ def main():
                     "correct": sum(r["correct"] for r in rows),
                     "visible": sum(r["visible"] for r in rows),
                     "unchanged": sum(r["unchanged"] for r in rows),
+                    "unrelated_prefix_changes": sum(
+                        r["actual"].split("\n")[
+                            : len(r.get("source", sources[r["case"]]).split("\n")) - 1
+                        ]
+                        != r.get("source", sources[r["case"]]).split("\n")[:-1]
+                        for r in rows
+                    ),
                     "preview": latency(durations),
                     "request": latency(requests),
                     "elapsed": latency([r["elapsed_ms"] for r in rows]),

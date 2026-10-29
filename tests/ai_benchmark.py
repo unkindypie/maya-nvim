@@ -134,12 +134,21 @@ def main():
     parser.add_argument("--endpoint", default="http://127.0.0.1:11434")
     parser.add_argument("--no-extra-lsp", action="store_true")
     parser.add_argument(
+        "--blink-qwen",
+        action="store_true",
+        help="Experimental generic-provider Qwen completion at end of buffer only",
+    )
+    parser.add_argument(
         "--single-insert-delay",
         type=int,
         default=None,
         help="Experimental Insert-only delay; saved preferences stay unchanged",
     )
     args = parser.parse_args()
+    if args.repetitions < 1:
+        parser.error("--repetitions must be positive")
+    if args.blink_qwen and args.modes != ["single"]:
+        parser.error("--blink-qwen requires --modes single")
     if os.environ.get("MAYA_NVIM_TEST_OLLAMA") != "1":
         parser.error("Set MAYA_NVIM_TEST_OLLAMA=1 to run local model requests")
     os.environ.update(
@@ -184,7 +193,9 @@ def main():
                 )
             )
             for case in cases:
-                if mode == "completion-only" and case["kind"] != "insert":
+                if (mode == "completion-only" or args.blink_qwen) and case[
+                    "kind"
+                ] != "insert":
                     continue
                 # Fresh editor per case prevents cross-fixture edit history leakage.
                 nvim = pynvim.attach(
@@ -216,6 +227,20 @@ def main():
                             'vim.bo.filetype=...; require("maya.ai").select("ollama",false); require("maya.ai").cancel()',
                             case["language"],
                         )
+                        if args.blink_qwen:
+                            nvim.exec_lua("""
+local edit=require("blink-edit")
+local cfg=vim.deepcopy(require("blink-edit.config").get())
+cfg.llm.provider="generic"
+cfg.llm.model=require("maya.ai").model
+cfg.llm.max_tokens=96
+cfg.mode="completion"
+cfg.providers.generic.prompt_template="<|fim_prefix|>{{current}}<|fim_suffix|><|fim_middle|>"
+cfg.providers.generic.use_history=false
+cfg.providers.generic.stop_tokens={"<|fim_suffix|>","<|fim_middle|>","<|endoftext|>","<|im_end|>"}
+edit.reset()
+edit.setup(cfg)
+""")
                         if args.single_insert_delay is not None and mode == "single":
                             nvim.exec_lua(
                                 'local delay=...; local user=require("maya.user"); if not user.benchmark_get then user.benchmark_get=user.get end; user.get=function(key) if key=="ai_next_edit_debounce_ms" and vim.api.nvim_get_mode().mode=="i" then return delay end; return user.benchmark_get(key) end',
@@ -275,6 +300,13 @@ for _,name in ipairs({"minuet.backends.openai_fim_compatible","blink-edit.backen
    table.insert(_G.benchmark_requests,row)
    return original(opts,function(...)
     row.finished=vim.uv.hrtime()
+    if name=="blink-edit.backends" then
+     row.error=select(1,...)
+     local response=select(2,...)
+     row.response=response and response.text
+    else
+     row.response=select(1,...)
+    end
     return callback(...)
    end)
   end
@@ -319,11 +351,15 @@ end
                                     else None,
                                     "elapsed_ms": round(elapsed, 1),
                                     "exact": actual.strip() == case["expected"].strip(),
-                                    "correct": equivalent(
+                                    "correct": elapsed < 13000
+                                    and not any(q.get("error") for q in requests)
+                                    and equivalent(
                                         actual, case["expected"], case["language"]
                                     ),
+                                    "timed_out": elapsed >= 13000,
                                     "unchanged": actual == case["source"],
                                     "actual": actual,
+                                    "source": case["source"],
                                     "expected": case["expected"],
                                     "requests": requests,
                                     "loads": loads,
