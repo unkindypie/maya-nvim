@@ -15,7 +15,15 @@ os.environ["MAYA_NVIM_NO_INSTALL"] = "1"
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--mode", choices=["dual", "single"], default="dual")
 parser.add_argument("--no-extra-lsp", action="store_true")
+parser.add_argument(
+    "--cursortab", type=Path, help="Disposable patched candidate checkout"
+)
+parser.add_argument(
+    "--context-chars", type=int, default=6000, help="Candidate callback byte budget"
+)
 options = parser.parse_args()
+if not 1 <= options.context_chars <= 6000:
+    parser.error("Context budget must be between 1 and 6000 bytes")
 requests = []
 
 
@@ -24,8 +32,14 @@ class Capture(BaseHTTPRequestHandler):
         body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
         requests.append(body)
         data = json.dumps({"response": "", "done": True}).encode()
+        if body.get("stream"):
+            data = b'data: {"choices":[{"text":"","finish_reason":"stop"}]}\n\ndata: [DONE]\n\n'
+
         self.send_response(200)
-        self.send_header("Content-Type", "application/json")
+        self.send_header(
+            "Content-Type",
+            "text/event-stream" if body.get("stream") else "application/json",
+        )
         self.send_header("Content-Length", str(len(data)))
         self.end_headers()
         self.wfile.write(data)
@@ -183,6 +197,26 @@ require("maya.ai").select("ollama",false)
                     nvim.exec_lua(
                         'require("blink-edit.config").get().context.lsp.enabled=false'
                     )
+                if options.cursortab:
+                    from ai_candidate_support import MODEL, SETUP
+
+                    nvim.exec_lua(
+                        SETUP,
+                        "cursortab",
+                        str(options.cursortab),
+                        f"http://127.0.0.1:{server.server_port}",
+                        temp,
+                        60000,
+                        MODEL,
+                        options.context_chars,
+                    )
+                    deadline = time.monotonic() + 12
+                    while not Path(temp, "cursortab/cursortab.sock").exists():
+                        assert time.monotonic() < deadline, (
+                            "Candidate daemon startup failed"
+                        )
+                        time.sleep(0.05)
+                    time.sleep(0.15)
                 wait(nvim, "#vim.lsp.get_clients({bufnr=0})>0")
                 time.sleep(2)
                 nvim.current.window.cursor = (len(source.splitlines()), 0)
@@ -220,7 +254,7 @@ local methods={}; for _,m in ipairs({"hover","signatureHelp","definition","typeD
 methods[m]=c:supports_method("textDocument/"..m,0) end
 out[c.name]=methods end; return out""")
                 before = len(requests)
-                if options.mode == "dual":
+                if options.mode == "dual" and not options.cursortab:
                     nvim.exec_lua('require("minuet.virtualtext").action.trigger()')
                     deadline = time.monotonic() + 5
                     while len(requests) == before and time.monotonic() < deadline:
@@ -228,7 +262,11 @@ out[c.name]=methods end; return out""")
                     assert len(requests) > before, "No Qwen HTTP request"
                     assert all(token in requests[-1]["prompt"] for token in required)
                 before = len(requests)
-                nvim.exec_lua('require("maya.ai_next_edit").trigger()')
+                nvim.exec_lua(
+                    "_G.eval_request(true)"
+                    if options.cursortab
+                    else 'require("maya.ai_next_edit").trigger()'
+                )
                 deadline = time.monotonic() + 5
                 while len(requests) < before + 1 and time.monotonic() < deadline:
                     time.sleep(0.05)
@@ -239,7 +277,7 @@ out[c.name]=methods end; return out""")
                     "PASS",
                     name,
                     "HTTP prompts contain field/type documentation; mode",
-                    options.mode,
+                    "cursortab" if options.cursortab else options.mode,
                     "extra LSP",
                     not options.no_extra_lsp,
                     "capabilities",
@@ -250,7 +288,11 @@ out[c.name]=methods end; return out""")
                     "Semantic context:", context[:350].replace("\n", " | "), flush=True
                 )
             finally:
-                stop(nvim)
+                try:
+                    if options.cursortab:
+                        nvim.exec_lua('require("cursortab.daemon").stop_daemon()')
+                finally:
+                    stop(nvim)
 finally:
     server.shutdown()
     server.server_close()

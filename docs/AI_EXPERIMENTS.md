@@ -3,8 +3,10 @@
 The target is one local AI plugin and one active local model for insertions and
 next edits, with Maya's existing capability-based, cached LSP context. Local
 inference for both behaviors is a requirement, not a provider preference. Cloud
-model results cannot qualify a local implementation. Sweep through blink-edit is
-the current candidate; any alternative must demonstrate both behaviors locally.
+model results cannot qualify a local implementation. The expanded
+[Cursortab versus blink-edit evaluation](AI_CANDIDATES.md) covers the first two
+stages of the revised plan; runtime migration waits for review. Both candidates
+must demonstrate both behaviors locally.
 Legacy compatibility calls for a documented migration, not permanent retention of
 a second local AI plugin.
 
@@ -60,7 +62,10 @@ validate Mellum/custom endpoint compatibility.
 Repeated small fixtures can benefit from prompt caching; these timings are not an
 estimate of everyday project performance or a general model ranking.
 
-## Gates and staged delivery
+## Earlier gates and staged delivery
+
+The revised Cursortab comparison stages and balanced targets in
+[the candidate evaluation](AI_CANDIDATES.md) supersede this earlier sequence.
 
 1. **Before runtime changes:** record current dual, single, and completion-only
    behavior, correctness, preview latency, and failures. Test the scorer itself.

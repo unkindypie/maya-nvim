@@ -1,0 +1,169 @@
+diff --git a/lua/cursortab/config.lua b/lua/cursortab/config.lua
+index a26f44e..5c2cea7 100644
+--- a/lua/cursortab/config.lua
++++ b/lua/cursortab/config.lua
+@@ -64,6 +64,7 @@
+ ---@field ghost_text boolean
+ 
+ ---@class CursortabConfig
++---@field source_context? fun(bufnr: integer): string Cached semantic context; must not wait for I/O.
+ ---@field enabled boolean
+ ---@field log_level string
+ ---@field state_dir string Directory for runtime files (log, socket, pid)
+@@ -295,6 +296,9 @@ local valid_addition_styles = { dimmed = true, highlight = true }
+ 
+ -- Optional tables have recognized keys without supplying default values.
+ local config_keys = vim.deepcopy(default_config)
++config_keys.source_context = function()
++	return ""
++end
+ config_keys.provider.fim_tokens = {
+ 	prefix = "",
+ 	suffix = "",
+diff --git a/server/buffer/buffer.go b/server/buffer/buffer.go
+index 310ac6c..afcbb09 100644
+--- a/server/buffer/buffer.go
++++ b/server/buffer/buffer.go
+@@ -20,7 +20,8 @@ type Config struct {
+ }
+ 
+ type NvimBuffer struct {
+-	client *nvim.Nvim // stored internally, set via SetClient
++	semanticContext string
++	client          *nvim.Nvim // stored internally, set via SetClient
+ 
+ 	// Private state
+ 	lines         []string
+@@ -79,6 +80,8 @@ func (b *NvimBuffer) SetClient(n *nvim.Nvim) {
+ 
+ // Accessor methods implementing engine.Buffer interface
+ 
++func (b *NvimBuffer) CachedContext() string { return b.semanticContext }
++
+ func (b *NvimBuffer) Lines() []string { return b.lines }
+ 
+ func (b *NvimBuffer) Row() int { return b.row }
+@@ -190,6 +193,20 @@ func (b *NvimBuffer) Sync(workspacePath string) (*SyncResult, error) {
+ 	var cursor [2]int
+ 	var scrollOffset int
+ 	var nvimCwd string
++	var semanticContext string
++	// Read cached text in the same atomic batch as the buffer/cursor snapshot.
++	batch.ExecLua(`
++ local callback = require("cursortab.config").get().source_context
++ if type(callback) ~= "function" then return "" end
++ local buf = vim.api.nvim_get_current_buf()
++ local tick = vim.api.nvim_buf_get_changedtick(buf)
++ local cursor = vim.api.nvim_win_get_cursor(0)
++ local ok, text = pcall(callback, buf)
++ if not ok or type(text) ~= "string" or vim.api.nvim_get_current_buf() ~= buf
++   or vim.api.nvim_buf_get_changedtick(buf) ~= tick
++   or not vim.deep_equal(cursor, vim.api.nvim_win_get_cursor(0)) then return "" end
++ return text:sub(1,6000)
++ `, &semanticContext, nil)
+ 
+ 	batch.CurrentBuffer(&currentBuf)
+ 	batch.BufferName(nvim.Buffer(0), &path) // Use 0 for current buffer
+@@ -232,6 +249,7 @@ func (b *NvimBuffer) Sync(workspacePath string) (*SyncResult, error) {
+ 	oldPath := b.path
+ 
+ 	// Update buffer state
++	b.semanticContext = semanticContext
+ 	b.lines = linesStr
+ 	b.row = cursor[0]              // Line (vertical position, 1-based in nvim cursor)
+ 	b.col = cursor[1]              // Column (horizontal position, 0-based in nvim cursor)
+diff --git a/server/ctx/model.go b/server/ctx/model.go
+index 9ae59c2..90966ca 100644
+--- a/server/ctx/model.go
++++ b/server/ctx/model.go
+@@ -28,10 +28,11 @@ type CompletionInput struct {
+ }
+ 
+ type CurrentSnapshot struct {
+-	WorkspacePath  string
+-	File           FileSnapshot
+-	Cursor         CursorPosition
+-	ViewportHeight int
++	SemanticContext string
++	WorkspacePath   string
++	File            FileSnapshot
++	Cursor          CursorPosition
++	ViewportHeight  int
+ }
+ 
+ type FileSnapshot struct {
+diff --git a/server/engine/engine_test.go b/server/engine/engine_test.go
+index 94ec50b..568bf5b 100644
+--- a/server/engine/engine_test.go
++++ b/server/engine/engine_test.go
+@@ -113,3 +113,17 @@ func TestStateNotifierCancellation(t *testing.T) {
+ 		})
+ 	}
+ }
++
++// Cached semantic text is tied to the real editor snapshot, never synthetic
++// lines or a predicted cursor position used for speculative completion.
++type cachedContextBuffer struct{ *mockBuffer }
++
++func (b *cachedContextBuffer) CachedContext() string { return "schema documentation" }
++
++func TestCachedContextSnapshotIdentity(t *testing.T) {
++	e := createTestEngine(newMockBuffer(), newMockProvider(), newMockClock())
++	e.buffer = &cachedContextBuffer{newMockBuffer()}
++	assert.Equal(t, "schema documentation", e.buildCurrentSnapshot(completionInputOptions{}).SemanticContext, "real snapshot")
++	assert.Equal(t, "", e.buildCurrentSnapshot(completionInputOptions{hasCursorOverride: true, cursorRow: 2}).SemanticContext, "predicted cursor")
++	assert.Equal(t, "", e.buildCurrentSnapshot(completionInputOptions{lines: []string{"synthetic"}}).SemanticContext, "synthetic lines")
++}
+diff --git a/server/engine/input.go b/server/engine/input.go
+index b66e0ed..7abb4a5 100644
+--- a/server/engine/input.go
++++ b/server/engine/input.go
+@@ -43,8 +43,13 @@ func (e *Engine) buildCurrentSnapshot(opts completionInputOptions) ctx.CurrentSn
+ 		row = opts.cursorRow
+ 		col = opts.cursorCol
+ 	}
++	semanticContext := ""
++	if reader, ok := e.buffer.(interface{ CachedContext() string }); ok && !opts.hasCursorOverride && opts.lines == nil {
++		semanticContext = reader.CachedContext()
++	}
+ 	return ctx.CurrentSnapshot{
+-		WorkspacePath: e.WorkspacePath,
++		SemanticContext: semanticContext,
++		WorkspacePath:   e.WorkspacePath,
+ 		File: ctx.FileSnapshot{
+ 			Path:  e.buffer.Path(),
+ 			Lines: slices.Clone(lines),
+diff --git a/server/provider/sweep/sweep.go b/server/provider/sweep/sweep.go
+index e52db16..ecc6042 100644
+--- a/server/provider/sweep/sweep.go
++++ b/server/provider/sweep/sweep.go
+@@ -55,6 +55,9 @@ func (p *Provider) Build(ctx *provider.RequestState) (*openai.CompletionRequest,
+ 	current := input.Current
+ 	lines := current.File.Lines
+ 	var promptBuilder strings.Builder
++	if current.SemanticContext != "" {
++		promptBuilder.WriteString("<|file_sep|>lsp-context.txt\n" + current.SemanticContext + "\n")
++	}
+ 
+ 	if len(lines) == 0 {
+ 		promptBuilder.WriteString("<|file_sep|>original/")
+diff --git a/server/provider/sweep/sweep_test.go b/server/provider/sweep/sweep_test.go
+index 38bc719..9a49d4e 100644
+--- a/server/provider/sweep/sweep_test.go
++++ b/server/provider/sweep/sweep_test.go
+@@ -193,3 +193,15 @@ func TestStreamCompletion_EditBelowPrefill(t *testing.T) {
+ 	assert.NotNil(t, resp.Completion, "completion")
+ 	assert.Equal(t, "func sub(a, b int) int {", streamed[8], "edited line")
+ }
++
++func TestCachedSemanticContext(t *testing.T) {
++	config := &types.ProviderConfig{ProviderModel: "test-model"}
++	p := NewProvider(config)
++	input := completionInput("example.py", []string{"config = {}"}, 1, 9)
++	input.Current.SemanticContext = "schema.py: Settings.theme: Theme"
++	req := buildPromptForTest(p, stateForInput(input, config))
++	assert.True(t, strings.Contains(req.Prompt, "<|file_sep|>lsp-context.txt\nschema.py: Settings.theme: Theme\n"), "cached semantic context must reach the model")
++	input.Current.SemanticContext = ""
++	req = buildPromptForTest(p, stateForInput(input, config))
++	assert.False(t, strings.Contains(req.Prompt, "lsp-context.txt"), "absent context must not create a section")
++}

@@ -41,7 +41,9 @@ plugins by demonstrated local-model support, quality, latency, and maintenance o
 the target hardware. Popularity, broad cloud-provider support, or cloud-oriented
 next-edit features do not establish suitability for this feature.
 
-blink-edit with Sweep is the current candidate for this goal. Minuet's general
+Compare Cursortab and blink-edit with the same local Sweep model before migration.
+Favor upstream maintenance and tested native behavior over custom scheduling code;
+a pure-Lua implementation alone is not a maintenance advantage. Minuet's general
 completion support alone does not establish that its Duet next-edit path is
 suitable for small local models. Require local evidence for both behaviors before
 recommending an alternative. The dual-engine rules below describe the existing

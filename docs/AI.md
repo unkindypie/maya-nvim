@@ -7,8 +7,8 @@ Copilot is a separate opt-in alternative and does not satisfy the local feature'
 requirements.
 
 The target architecture is **one local AI plugin and one active local model** for
-both behaviors. blink-edit with Sweep is the current candidate because it already
-supports the specialized local edit workflow being tested. Plugin selection must
+both behaviors. The [Cursortab versus blink-edit evaluation](AI_CANDIDATES.md)
+compares local Sweep quality, speed and future maintenance. Plugin selection must
 prioritize demonstrated local operation on the target hardware. General provider
 support or upstream popularity alone is insufficient; an experimental edit path
 validated mainly with cloud models needs local validation before it can qualify.

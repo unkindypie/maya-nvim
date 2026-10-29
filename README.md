@@ -194,8 +194,9 @@ models running locally through Ollama, without a cloud account or paid API. Both
 behaviors use the existing shared LSP context collector.
 
 The simplification goal is one local AI plugin and one active local model for both
-behaviors; blink-edit with Sweep is the current candidate. The presets below
-describe the existing implementation while that migration is evaluated. Copilot
+behaviors. The [Cursortab versus blink-edit evaluation](docs/AI_CANDIDATES.md)
+compares local quality, speed and maintenance before migration. The presets below
+describe the existing implementation. Copilot
 is a separate opt-in alternative, and AI suggestions can also be disabled.
 
 ### For local Ollama models installation offeers the following base configs:
