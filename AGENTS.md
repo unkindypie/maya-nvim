@@ -26,6 +26,27 @@ Keep repository small from any commited artifacts, too big images, etc. If
 image is replaced, make sure to delete it from version history to increase speed of git clone.
 Don't commit any not needed large artifacts.
 
+## Local AI feature goal
+
+The local AI feature exists specifically to run local models for both inline
+completion and next-edit prediction. Both behaviors must work without cloud
+inference, a cloud account, or a paid API. Preserve the existing shared, cached
+LSP context collector. Copilot is a separate opt-in feature, never a substitute
+for meeting the local AI requirement.
+
+The simplification target is one local AI plugin and one active local model for
+both behaviors. Do not retain a second local AI plugin permanently for legacy
+compatibility; document and test migration of affected settings instead. Evaluate
+plugins by demonstrated local-model support, quality, latency, and maintenance on
+the target hardware. Popularity, broad cloud-provider support, or cloud-oriented
+next-edit features do not establish suitability for this feature.
+
+blink-edit with Sweep is the current candidate for this goal. Minuet's general
+completion support alone does not establish that its Duet next-edit path is
+suitable for small local models. Require local evidence for both behaviors before
+recommending an alternative. The dual-engine rules below describe the existing
+implementation during migration, not the desired final architecture.
+
 ## Workflow
 
 Enable the repository's Markdown/Python formatting hook after cloning:

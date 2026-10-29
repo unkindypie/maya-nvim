@@ -1,5 +1,21 @@
 # AI suggestions
 
+The local AI feature's purpose is to provide **both inline completion and
+next-edit prediction with local models**, without cloud inference, a cloud account,
+or a paid API. The existing shared LSP context collector supplies semantic context.
+Copilot is a separate opt-in alternative and does not satisfy the local feature's
+requirements.
+
+The target architecture is **one local AI plugin and one active local model** for
+both behaviors. blink-edit with Sweep is the current candidate because it already
+supports the specialized local edit workflow being tested. Plugin selection must
+prioritize demonstrated local operation on the target hardware. General provider
+support or upstream popularity alone is insufficient; an experimental edit path
+validated mainly with cloud models needs local validation before it can qualify.
+Legacy configurations should receive a documented migration rather than keeping
+a second local plugin indefinitely. The modes below describe the current runtime;
+the architecture migration has not yet been implemented.
+
 Choose Ollama, GitHub Copilot, or off with `Space ao/ac/ax` or
 `:MayaAI ollama|copilot|off`. Ordinary Blink/LSP/snippet completion remains
 available with every choice. Local requests never fall back to cloud services.

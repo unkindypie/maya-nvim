@@ -189,8 +189,14 @@ See [keybindings](docs/KEYBINDINGS.md), [language tools](docs/LANGUAGES.md), and
 
 ## 🌺 AI suggestions
 
-Maya's AI setup is custom for local Ollama use and has an option to go with Copilot
-or no AI suggestions at all.
+Maya's local AI feature provides inline completion and next-edit prediction using
+models running locally through Ollama, without a cloud account or paid API. Both
+behaviors use the existing shared LSP context collector.
+
+The simplification goal is one local AI plugin and one active local model for both
+behaviors; blink-edit with Sweep is the current candidate. The presets below
+describe the existing implementation while that migration is evaluated. Copilot
+is a separate opt-in alternative, and AI suggestions can also be disabled.
 
 ### For local Ollama models installation offeers the following base configs:
 

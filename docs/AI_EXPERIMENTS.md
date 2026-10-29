@@ -1,8 +1,12 @@
 # Local AI simplification experiments
 
-The target is one model for insertions and next edits, with Maya's existing
-capability-based, cached LSP context. Model quality and library compatibility are
-separate gates. Sweep is a candidate, not an assumed winner.
+The target is one local AI plugin and one active local model for insertions and
+next edits, with Maya's existing capability-based, cached LSP context. Local
+inference for both behaviors is a requirement, not a provider preference. Cloud
+model results cannot qualify a local implementation. Sweep through blink-edit is
+the current candidate; any alternative must demonstrate both behaviors locally.
+Legacy compatibility calls for a documented migration, not permanent retention of
+a second local AI plugin.
 
 ## Reproduce
 
@@ -67,9 +71,10 @@ estimate of everyday project performance or a general model ranking.
    for insertions and edits, introduce no additional unrelated edits, and keep
    warm p95 preview latency within 20% of dual. Investigate multi-second latency.
    Failed gates preserve current defaults and libraries.
-4. **Before library removal:** validate custom endpoints and Qwen/Mellum FIM
-   prefix/suffix behavior through blink-edit. Its generic template uses a current
-   window; it is not a drop-in replacement for Minuet's cursor-split FIM path.
+4. **Before library removal:** validate the chosen local model and supported local
+   endpoints for both behaviors, including completion in the middle of existing
+   code. Document migration of legacy Qwen/Mellum configurations. Full compatibility
+   with every previous model is not a reason to retain a second plugin indefinitely.
 5. **After a passing migration:** repeat the frozen benchmark and context tests,
    run cancellation/ownership/acceptance/undo/provider-switch regressions, and
    perform a Kitty/tmux interactive check. Commit and push only validated stages.
@@ -129,7 +134,10 @@ unchanged. Migration and library removal are deferred under the plan's gate.
 A post-migration benchmark and manual Kitty/tmux check cannot be claimed because
 no migration was performed. Before migration, investigate the remaining insertion
 failures and prompt/runtime latency on held-out fixtures with real LSP context;
-validate arbitrary cursor/suffix and custom-model behavior before removing Minuet.
+validate cursor/suffix behavior for the selected local model and document legacy
+configuration migration before removing Minuet. The original experiment treated
+Qwen/Mellum compatibility as a removal gate; the clarified one-plugin goal replaces
+that requirement with explicit migration.
 
 The final repeat with the 200 ms delay and extra LSP collection enabled scored
 100/120 insertions, 60/60 corrections, and 60/60 unchanged abstention cases. Its
