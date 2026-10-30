@@ -221,9 +221,11 @@ return {
     event = "VeryLazy",
     dependencies = { "nvim-tree/nvim-web-devicons" },
     opts = {
+      highlights = require("maya.theme").bufferline_highlights(),
       options = {
         diagnostics = "nvim_lsp",
         always_show_bufferline = true,
+        separator_style = { "│", "│" },
         close_command = function(buf)
           Snacks.bufdelete(buf)
         end,

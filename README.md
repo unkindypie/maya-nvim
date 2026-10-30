@@ -174,6 +174,10 @@ restart; it will be seeded again. A read-only personal directory uses a lockfile
 in maya-nvim's state directory instead. Keep personal config and locks when
 uninstalling unless you explicitly want to remove them.
 
+Buffer tabs follow the active light/dark colorscheme, with a distinct selected tab
+and vertical separators. Styling refreshes on live theme changes and works with
+transparent editor backgrounds; no personal bufferline color overrides are needed.
+
 ## 🌟 Daily use
 
 Press Space for which-key. `Space f` finds files, `Space e` opens the explorer,

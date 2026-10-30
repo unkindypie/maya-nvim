@@ -1,4 +1,65 @@
 local M = {}
+-- Build opaque tab surfaces before transparency removes Normal's background.
+local function bufferline_palette()
+  local normal = vim.api.nvim_get_hl(0, { name = "Normal", link = false })
+  local light = vim.o.background == "light"
+  local bg = normal.bg or (light and 0xf2efda or 0x292522)
+  local fg = normal.fg or (light and 0x343e34 or 0xece1d7)
+  local function blend(a, b, weight)
+    local result = 0
+    for _, shift in ipairs({ 16, 8, 0 }) do
+      local ac = math.floor(a / 2 ^ shift) % 256
+      local bc = math.floor(b / 2 ^ shift) % 256
+      result = result + math.floor(ac * (1 - weight) + bc * weight + 0.5) * 2 ^ shift
+    end
+    return result
+  end
+  local accent = vim.api.nvim_get_hl(0, { name = "Function", link = false }).fg or fg
+  for name, value in pairs({
+    Fill = { fg = fg, bg = bg },
+    Inactive = { fg = blend(fg, bg, 0.25), bg = blend(bg, fg, 0.03) },
+    Visible = { fg = fg, bg = blend(bg, fg, 0.07) },
+    Selected = { fg = fg, bg = blend(bg, fg, 0.14), bold = true },
+    Separator = { fg = blend(bg, fg, 0.45), bg = bg },
+    Accent = { fg = accent, bg = bg },
+  }) do
+    vim.api.nvim_set_hl(0, "MayaBufferline" .. name, value)
+  end
+end
+
+function M.bufferline_highlights()
+  local function color(group, attr)
+    return { highlight = "MayaBufferline" .. group, attribute = attr }
+  end
+  local highlights = { fill = { bg = color("Fill", "bg") } }
+  for suffix, group in pairs({ [""] = "Inactive", _visible = "Visible", _selected = "Selected" }) do
+    for _, name in ipairs({ "buffer", "close_button", "tab" }) do
+      local key = name == "buffer" and suffix == "" and "background" or name .. suffix
+      -- bufferline has tab/tab_selected, but no tab_visible.
+      if key ~= "tab_visible" then
+        highlights[key] = { fg = color(group, "fg"), bg = color(group, "bg"), italic = false }
+      end
+    end
+    -- Preserve diagnostic/modified colors, while keeping each tab one continuous surface.
+    for _, name in ipairs({
+      "modified",
+      "duplicate",
+      "diagnostic",
+      "error",
+      "warning",
+      "info",
+      "hint",
+      "pick",
+    }) do
+      highlights[name .. suffix] = { bg = color(group, "bg") }
+    end
+    highlights["separator" .. suffix] = { fg = color("Separator", "fg"), bg = color(group, "bg") }
+  end
+  highlights.buffer_selected.bold = true
+  highlights.indicator_selected = { fg = color("Accent", "fg"), bg = color("Selected", "bg") }
+  return highlights
+end
+
 function M.apply_transparency()
   if not require("maya.user").get("transparent_background") then
     return
@@ -89,6 +150,7 @@ function M.setup_default(opts)
   local theme = selected()
   apply((not theme.plugin or theme.plugin == "catppuccin/nvim") and theme.name or "catppuccin")
   local function highlights()
+    bufferline_palette()
     M.apply_transparency()
     -- Keep Markdown backgrounds transparent with every colorscheme.
     vim.api.nvim_set_hl(0, "MayaMarkdownBackground", {})
