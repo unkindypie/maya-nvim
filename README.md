@@ -250,7 +250,3 @@ Configuration licensed GPL-3.0; LunarVim-derived mappings are attributed in
   support, live updates, and a safe fallback. The current personal Maya watcher
   reads `~/.config/maya-theme/current`; built-in `theme_background = "auto"`
   preserves Neovim's existing background rather than detecting the desktop.
-- Make Codex CLI follow desktop light/dark changes alongside mvim, including
-  running sessions. Investigate terminal appearance notifications and supported
-  Codex theme controls; the current `codex_tui` MCP tools expose task/worktree
-  management, with no theme-setting or IDE-context attachment method.
