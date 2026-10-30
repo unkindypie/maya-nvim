@@ -27,12 +27,35 @@ _G.notice=""
 vim.notify=function(text) _G.notice=text end
 ai.notify_status()
 assert(notice:find("Cursortab") and notice:find("custom%-sweep") and notice:find("Ctrl%-%]"))
-package.loaded.copilot={setup=function() end}
-vim.api.nvim_create_user_command("Copilot",function() end,{nargs="*",force=true})
+-- Exercise the real shared adapter, but never launch an authenticated cloud client.
+local enabled={}
+vim.lsp.enable=function(name,value) assert(name=="copilot"); enabled[#enabled+1]=value~=false end
+local executable=vim.fn.executable
+vim.fn.executable=function(name) return name=="copilot-language-server" and 0 or executable(name) end
+vim.env.MAYA_NVIM_NO_INSTALL=nil
+local installed
+require("maya.languages").install_package=function(name,done)
+ assert(name=="copilot-language-server"); installed=done
+end
 ai.select("copilot",false)
-assert(not require("cursortab.daemon").is_enabled())
+assert(require("cursortab.config").get().provider.type=="copilot")
+assert(require("cursortab.config").get().enabled_predicate())
+assert(not package.loaded.copilot and not require("lazy.core.config").plugins["copilot.lua"])
+assert(type(vim.lsp.config.copilot.on_attach)=="function")
+ai.notify_status()
+assert(notice:find("GitHub Copilot") and notice:find("LspCopilotSignIn"))
 ai.select("off",false)
-assert(ai.status()=="" and not ai.accept())
+installed() -- A late install must not re-enable cloud access after AI-off.
+assert(enabled[#enabled]==false and #enabled==1)
+assert(ai.status()=="" and not ai.accept() and not require("cursortab.daemon").is_enabled())
+ai.select("copilot",false)
+installed()
+assert(enabled[#enabled]==true)
+ai.select("ollama",false)
+assert(enabled[#enabled]==false)
+assert(require("cursortab.config").get().provider.type=="sweep")
+assert(require("cursortab.config").get().provider.model=="custom-sweep")
+ai.select("off",false)
 require("cursortab.daemon").stop_daemon()
 """,
             temp,

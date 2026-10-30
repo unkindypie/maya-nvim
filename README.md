@@ -204,7 +204,7 @@ for status. **Tab accepts**, `Ctrl-]` dismisses until the next edit, and `Space 
 requests a suggestion. Selected ordinary editor completions take priority.
 `Space am` opens saved AI settings. `Ctrl-L` / `Alt-[` also request a suggestion.
 
-Copilot remains a separate opt-in choice (`Space ac`, then `:Copilot auth`).
+Copilot uses the same Cursortab engine as an opt-in cloud provider (`Space ac`, then `:LspCopilotSignIn`).
 A local server failure never switches to a cloud provider.
 See [AI setup and migration](docs/AI.md) and [measured quality and speed](docs/AI_CANDIDATES.md).
 

@@ -16,7 +16,7 @@ function M.dismiss()
 end
 local function eligible(ai)
   local cmp = package.loaded["blink.cmp"]
-  return ai.provider == "ollama"
+  return ai.provider ~= "off"
     and ai.eligible()
     and not (cmp and cmp.get_selected_item())
     and not vim.deep_equal(
@@ -50,7 +50,7 @@ function M.setup(ai)
       normal_edit_only = true,
       cursor_prediction = { enabled = false, auto_advance = false },
     },
-    provider = {
+    provider = ai.provider == "copilot" and { type = "copilot", completion_timeout = 10000 } or {
       type = ai.engine,
       url = ai.endpoint,
       model = ai.model,
@@ -103,7 +103,7 @@ function M.accept()
 end
 function M.trigger()
   local ai = require("maya.ai")
-  if not M.initialized or ai.provider ~= "ollama" or M.visible() or M.pending() then
+  if not M.initialized or ai.provider == "off" or M.visible() or M.pending() then
     return
   end
   dismissed = nil

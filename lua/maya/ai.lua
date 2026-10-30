@@ -1,4 +1,4 @@
-local M = { provider = "off", initialized = {} }
+local M = { provider = "off" }
 local function settings()
   local ok, value = pcall(function()
     return vim.json.decode(
@@ -44,10 +44,10 @@ function M.status()
 end
 function M.notify_status()
   local lines = { "AI: " .. M.provider }
-  if M.provider == "ollama" then
+  if M.provider ~= "off" then
     vim.list_extend(lines, {
-      "Cursortab · " .. M.model,
-      "Server: " .. M.endpoint,
+      "Cursortab · " .. (M.provider == "copilot" and "GitHub Copilot" or M.model),
+      M.provider == "copilot" and "Sign in: :LspCopilotSignIn" or "Server: " .. M.endpoint,
       "Buffer: " .. (M.buffer_reason() or "eligible"),
       "Now: " .. require("maya.ai_next_edit").status(),
       "Tab: accept · Ctrl-]: dismiss · Space an: request",
@@ -66,35 +66,32 @@ function M.select(provider, persist)
   )
   local opts = settings()
   M.cancel()
-  if M.initialized.copilot and M.provider == "copilot" and provider ~= "copilot" then
-    vim.cmd("Copilot disable")
+  if M.provider == "copilot" then
+    vim.lsp.enable("copilot", false)
   end
   M.provider = provider
   M.model, M.endpoint = opts.model, opts.endpoint
   M.engine, M.context_size = opts.engine, opts.context_size
-  if provider == "ollama" then
+  if provider ~= "off" then
     require("maya.ai_next_edit").setup(M)
-  elseif provider == "copilot" then
-    if not M.initialized.copilot then
-      require("copilot").setup({
-        panel = { enabled = false },
-        suggestion = {
-          enabled = true,
-          auto_trigger = true,
-          hide_during_completion = true,
-          keymap = {
-            accept = false,
-            accept_word = false,
-            accept_line = false,
-            next = false,
-            prev = false,
-            dismiss = false,
-          },
-        },
-      })
-      M.initialized.copilot = true
+  end
+  if provider == "copilot" then
+    -- Use nvim-lspconfig's native authentication commands; Cursortab owns suggestions.
+    vim.lsp.config("copilot", { settings = { telemetry = { telemetryLevel = "off" } } })
+    local function enable()
+      if M.provider == "copilot" then
+        vim.lsp.enable("copilot")
+      end
+    end
+    if vim.fn.executable("copilot-language-server") == 1 then
+      enable()
+    elseif vim.env.MAYA_NVIM_NO_INSTALL ~= "1" then
+      require("maya.languages").install_package("copilot-language-server", enable)
     else
-      vim.cmd("Copilot enable")
+      vim.notify(
+        "Install copilot-language-server with :Mason before using Copilot",
+        vim.log.levels.WARN
+      )
     end
   end
   if persist ~= false then
@@ -109,27 +106,16 @@ function M.edit_settings()
   vim.cmd.edit(vim.fn.fnameescape(vim.fn.stdpath("state") .. "/ai.json"))
 end
 function M.accept()
-  if M.provider == "ollama" then
-    return require("maya.ai_next_edit").accept()
-  end
-  if M.provider == "copilot" and M.initialized.copilot then
-    local suggestion = require("copilot.suggestion")
-    if suggestion.is_visible() then
-      suggestion.accept()
-      return true
-    end
-  end
-  return false
+  return M.provider ~= "off" and require("maya.ai_next_edit").accept() or false
 end
 function M.action(name)
-  if M.provider == "ollama" then
-    if name == "dismiss" then
-      require("maya.ai_next_edit").dismiss()
-    else
-      require("maya.ai_next_edit").trigger()
-    end
-  elseif M.provider == "copilot" and M.initialized.copilot then
-    require("copilot.suggestion")[name]()
+  if M.provider == "off" then
+    return
+  end
+  if name == "dismiss" then
+    require("maya.ai_next_edit").dismiss()
+  else
+    require("maya.ai_next_edit").trigger()
   end
 end
 function M.setup()
@@ -147,7 +133,7 @@ function M.setup()
     end,
   })
   vim.keymap.set("n", "<Tab>", function()
-    if M.provider == "ollama" and require("maya.ai_next_edit").visible() then
+    if M.provider ~= "off" and require("maya.ai_next_edit").visible() then
       vim.schedule(function()
         M.accept()
       end)

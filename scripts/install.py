@@ -239,7 +239,7 @@ def main():
         else:
             if args.ai == "copilot":
                 print(
-                    "🌺 GitHub Copilot selected. Run :Copilot auth in mvim to sign in."
+                    "🌺 GitHub Copilot selected. Run :LspCopilotSignIn in mvim to sign in."
                 )
             state.mkdir(parents=True, exist_ok=True)
             try:

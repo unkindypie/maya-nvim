@@ -1,3 +1,13 @@
+# Native Copilot integration — 2026-10-30
+
+Cursortab now handles the opt-in Copilot provider through Neovim LSP; the separate
+copilot.lua plugin is removed. `tests/ai_copilot.py` uses the real Cursortab daemon
+and an in-process simulated Copilot LSP transport to verify request bridging,
+preview rendering, Tab acceptance and AI-off client shutdown without cloud access.
+Provider migration tests also cover local/Copilot/off switching and delayed Mason
+installation after disabling Copilot. Existing completion-menu key tests pass.
+Live GitHub authentication and real Copilot prediction quality remain unverified.
+
 # Cursortab migration validation — 2026-10-30
 
 Validated on Neovim 0.12.5, Ollama 0.40.4 and an RTX 3060 Laptop with 6 GB VRAM.

@@ -67,6 +67,5 @@ return {
       assert(result.code == 0, result.stderr)
     end,
   },
-  { "zbirenbaum/copilot.lua", lazy = true },
   { "nvim-lua/plenary.nvim", lazy = true },
 }

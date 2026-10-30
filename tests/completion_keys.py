@@ -12,11 +12,13 @@ try:
     wait(nvim, 'vim.fn.mode() == "i"')
     nvim.exec_lua("""
 local ai=require("maya.ai")
-ai.provider="copilot"; ai.initialized.copilot=true
+ai.provider="copilot"
 _G.ai_visible=true; _G.dismissed=0; _G.ai_accepted=0
-package.loaded["copilot.suggestion"]={
+package.loaded["maya.ai_next_edit"]={
+ cancel=function() end,
+ trigger=function() end,
  dismiss=function() ai_visible=false; dismissed=dismissed+1 end,
- is_visible=function() return ai_visible end,
+ visible=function() return ai_visible end,
  accept=function() ai_accepted=ai_accepted+1 end,
 }
 require("blink.cmp").show({providers={"buffer"}})

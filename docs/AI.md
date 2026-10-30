@@ -47,7 +47,7 @@ Validation is an endpoint/residency smoke test, not a correctness score.
 ## Controls
 
 - `Space ao` / `:MayaAI ollama`: enable or reload local AI.
-- `Space ac` / `:MayaAI copilot`: select Copilot; authenticate with `:Copilot auth`.
+- `Space ac` / `:MayaAI copilot`: select Copilot; authenticate with `:LspCopilotSignIn`.
 - `Space ax` / `:MayaAI off`: cancel and disable AI.
 - `Tab`: accept selected ordinary completion first, then a visible AI suggestion.
   Normal-mode Tab accepts an AI preview or retains jump-forward behavior.
@@ -109,3 +109,17 @@ If the binary is missing, run `python3 scripts/build_cursortab.py` with
 `NVIM_APPNAME=maya-nvim`, then restart mvim. Re-run the installer for model or
 residency failures. A local OpenAI-compatible endpoint can also be configured
 manually; its operator must set a matching model and context size.
+
+## Native Copilot provider
+
+Selecting Copilot installs `copilot-language-server` through Mason when needed and
+enables nvim-lspconfig's native Copilot LSP configuration. Open a source file, then
+run `:LspCopilotSignIn` (replacing `:Copilot auth`). Use `:LspCopilotSignOut` to sign
+out. GitHub authentication and Copilot access are required. Existing saved
+`provider: "copilot"` preferences continue to work.
+
+Cursortab owns suggestions, acceptance, dismissal and manual requests for both
+providers; `copilot.lua` is removed. Selecting local AI or off disables the Copilot
+LSP client and cancels pending suggestions. There is no automatic cloud fallback.
+Maya's cached semantic collector remains connected to local model prompts; native
+Copilot builds context through its own language-server protocol.

@@ -41,7 +41,8 @@ plugins by demonstrated local-model support, quality, latency, and maintenance o
 the target hardware. Popularity, broad cloud-provider support, or cloud-oriented
 next-edit features do not establish suitability for this feature.
 
-Cursortab is the sole local suggestion engine. Favor upstream maintenance and
+Cursortab is the sole suggestion engine for local models and opt-in Copilot.
+Copilot uses its native provider and Neovim LSP, never a separate suggestion plugin. Favor upstream maintenance and
 native scheduling over custom coordination. Keep the shared cached LSP collector
 connected to every supported local prompt format. Benchmark changes against the
 recorded Blink baseline in docs/AI_CANDIDATES.md; report quality regressions honestly.
@@ -104,6 +105,7 @@ MAYA_NVIM_NO_INSTALL=1 MAYA_NVIM_NO_AI=1 bin/mvim --headless '+lua assert(vim.g.
 # Opt-in real Codex TUI /ide handshake (requires installed, logged-in CLI):
 MAYA_NVIM_TEST_CODEX=1 .local/test-env/bin/python tests/codex_cli_ide.py
 .local/test-env/bin/python tests/ai_cursortab.py
+.local/test-env/bin/python tests/ai_copilot.py
 .local/test-env/bin/python tests/ai_context.py
 .local/test-env/bin/python tests/ai_annotations.py
 .local/test-env/bin/python tests/ai_shared_context.py
