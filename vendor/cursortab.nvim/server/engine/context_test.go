@@ -1,0 +1,141 @@
+package engine
+
+import (
+	"context"
+	"cursortab/assert"
+	"cursortab/text"
+	"cursortab/types"
+	"testing"
+)
+
+func TestIsFileStateValid(t *testing.T) {
+	buf := newMockBuffer()
+	prov := newMockProvider()
+	clock := newMockClock()
+	eng := createTestEngine(buf, prov, clock)
+
+	tests := []struct {
+		name         string
+		state        *FileState
+		currentLines []string
+		want         bool
+	}{
+		{
+			name:         "empty original lines",
+			state:        &FileState{OriginalLines: []string{}},
+			currentLines: []string{"a", "b"},
+			want:         false,
+		},
+		{
+			name:         "same content",
+			state:        &FileState{OriginalLines: []string{"a", "b", "c"}},
+			currentLines: []string{"a", "b", "c"},
+			want:         true,
+		},
+		{
+			name:         "minor difference",
+			state:        &FileState{OriginalLines: []string{"a", "b", "c"}},
+			currentLines: []string{"a", "b", "c", "d"},
+			want:         true,
+		},
+		{
+			name:         "major line count difference",
+			state:        &FileState{OriginalLines: []string{"a", "b", "c"}},
+			currentLines: []string{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n"},
+			want:         false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := eng.isFileStateValid(tt.state, tt.currentLines)
+			assert.Equal(t, tt.want, got, "isFileStateValid")
+		})
+	}
+}
+
+func TestTrimFileStateStore(t *testing.T) {
+	buf := newMockBuffer()
+	prov := newMockProvider()
+	clock := newMockClock()
+	eng := createTestEngine(buf, prov, clock)
+
+	// Add 5 file states
+	for i := 0; i < 5; i++ {
+		eng.fileStateStore[string(rune('a'+i))+".go"] = &FileState{
+			LastAccessNs: int64(i * 1000),
+		}
+	}
+
+	eng.trimFileStateStore(2)
+
+	assert.Equal(t, 2, len(eng.fileStateStore), "file state store size")
+
+	// Should keep the most recently accessed (highest LastAccessNs)
+	_, existsD := eng.fileStateStore["d.go"]
+	assert.True(t, existsD, "should keep d.go (second most recent)")
+	_, existsE := eng.fileStateStore["e.go"]
+	assert.True(t, existsE, "should keep e.go (most recent)")
+}
+
+func TestHandleFileSwitch_DropsInFlightWork(t *testing.T) {
+	buf := newMockBuffer()
+	prov := newMockProvider()
+	clock := newMockClock()
+	eng, cancel := createTestEngineWithContext(buf, prov, clock)
+	defer cancel()
+
+	prefetchCtx, cancelPrefetch := context.WithCancel(context.Background())
+	currentCtx, currentCancel := context.WithCancel(context.Background())
+	streamCtx, streamCancel := context.WithCancel(context.Background())
+	defer cancelPrefetch()
+	defer currentCancel()
+	defer streamCancel()
+
+	eng.prefetch = prefetchSlot{
+		inflight: &prefetchInflight{cancel: cancelPrefetch},
+		ready: &prefetchedCompletion{CompletionResponse: &types.CompletionResponse{Completion: &types.Completion{
+			StartLine: 5, EndLineInc: 5, Lines: []string{"old file completion"},
+		}}},
+	}
+	eng.currentCancel = currentCancel
+	eng.completionStream = newMockCompletionStream(streamCancel)
+	eng.streamingState = &streamingState{}
+	eng.state = stateStreamingCompletion
+	showDisplayedCompletionForTest(
+		eng,
+		&types.Completion{
+			StartLine: 1, EndLineInc: 1, Lines: []string{"old"},
+		},
+		nil,
+		nil,
+	)
+	eng.stagedCompletion = &text.StagedCompletion{CurrentIdx: 0}
+	eng.cursorTarget = &types.CursorPredictionTarget{LineNumber: 5}
+
+	eng.handleFileSwitch("a.go", "b.go", []string{"new content"})
+
+	assertNoPrefetch(t, eng, "prefetch cleared")
+	assert.Nil(t, eng.currentCancel, "current request cancel cleared")
+	assert.Nil(t, eng.completionStream, "completion stream cleared")
+	assert.Nil(t, eng.streamingState, "streaming state cleared")
+	assert.Nil(t, eng.display.current(), "completions cleared")
+	assert.Nil(t, eng.stagedCompletion, "staged completion cleared")
+	assert.Nil(t, eng.cursorTarget, "cursor target cleared")
+	assert.Equal(t, stateIdle, eng.state, "state reset to idle")
+
+	for _, c := range []struct {
+		name string
+		ctx  context.Context
+	}{
+		{"prefetch", prefetchCtx},
+		{"current", currentCtx},
+		{"stream", streamCtx},
+	} {
+		select {
+		case <-c.ctx.Done():
+		default:
+			t.Errorf("%s context should be cancelled", c.name)
+		}
+	}
+}

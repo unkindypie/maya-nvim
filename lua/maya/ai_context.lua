@@ -18,13 +18,14 @@ end
 local function key(buf, tick, cursor)
   return table.concat({ buf, tick, cursor[1], cursor[2] }, ":")
 end
----@param opts? {include_source?: boolean}
+---@param opts? {include_source?: boolean, focused?: boolean}
 function M.get(opts)
   local buf, tick, cursor = identity()
   local entry = cache[key(buf, tick, cursor)]
   if not entry then
     return ""
   end
+  -- Keep explicit type chains; broad incidental definitions can crowd out useful hints.
   local matches = {}
   for _, item in ipairs(snippets) do
     local target = vim.fn.bufnr(item.path)
@@ -36,6 +37,7 @@ function M.get(opts)
       and item.scope == entry.scope
       and math.abs(item.row - cursor[1]) < 12
       and item.valid
+      and not (opts and opts.focused and item.priority == 1 and #item.text > 1600)
       and (
         not item.buf
         or (
@@ -391,5 +393,4 @@ function M.refresh()
     end
   end
 end
-function M.setup(_) end
 return M

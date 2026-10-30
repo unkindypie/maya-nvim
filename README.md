@@ -87,7 +87,7 @@ return {
   pokemon_sound_on_start_volume_percentage = 50, -- 0–100; 0 mutes playback.
   reopen_tabs = true, -- Restore this folder's files, tabs, and splits.
   ai_completion_debounce_ms = 200, -- Insert-mode completion idle delay.
-  ai_next_edit_debounce_ms = 650, -- Sweep next-edit idle delay.
+  ai_next_edit_debounce_ms = 650, -- Local AI idle delay.
 
   options = {}, -- No personal editor-option overrides.
 
@@ -189,52 +189,24 @@ See [keybindings](docs/KEYBINDINGS.md), [language tools](docs/LANGUAGES.md), and
 
 ## 🌺 AI suggestions
 
-Maya's local AI feature provides inline completion and next-edit prediction using
-models running locally through Ollama, without a cloud account or paid API. Both
-behaviors use the existing shared LSP context collector.
+**Cursortab runs one local model for inline completions and next edits**, using
+Maya's cached LSP type context. No cloud account or paid API is needed. The installer
+builds Cursortab and sets up Ollama with one model:
 
-The simplification goal is one local AI plugin and one active local model for both
-behaviors. The [Cursortab versus blink-edit evaluation](docs/AI_CANDIDATES.md)
-compares local quality, speed and maintenance before migration. The presets below
-describe the existing implementation. Copilot
-is a separate opt-in alternative, and AI suggestions can also be disabled.
+| Dedicated VRAM     | Model choice                                          |
+| ------------------ | ----------------------------------------------------- |
+| 2 GB+              | Sweep 1.5B Q8 (default; 2 GB may require CPU offload) |
+| 8 GB+ alternatives | Zeta-2.1 or Zeta-2 8B Q4_K_M                          |
 
-### For local Ollama models installation offeers the following base configs:
+Memory needs depend on context length and other GPU use; setup checks residency.
+Use `Space ao` to enable/reload local AI, `Space ax` to turn AI off, and `Space as`
+for status. **Tab accepts**, `Ctrl-]` dismisses until the next edit, and `Space an`
+requests a suggestion. Selected ordinary editor completions take priority.
+`Space am` opens saved AI settings. `Ctrl-L` / `Alt-[` also request a suggestion.
 
-| Estimated VRAM | Local preset                                                                  |
-| -------------- | ----------------------------------------------------------------------------- |
-| 2–4 GB         | Single: Sweep 1.5B Q8 alone for insertions and edits; 2 GB may offload to CPU |
-| 6 GB           | Dual: Qwen2.5-Coder 1.5B Base Q8 + Sweep                                      |
-| 8 GB+          | Dual: Qwen2.5-Coder 7B Base Q4_K_M + Sweep; optional Mellum 4B Q8             |
-
-Local AI can work in 2 modes, Dual and Single. `Space am` opens the local-mode picker:
-**Dual** runs inline completion plus Sweep next edits,
-**Single** runs Sweep only. There is also a **Completion-only** mode for people who has some Ollama models already installed,
-it runs only the saved inline model selected during installation.
-
-These are estimates, real use may be different.
-See [models, flags, and compatibility](docs/AI.md) for exact tags and details.
-
-### Some commands and hotkeys, also accessible from Space + a:
-
-```vim
-:MayaAI ollama
-:MayaAI copilot
-:MayaAI off
-```
-
-Use `Space ao/ac/ax` for the same actions. GitHub authentication is through
-`:Copilot auth`. Local server failure never silently switches to GitHub.
-Tab accepts a selected completion first, then a visible AI suggestion; otherwise it navigates completion,
-jumps/expands snippets, or inserts a normal Tab. Ctrl-J/K navigate completion,
-Ctrl-L / Alt-[ cycle inline suggestions; Ctrl-] dismisses. `Space an` requests
-next-edit, `Space aa` accepts, and `Space ad` dismisses. Dual mode uses inline
-completion in Insert mode and Sweep on Normal-mode idle; single mode uses Sweep
-for both.
-Enter accepts a selected completion; it does not automatically select one.
-
-Details: [AI setup](docs/AI.md), [keybindings and migration](docs/KEYBINDINGS.md),
-[maintenance/troubleshooting](docs/MAINTENANCE.md), [validation](docs/VALIDATION.md).
+Copilot remains a separate opt-in choice (`Space ac`, then `:Copilot auth`).
+A local server failure never switches to a cloud provider.
+See [AI setup and migration](docs/AI.md) and [measured quality and speed](docs/AI_CANDIDATES.md).
 
 Review Git changes in a directory tree with `Space gv` (Diffview). Use `Space gV`
 to compare a branch or revision such as `origin/main...HEAD`, and `Space gq` to

@@ -25,6 +25,15 @@ function M.run()
       for _, task in ipairs((plugin._ or {}).tasks or {}) do
         assert(not task:has_errors(), "Plugin task failed: " .. plugin.name .. "; see update log")
       end
+      if plugin.name == "cursortab.nvim" and phase == "restore" then
+        local build = vim
+          .system(
+            { "python3", vim.env.MAYA_NVIM_UPDATE_ROOT .. "/scripts/build_cursortab.py" },
+            { text = true }
+          )
+          :wait()
+        assert(build.code == 0, "Cursortab build failed: " .. (build.stderr or ""))
+      end
       if plugin.url then
         assert(vim.fn.isdirectory(plugin.dir) == 1, "Plugin missing: " .. plugin.name)
       end

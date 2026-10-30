@@ -242,8 +242,8 @@ for key, item in pairs({
   end, item[2])
 end
 leader("am", function()
-  require("maya.ai").choose_local_mode()
-end, "Local AI mode (enables Ollama)")
+  require("maya.ai").edit_settings()
+end, "Local AI settings")
 leader("as", function()
   require("maya.ai").notify_status()
 end, "AI status and pause reason")

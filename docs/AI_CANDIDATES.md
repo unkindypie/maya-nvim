@@ -1,4 +1,137 @@
-# Local AI candidate evaluation — stages 1 and 2
+# Local AI: Cursortab rollout and candidate evaluation
+
+## Runtime migration — 30 October 2026
+
+The full migration is now authorized and implemented. **Cursortab is the only
+local AI plugin**, serving completion and edits with one local model. Minuet,
+blink-edit and Maya's dual-engine coordinator are removed. Ordinary blink.cmp
+completion and optional Copilot remain. See [setup and migration](AI.md).
+
+The earlier stage-2 stop/review recommendation below is historical, superseded
+by this rollout. Its raw measurements remain unchanged.
+
+### Sweep correctness: context was present, but too broad
+
+Both original candidates already received Maya's cached LSP collector. The gap
+was not caused by omitting the collector. Captured Lua/Python prompts contained
+large incidental standard-library definition excerpts, including unrelated APIs.
+Cursortab's native prompt, cursor markers, response prefill and acceptance rules
+also differ from Blink; identical weights do not imply identical predictions.
+
+The adopted change leaves collection intact and selects a focused cache view:
+omit definition snippets larger than 1,600 bytes only at the lowest priority.
+Explicit annotation/type chains retain priority; hover/signature hints and the
+6,000-byte maximum remain. This is not the failed blanket 2,000-byte truncation
+from stage 2. All six real-LSP fidelity fixtures still pass, including the complete
+MayaConfig annotation and nested Lua/Python/TypeScript types.
+
+Each new controlled run covers 60 fixtures, one first observation plus two warm
+repetitions (180 observations, 120 warm). The earlier Blink baseline has ten warm
+repetitions; this is a corpus comparison, not a significance claim.
+
+| Configuration                                      | Insertions        | Corrections       | Quiet            | Correct-preview p95: insert / edit |
+| -------------------------------------------------- | ----------------- | ----------------- | ---------------- | ---------------------------------- |
+| Recorded Blink + Sweep baseline                    | 212/240 (88.3%)   | 133/180 (73.9%)   | 180/180 (100%)   | 2,680 / 988 ms                     |
+| Cursortab, full cache, server context 2,048        | 40/48 (83.3%)     | 24/36 (66.7%)     | 28/36 (77.8%)    | 455 / 990 ms                       |
+| Cursortab, full cache, server context 4,096        | 46/48 (95.8%)     | 24/36 (66.7%)     | 34/36 (94.4%)    | 529 / 991 ms                       |
+| **Cursortab, focused cache, server context 4,096** | **46/48 (95.8%)** | **28/36 (77.8%)** | **36/36 (100%)** | **373 / 822 ms**                   |
+
+Timing includes the controlled 200/650 ms editing pause. The chosen view matches
+or exceeds the recorded Blink percentages on this corpus. Held-out corrections
+improve from 6/12 to 8/12, matching Blink's earlier 40/60; held-out insertions and
+quiet cases remain 12/12 each. No request overlaps or timeouts occurred in the
+focused run. Four client stream disconnects were recorded on the large Python
+fixtures, consistent with native early stream termination, without failed outcomes.
+
+The 2,048-token run exposed the OpenAI/Ollama context mismatch: Cursortab's client
+budget does not set Ollama's server context. The installer now creates a dedicated
+weight-sharing alias with explicit `num_ctx`, avoiding changes to the source model.
+
+Remaining Sweep failures include Lua `table.lenght` becoming invalid
+`table.length`, ignoring a literal annotation, adding an unsolicited `print`, and
+leaving an assertion-inconsistent Lua arithmetic expression unchanged. This change
+improves measured correctness; it does not make model output reliable enough to
+accept without review. The scorer still uses the original strict expected forms.
+
+### Larger models and native typing
+
+Sweep remains the installer default, including on larger GPUs. Zeta-2.1 Q4_K_M
+and Zeta-2 Q4_K_M are explicit 8 GB+ alternatives with an 8,192-token server
+context. The [upstream benchmarks](https://github.com/cursortab/cursortab.nvim#benchmarks)
+use different scenarios and quantization; they do not establish Maya accuracy.
+
+On the same original 24-fixture subset, warm controlled outcomes were:
+
+| Model                                   | Insertions | Corrections | Quiet |
+| --------------------------------------- | ---------- | ----------- | ----- |
+| Focused Sweep Q8 (two warm repetitions) | 22/24      | 10/12       | 12/12 |
+| Zeta-2 Q4 (one warm repetition)         | 10/12      | 2/6         | 6/6   |
+| Zeta-2.1 Q4 (one warm repetition)       | 4/12       | 4/6         | 6/6   |
+
+Zeta-2.1 included one warm timeout after loading. A separate warmed retry of the
+first three Python insertion fixtures fixed two failures; the third remained a
+no-op. We retain the original results rather than silently substituting retries.
+Zeta-2 was explicitly prewarmed. Both larger models offloaded to CPU on this
+6 GB RTX 3060 Laptop GPU: Zeta-2 correct-preview p95 was 3,529 ms for insertion
+and 2,553 ms for edits; Zeta-2.1 edit p95 was 3,138 ms. These are **not 8 GB GPU
+latency measurements**. Full residency on an 8 GB system remains unverified;
+setup checks actual residency and available memory before saving preferences.
+
+Native-event tests cover nine fixtures, three repetitions for Sweep. Before the
+Normal-mode policy change, live-LSP quiet cases passed only 3/9: Cursortab offered
+unwanted trailing return/export statements. Automatic Normal-mode stages made
+entirely of added lines are now withheld in both streamed and batch paths.
+Explicit requests and Insert-mode additions remain available and are tested.
+
+After that change, native Sweep passed insertion 9/9, correction 9/9 and quiet
+9/9 without LSP. With live LSP it passed 9/9, **6/9**, and 9/9 respectively;
+three corrections produced model no-ops. Earlier live-LSP repetitions varied
+between 7/9 and 8/9 corrections. Thus controlled corpus parity does not establish
+universal native-event parity: live context/timing remains a quality limitation.
+Single native live-LSP passes for Zeta-2 and Zeta-2.1 scored respectively
+1/3 and 1/3 insertions, 0/3 and 1/3 corrections, and 3/3 quiet each.
+
+[Machine-readable results](AI_MIGRATION_RESULTS.json) include aggregate counts,
+latencies, model digests where captured, and hashes of raw captures. Raw prompts,
+project text, generated binaries, model weights and logs are excluded from Git.
+
+### Runtime and maintenance
+
+Cursortab owns scheduling, cancellation, streaming and preview staging. Maya
+supplies preferences, key arbitration and cached semantic text for Sweep, Zeta-2
+and Zeta-2.1. Local extensions are documented in [vendor provenance](../vendor/README.md).
+They disable speculative prefetch, check eligibility before late previews, count
+edits made before the first daemon sync, replay startup edits after connection,
+separate AI acceptance from surrounding typing in undo history, and suppress
+automatic Normal-mode stages consisting only of added lines.
+
+Installer and editor updates rebuild the Go daemon. A compatible system Go is
+reused; otherwise setup downloads and verifies an isolated toolchain. Saved old
+modes migrate to the saved edit model (or Sweep); no second engine remains for
+compatibility. AI-off and endpoint preferences are preserved. The old installer
+mode flags are replaced by one model plus its prompt format.
+
+### Reproducing current experiments
+
+Create `maya-sweep-candidate-eval` from the Sweep Q8 source using Ollama `/api/create`
+with `parameters: {"num_ctx": 4096}`. Model weights and raw JSONL stay outside Git.
+Set `NVIM_APPNAME=maya-nvim` for all commands.
+
+```sh
+python3 scripts/build_cursortab.py
+MAYA_NVIM_TEST_OLLAMA=1 MAYA_AI_FOCUSED=0 .local/test-env/bin/python tests/ai_candidates.py --cursortab vendor/cursortab.nvim --repetitions 2
+MAYA_NVIM_TEST_OLLAMA=1 .local/test-env/bin/python tests/ai_candidates.py --cursortab vendor/cursortab.nvim --repetitions 2
+MAYA_NVIM_TEST_OLLAMA=1 .local/test-env/bin/python tests/ai_candidate_typing.py --cursortab vendor/cursortab.nvim --lsp
+```
+
+Use `MAYA_AI_TEST_MODEL`, `MAYA_AI_TEST_ENGINE` and `MAYA_AI_TEST_CONTEXT` for
+Zeta aliases with the correct server context. Historical dual/Blink reproduction
+requires checkout `345fde4`; the current runtime and harness intentionally do not
+retain those plugins.
+
+---
+
+## Historical stage 1–2 review checkpoint
 
 Review checkpoint requested on 29 October 2026. This work evaluates Cursortab
 against the bundled blink-edit with local models. It does not change the active

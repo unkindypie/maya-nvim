@@ -1,0 +1,2 @@
+# Upstream diff fixtures intentionally contain trailing spaces and empty lines.
+vendor/cursortab.nvim/**/*.txtar -whitespace

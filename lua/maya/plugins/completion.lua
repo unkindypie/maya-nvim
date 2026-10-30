@@ -57,15 +57,15 @@ return {
   { "windwp/nvim-autopairs", event = "InsertEnter", opts = {} },
   { "folke/lazydev.nvim", ft = "lua", opts = {} },
   {
-    dir = vendor .. "minuet-ai.nvim",
-    name = "minuet-ai.nvim",
+    dir = vendor .. "cursortab.nvim",
+    name = "cursortab.nvim",
     lazy = true,
-    dependencies = { "nvim-lua/plenary.nvim" },
-  },
-  {
-    dir = vendor .. "blink-edit.nvim",
-    name = "blink-edit.nvim",
-    lazy = true,
+    build = function()
+      local result = vim
+        .system({ "python3", vim.fn.stdpath("config") .. "/scripts/build_cursortab.py" }, { text = true })
+        :wait()
+      assert(result.code == 0, result.stderr)
+    end,
   },
   { "zbirenbaum/copilot.lua", lazy = true },
   { "nvim-lua/plenary.nvim", lazy = true },

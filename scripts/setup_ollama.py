@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Reuse or install Ollama; validate selected completion/next-edit models."""
+"""Reuse or install Ollama; validate one local completion/edit model."""
 
 import argparse
 import hashlib
@@ -7,7 +7,6 @@ import json
 import os
 import platform
 import shutil
-import statistics
 import shlex
 import urllib.error
 import subprocess
@@ -19,7 +18,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from ai_setup import detect_gpu, recommended_model, recommended_profile, SWEEP
+from ai_setup import detect_gpu, recommended_profile, SWEEP, migrate, engine_for
 
 ENDPOINT = "http://127.0.0.1:11434"
 
@@ -93,9 +92,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--models-dir", type=Path)
     parser.add_argument("--model")
-    parser.add_argument("--ai-mode", choices=["completion-only", "single", "dual"])
-    parser.add_argument("--next-edit-model")
-    parser.add_argument("--fim-format", choices=["qwen", "mellum"])
+    parser.add_argument("--engine", choices=["sweep", "zeta-2", "zeta-2.1"])
     parser.add_argument("--endpoint")
     parser.add_argument(
         "--yes",
@@ -118,10 +115,6 @@ def main():
     ENDPOINT = (
         args.endpoint or saved.get("endpoint") or "http://127.0.0.1:11434"
     ).rstrip("/")
-    if args.ai_mode == "single" and args.model:
-        parser.error("Single mode uses --next-edit-model, not --model")
-    if args.next_edit_model and args.ai_mode == "completion-only":
-        parser.error("--next-edit-model requires single or dual mode")
     existing = Path("/mnt/ml/ollama")
     default = Path(
         os.environ.get(
@@ -195,30 +188,18 @@ WantedBy=default.target
         )
     available = {m["name"] for m in api("/api/tags")["models"]}
     hardware = detect_gpu()
-    mode = args.ai_mode or (
-        "completion-only" if args.model else saved.get("local_mode", "completion-only")
+    migrated = migrate(saved)
+    profile = recommended_profile(hardware)
+    model = args.model or (migrated["model"] if saved else (profile or {}).get("model"))
+    if not model:
+        raise SystemExit("VRAM unavailable; specify --model and --engine")
+    engine = (
+        args.engine
+        or (migrated.get("engine") if not args.model and saved else None)
+        or engine_for(model)
     )
-    if args.next_edit_model and not args.ai_mode:
-        mode = "dual"
-    model = args.model or saved.get("model")
-    if not model and mode != "single":
-        profile = recommended_profile(hardware)
-        if not profile:
-            raise SystemExit("🔔 VRAM unavailable; specify --model or --ai-mode single")
-        model = profile.get("model") or recommended_model(hardware)
-    next_model = args.next_edit_model or saved.get("next_edit_model") or SWEEP
-    fim_format = args.fim_format or saved.get("fim_format")
-    if model and "qwen" in model.lower():
-        fim_format = "qwen"
-    elif model and "mellum" in model.lower():
-        fim_format = "mellum"
-    if mode == "dual" and not fim_format:
-        raise SystemExit(
-            "🔔 Custom dual-mode models require --fim-format qwen or mellum"
-        )
-    print(
-        f"🌺 Local AI: {mode}; inline: {model}; next-edit: {next_model}; hardware: {hardware}"
-    )
+    context_size = 4096 if engine == "sweep" else 8192
+    print(f"Local AI: Cursortab / {engine}; model: {model}; hardware: {hardware}")
 
     def ensure(name):
         if name not in available:
@@ -242,153 +223,98 @@ WantedBy=default.target
                 )
             available.add(name)
 
-    def benchmark(name, next_edit=False):
-        prompt = "<|fim_prefix|>def add(a: int, b: int) -> int:\n    <|fim_suffix|>\n\nprint(add(2, 3))\n<|fim_middle|>"
-        if next_edit:
-            prompt = "<|file_sep|>original/example.py\ndef add(a, b):\n    return a - b\n<|file_sep|>current/example.py\ndef add(a, b):\n    return a + b\n<|file_sep|>updated/example.py\n"
-        elif "mellum" in name.lower():
-            prompt = "<filename>example.py\n<fim_suffix>\n\nprint(add(2, 3))\n<fim_prefix>def add(a: int, b: int) -> int:\n    <fim_middle>"
-        data = {
-            "model": name,
-            "prompt": prompt,
-            "raw": True,
-            "stream": False,
-            "options": {
-                "num_ctx": 4096,
-                "num_predict": 512 if next_edit else 96,
-                "temperature": 0,
-            },
-        }
-        # Keep dual models resident during validation. Legacy mode retains its cold probe.
-        if mode == "completion-only":
-            api("/api/generate", {"model": name, "keep_alive": 0})
-        cold_start = time.monotonic()
-        api("/api/generate", data)
-        cold_seconds = time.monotonic() - cold_start
-        times = []
-        for _ in range(3):
-            start = time.monotonic()
-            result = api("/api/generate", data)
-            times.append(time.monotonic() - start)
-        return times, result.get("response", ""), cold_seconds
-
-    required = ([model] if mode != "single" else []) + (
-        [next_model] if mode != "completion-only" else []
+    # OpenAI /v1/completions ignores num_ctx; a dedicated alias pins server context.
+    # Reuse the source weights, without mutating the user's original model parameters.
+    source = (
+        saved.get("source_model", model)
+        if model.startswith("maya-local-") and model == saved.get("model")
+        else model
     )
-    previous_model = saved.get("model")
-    if (
-        args.ai_mode
-        and saved.get("provider") == "ollama"
-        and previous_model
-        and previous_model not in required
-    ):
-        print(
-            "🌠 Releasing the previous completion model from memory; keeping its downloaded weights: "
-            + previous_model
+    ensure(source)
+    alias = (
+        "maya-local-"
+        + hashlib.sha256(f"{source}:{context_size}".encode()).hexdigest()[:12]
+    )
+    api(
+        "/api/create",
+        {
+            "model": alias,
+            "from": source,
+            "parameters": {"num_ctx": context_size},
+            "stream": False,
+        },
+        timeout=1800,
+    )
+    if engine == "sweep":
+        prompt = "<|file_sep|>current/example.py\ndef add(a, b):\n    return a +\n<|file_sep|>updated/example.py\ndef add(a, b):\n"
+    elif engine == "zeta-2.1":
+        prompt = "<[fim-suffix]>\n<[fim-prefix]><filename>example.py\n<|marker_1|>\ndef add(a, b):\n    return a +<|user_cursor|>\n<|marker_2|>\n<[fim-middle]>"
+    else:
+        prompt = "<[fim-suffix]>\n<[fim-prefix]><filename>example.py\n<<<<<<< CURRENT\ndef add(a, b):\n    return a +<|user_cursor|>\n=======\n<[fim-middle]>"
+    times = []
+    for _ in range(3):
+        start = time.monotonic()
+        result = api(
+            "/v1/completions",
+            {
+                "model": alias,
+                "prompt": prompt,
+                "max_tokens": 96,
+                "temperature": 0,
+                "stream": False,
+            },
+            timeout=180,
         )
-        api("/api/generate", {"model": previous_model, "keep_alive": 0})
-    reports = {}
-    for name in dict.fromkeys(required):
-        ensure(name)
-        if mode != "completion-only":
-            metadata = api("/api/show", {"model": name})
-            model_info = metadata.get("model_info", {})
-            contexts = [
-                value
-                for key, value in model_info.items()
-                if key.endswith(".context_length") and isinstance(value, (int, float))
-            ]
-            if contexts and min(contexts) < 4096:
-                raise RuntimeError("Model context is below 4096 tokens: " + name)
-        times, sample, cold_seconds = benchmark(
-            name, next_edit=name == next_model and mode != "completion-only"
-        )
-        if not sample.strip():
+        if not result.get("choices"):
             raise RuntimeError(
-                "Ollama returned an empty prediction; previous AI preferences are kept"
+                "Local completion endpoint returned no choices; previous preferences kept"
             )
-        reports[name] = {
-            "cold_seconds": cold_seconds,
-            "warm_seconds": times,
-            "median_seconds": statistics.median(times),
-            "sample": sample,
-        }
-        if statistics.median(times) > 2:
-            print(
-                "🔔 Prediction exceeded two seconds; consider the single-model preset."
-            )
-    hardware_after = detect_gpu()
+        times.append(time.monotonic() - start)
     residency = api("/api/ps")
-    resident = {m["name"]: m for m in residency.get("models", [])}
-    if mode == "dual":
-        reserve = max(512, hardware.get("vram_mib", 0) * 0.1) * 1024**2
-        used = sum(m.get("size_vram", 0) for m in resident.values())
-        total = hardware.get("vram_mib", 0) * 1024**2
-        fits = all(name in resident for name in required)
-        if total:
-            fits = fits and used + reserve <= total
-        if "free_mib" in hardware_after:
-            fits = fits and hardware_after["free_mib"] * 1024**2 >= reserve
-        for name in required:
-            item = resident.get(name, {})
-            if (
-                total
-                and item.get("size", 0)
-                and item.get("size_vram", 0) < item["size"] * 0.8
-            ):
-                fits = False
-        if not fits:
-            print(
-                "🔔 The selected pair could not remain resident with a memory reserve."
+    resident = next(
+        (
+            item
+            for item in residency.get("models", [])
+            if item["name"].removesuffix(":latest") == alias
+        ),
+        None,
+    )
+    if resident and resident.get("context_length", context_size) < context_size:
+        raise RuntimeError(
+            "Ollama context is smaller than requested; previous AI preferences kept"
+        )
+    after = detect_gpu()
+    if hardware.get("vram_mib"):
+        reserve = max(512, hardware["vram_mib"] * 0.1)
+        if (
+            not resident
+            or resident.get("size_vram", 0) < resident.get("size", 1) * 0.8
+            or after.get("free_mib", reserve) < reserve
+        ):
+            raise RuntimeError(
+                "Model did not fit with a VRAM reserve. Previous AI preferences kept. Select Sweep or free GPU memory and rerun."
             )
-            if (
-                not args.yes
-                and os.isatty(0)
-                and input("🌠 Use Sweep single-model mode instead? [Y/n]: ")
-                .strip()
-                .lower()
-                in ("", "y", "yes")
-            ):
-                mode = "single"
-                if model != next_model:
-                    api("/api/generate", {"model": model, "keep_alive": 0})
-                api("/api/generate", {"model": next_model, "keep_alive": 0})
-                api(
-                    "/api/generate",
-                    {
-                        "model": next_model,
-                        "prompt": "",
-                        "stream": False,
-                        "keep_alive": "5m",
-                        "options": {"num_ctx": 4096, "num_predict": 1},
-                    },
-                )
-            else:
-                raise RuntimeError(
-                    "Previous AI preferences kept. Rerun with --ai-mode single --next-edit-model "
-                    + next_model
-                )
-    state.mkdir(parents=True, exist_ok=True)
     preferences = dict(
-        saved,
+        migrated,
         provider="ollama",
         endpoint=ENDPOINT,
         models_dir=str(models),
-        local_mode=mode,
+        model=alias,
+        source_model=source,
+        engine=engine,
+        context_size=context_size,
     )
-    if mode != "single":
-        preferences["model"] = model
-    if mode != "completion-only":
-        preferences["next_edit_model"] = next_model
-    if mode != "completion-only" and fim_format:
-        preferences["fim_format"] = fim_format
     report = {
-        "mode": mode,
         "hardware": hardware,
-        "hardware_after": hardware_after,
-        "models": reports,
+        "hardware_after": after,
+        "model": alias,
+        "source_model": source,
+        "engine": engine,
+        "request_seconds": times,
         "running_models": residency,
+        "note": "Endpoint/residency smoke test; not a correctness benchmark.",
     }
+    state.mkdir(parents=True, exist_ok=True)
     (state / "ollama-validation.json").write_text(json.dumps(report, indent=2) + "\n")
     temporary = state / "ai.json.tmp"
     temporary.write_text(json.dumps(preferences, indent=2) + "\n")
@@ -399,7 +325,7 @@ WantedBy=default.target
 if __name__ == "__main__":
     try:
         main()
-    except (OSError, RuntimeError, subprocess.SubprocessError) as error:
+    except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as error:
         print(f"🔔 Local AI setup failed: {error}", file=sys.stderr)
         print(
             "🔔 Start/check your configured Ollama server, then rerun: "

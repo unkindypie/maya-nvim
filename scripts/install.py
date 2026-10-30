@@ -15,7 +15,13 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 from prerequisites import Prerequisites, add_arguments
-from ai_setup import choose_profile, detect_gpu, recommended_profile
+from ai_setup import (
+    choose_profile,
+    detect_gpu,
+    recommended_profile,
+    migrate,
+    engine_for,
+)
 
 BEGIN, END = "# >>> maya-nvim >>>", "# <<< maya-nvim <<<"
 
@@ -73,12 +79,9 @@ def main():
         help="override the local-AI question",
     )
     parser.add_argument("--ollama-models-dir", type=Path)
-    parser.add_argument("--ai-mode", choices=["completion-only", "single", "dual"])
-    parser.add_argument("--next-edit-model")
-    parser.add_argument("--fim-format", choices=["qwen", "mellum"])
+    parser.add_argument("--engine", choices=["sweep", "zeta-2", "zeta-2.1"])
     parser.add_argument(
-        "--model",
-        help="Inline model override; preserves legacy completion-only behavior unless --ai-mode is explicit",
+        "--model", help="Local edit model for both completion and next edits"
     )
     add_arguments(parser)
     args = parser.parse_args()
@@ -201,6 +204,11 @@ def main():
         MAYA_NVIM_NO_SESSION="1",
     )
     if not args.skip_bootstrap:
+        subprocess.run(
+            [sys.executable, str(ROOT / "scripts/build_cursortab.py")],
+            env=env,
+            check=True,
+        )
         # restore respects the committed lockfile; install fills in missing plugins only.
         subprocess.run(
             ["nvim", "--headless", "+Lazy! restore", "+Lazy! install", "+qa"],
@@ -225,12 +233,8 @@ def main():
                 command += ["--models-dir", str(args.ollama_models_dir.expanduser())]
             if args.model:
                 command += ["--model", args.model]
-            if args.ai_mode:
-                command += ["--ai-mode", args.ai_mode]
-            if args.next_edit_model:
-                command += ["--next-edit-model", args.next_edit_model]
-            if args.fim_format:
-                command += ["--fim-format", args.fim_format]
+            if args.engine:
+                command += ["--engine", args.engine]
             subprocess.run(command, check=True)
         else:
             if args.ai == "copilot":
@@ -268,70 +272,45 @@ def sound_enabled(args, personal_init):
 
 
 def choose_ai(args, state):
-    explicit_model = getattr(args, "model", None)
+    model = getattr(args, "model", None)
+    engine = getattr(args, "engine", None)
     requested = args.ai
-    saved = {}
     try:
         saved = json.loads((state / "ai.json").read_text())
         if not isinstance(saved, dict):
             saved = {}
     except (OSError, ValueError):
-        pass
-    mode = getattr(args, "ai_mode", None)
-    next_model = getattr(args, "next_edit_model", None)
-    if requested in ("off", "copilot") and (mode or next_model or explicit_model):
+        saved = {}
+    if requested in ("off", "copilot") and (model or engine):
         raise ValueError("Local model arguments require --ai ollama")
-    if mode == "single" and explicit_model:
-        raise ValueError("Single mode uses --next-edit-model, not --model")
-    if next_model and mode == "completion-only":
-        raise ValueError("--next-edit-model requires single or dual mode")
-    if requested is None and (explicit_model or mode or next_model):
+    if model or engine:
         requested = "ollama"
     if args.skip_bootstrap or args.dry_run:
         return requested or saved.get("provider", "off")
-    if requested in ("copilot", "off"):
+    if requested in ("off", "copilot"):
         return requested
-    if not (explicit_model or mode or next_model) and saved.get("provider") in (
-        "ollama",
-        "copilot",
-        "off",
+    if model:
+        args.engine = engine or engine_for(model)
+        return "ollama"
+    if saved.get("provider") in ("ollama", "off", "copilot") and (
+        requested is None or requested == saved["provider"]
     ):
-        if requested is None or requested == saved["provider"]:
-            args.model = saved.get("model")
-            args.ai_mode = saved.get("local_mode")
-            args.next_edit_model = saved.get("next_edit_model")
-            if args.ai_mode == "single":
-                args.model = None
-            return requested or saved["provider"]
-    if explicit_model and mode is None and not next_model:
-        args.ai_mode = "completion-only"
-        return "ollama"
-    if mode or next_model:
-        args.ai_mode = mode or "dual"
-        args.next_edit_model = next_model or saved.get("next_edit_model")
-        args.model = explicit_model or saved.get("model")
-        if args.ai_mode == "single":
-            args.model = None
-        if args.ai_mode != "single" and not args.model:
-            profile = recommended_profile(detect_gpu())
-            args.model = profile.get("model") if profile else None
-            if not args.model:
-                raise ValueError("Specify --model for this hardware")
-        return "ollama"
+        if saved["provider"] == "ollama":
+            profile = migrate(saved)
+            args.model, args.engine = profile["model"], engine or profile["engine"]
+        return saved["provider"]
     if sys.stdin.isatty() and not args.yes:
         provider, profile = choose_profile()
     elif requested == "ollama" or args.yes:
         profile = recommended_profile(detect_gpu())
         if profile is None:
             raise ValueError(
-                "VRAM unavailable: specify --ai-mode and models, --ai copilot, or --ai off"
+                "VRAM unavailable: specify --model and --engine, --ai copilot, or --ai off"
             )
         provider = "ollama"
     else:
         return "off"
-    args.model = profile.get("model")
-    args.ai_mode = profile.get("local_mode")
-    args.next_edit_model = profile.get("next_edit_model")
+    args.model, args.engine = profile.get("model"), engine or profile.get("engine")
     return provider
 
 

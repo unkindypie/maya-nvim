@@ -20,6 +20,9 @@ def main():
         action="store_true",
         help="Deterministic native-event contract test; no model inference",
     )
+    parser.add_argument(
+        "--lsp", action="store_true", help="Attach real language servers before typing"
+    )
     args = parser.parse_args()
     import os
 
@@ -61,7 +64,7 @@ def main():
             }
         ]
         for case in selected:
-            for candidate in ("blink", "cursortab"):
+            for candidate in ("cursortab",):
                 for sample in range(args.repetitions):
                     with tempfile.TemporaryDirectory(prefix="maya-native-") as temp:
                         ext = {"python": "py", "lua": "lua", "typescript": "ts"}[
@@ -81,6 +84,22 @@ def main():
                             case["language"],
                         )
                         try:
+                            if args.lsp:
+                                from ai_candidates import LSP
+
+                                cmd = LSP[case["language"]].copy()
+                                cmd[0] = str(
+                                    Path.home()
+                                    / ".local/share/maya-nvim/mason/bin"
+                                    / cmd[0]
+                                )
+                                nvim.exec_lua(
+                                    'local cmd,root=...; vim.lsp.start({name="native-context",cmd=cmd,root_dir=root,settings={Lua={workspace={checkThirdParty=false},diagnostics={enable=false}}}})',
+                                    cmd,
+                                    temp,
+                                )
+                                wait(nvim, "#vim.lsp.get_clients({bufnr=0})>0")
+                                time.sleep(1.5)
                             nvim.current.window.cursor = (len(initial.split("\n")), 0)
                             nvim.exec_lua(
                                 'pcall(function() require("nvim-autopairs").disable() end); _G.eval_enable()'

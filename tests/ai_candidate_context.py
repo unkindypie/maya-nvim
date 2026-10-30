@@ -60,7 +60,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--cursortab", required=True, type=Path)
     args = parser.parse_args()
-    for candidate in ("blink", "cursortab"):
+    for candidate in ("cursortab",):
         capture = Capture(
             reply=lambda row: {
                 "response": "",

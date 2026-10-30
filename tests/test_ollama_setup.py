@@ -18,10 +18,10 @@ spec.loader.exec_module(setup)
 
 class OllamaSetupTest(unittest.TestCase):
     def test_reuses_running_server_and_existing_model(self):
-        self.check_existing_model("qwen2.5-coder:3b-base")
+        self.check_existing_model("test-sweep")
 
     def test_preserves_saved_older_model(self):
-        self.check_existing_model("qwen2.5-coder:7b", saved=True)
+        self.check_existing_model("older-sweep", saved=True)
 
     def check_existing_model(self, model, saved=False):
         with tempfile.TemporaryDirectory() as temp:
@@ -35,8 +35,10 @@ class OllamaSetupTest(unittest.TestCase):
             def api(path, data=None, **kwargs):
                 if path == "/api/tags":
                     return {"models": [{"name": model}]}
-                if path == "/api/generate":
-                    return {"response": "return a + b"}
+                if path == "/api/create":
+                    return {}
+                if path == "/v1/completions":
+                    return {"choices": [{"text": "return a + b"}]}
                 if path == "/api/ps":
                     return {"models": []}
                 raise AssertionError("Unexpected API request: " + path)
@@ -47,9 +49,7 @@ class OllamaSetupTest(unittest.TestCase):
                     "sys.argv",
                     ["setup_ollama.py", "--models-dir", temp, "--model", model],
                 ),
-                patch.object(
-                    setup, "detect_gpu", return_value={"name": "test", "vram_mib": 6144}
-                ),
+                patch.object(setup, "detect_gpu", return_value={"name": "test"}),
                 patch.object(setup, "api", side_effect=api),
                 patch.object(
                     setup,
@@ -65,4 +65,4 @@ class OllamaSetupTest(unittest.TestCase):
                 setup.main()
             state = json.loads((Path(temp) / "maya-nvim/ai.json").read_text())
             self.assertEqual(state["provider"], "ollama")
-            self.assertEqual(state["model"], model)
+            self.assertEqual(state["source_model"], model)

@@ -43,7 +43,7 @@ def trial(nvim, case, capture, manual=False, candidate="blink"):
     context = nvim.exec_lua('return require("maya.ai_context").get()')
     baseline = len(capture.rows)
     t0 = time.monotonic()
-    if manual and candidate != "dual":
+    if manual:
         time.sleep(0.2 if case["kind"] == "insert" else 0.65)
     nvim.exec_lua("_G.eval_request(...)", manual)
     preview = None
@@ -120,8 +120,8 @@ def main():
     parser.add_argument(
         "--candidates",
         nargs="+",
-        default=["blink", "cursortab"],
-        choices=["blink", "cursortab", "dual"],
+        default=["cursortab"],
+        choices=["cursortab"],
     )
     parser.add_argument(
         "--manual",

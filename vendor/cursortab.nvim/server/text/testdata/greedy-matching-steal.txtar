@@ -1,0 +1,33 @@
+cursorRow: 9
+cursorCol: 9
+viewportTop: 1
+viewportBottom: 50
+-- old.txt --
+  if (!article) {
+    return 0;
+  }
+
+  if (article.tags === null) {
+    return 0;
+  }
+
+  return article.tags.split(",").length;
+}
+-- new.txt --
+  if (!article) {
+    return 0;
+  }
+
+  return article.tags.length;
+}
+-- expected --
+stage @5 cursor=1:22
+  modification @9 1-1 delete_chars 22:33
+    + "  return article.tags.length;"
+    - "  return article.tags.split(\",\").length;"
+  deletion @5 2-5
+    + "  if (article.tags === null) {"
+    + "    return 0;"
+    + "  }"
+    + ""
+

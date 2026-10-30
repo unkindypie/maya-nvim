@@ -92,10 +92,10 @@ formatting already completed for the other language may remain staged.
 
 ## Optional local AI during installation
 
-Fresh interactive installations offer GPU-aware single/dual local presets,
+Fresh interactive installations offer GPU-aware local edit models,
 GitHub Copilot, and **Skip Ollama models installation**. Unknown VRAM requires
 an explicit choice. Saved provider/model/endpoint preferences survive reruns;
-missing new settings retain legacy completion-only behavior. See
+old local settings migrate to one Cursortab model; the previous inline model is retained as migration metadata. See
 [AI setup](AI.md) for model tiers, migration, and memory validation.
 
 The choice is saved in `ai.json`, also used by `:MayaAI`; no additional personal

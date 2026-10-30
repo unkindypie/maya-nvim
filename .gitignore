@@ -2,3 +2,6 @@
 *.log
 .local/
 __pycache__/
+
+vendor/cursortab.nvim/server/cursortab
+vendor/cursortab.nvim/server/**/testdata/report.html

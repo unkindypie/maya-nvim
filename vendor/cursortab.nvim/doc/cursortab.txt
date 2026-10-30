@@ -1,0 +1,490 @@
+*cursortab.txt*  AI-powered code completion for Neovim
+
+Author: Leonard
+License: MIT
+
+==============================================================================
+CONTENTS                                                   *cursortab-contents*
+
+  1. Introduction ..................................... |cursortab-introduction|
+  2. Setup ............................................ |cursortab-setup|
+  3. Configuration .................................... |cursortab-config|
+  4. Highlight Groups ................................. |cursortab-highlights|
+  5. Commands ......................................... |cursortab-commands|
+  6. Architecture ..................................... |cursortab-architecture|
+
+==============================================================================
+INTRODUCTION                                           *cursortab-introduction*
+
+cursortab.nvim is an AI-powered code completion plugin with a hybrid Lua/Go
+architecture. It provides intelligent code completions with support for
+multi-stage edits and cursor prediction.
+
+==============================================================================
+SETUP                                                         *cursortab-setup*
+
+Using lazy.nvim: >lua
+
+  {
+    "cursortab/cursortab.nvim",
+    build = "cd server && go build",
+    config = function()
+      require("cursortab").setup({
+        -- your config here
+      })
+    end,
+  }
+<
+
+==============================================================================
+CONFIGURATION                                                *cursortab-config*
+
+The configuration uses a nested structure for better organization and
+maintainability.
+
+Full configuration with defaults: >lua
+
+  require("cursortab").setup({
+    enabled = true,
+    log_level = "info",  -- "trace", "debug", "info", "warn", "error"
+    state_dir = vim.fn.stdpath("state") .. "/cursortab",  -- Directory for runtime files
+
+    keymaps = {
+      accept = "<Tab>",           -- Keymap to accept completion, or false to disable
+      partial_accept = "<S-Tab>", -- Keymap to partially accept, or false to disable
+      trigger = false,            -- Keymap to manually trigger completion, or false to disable
+    },
+
+    ui = {
+      completions = {
+        addition_style = "dimmed", -- "dimmed" or "highlight"
+        fg_opacity = 0.6,          -- 0=invisible, 1=fully visible
+      },
+      jump = {
+        symbol = "",
+        text = " TAB ",
+        show_distance = true,
+      },
+    },
+
+    behavior = {
+      idle_completion_delay = 50,   -- ms, -1 to disable
+      text_change_debounce = 50,    -- ms, -1 to disable
+      max_visible_lines = 12,       -- max visible lines per completion, 0 to disable
+      disabled_in = {},                         -- Tree-sitter scopes to suppress completions
+      enabled_modes = { "insert", "normal" },  -- modes where completions are active
+      cursor_prediction = {
+        enabled = true,
+        auto_advance = true,
+        proximity_threshold = 2,
+      },
+      ignore_paths = {              -- glob patterns for files to skip
+        "*.min.js",
+        "*.min.css",
+        "*.map",
+        "*-lock.json",
+        "*.lock",
+        "*.sum",
+        "*.csv",
+        "*.tsv",
+        "*.parquet",
+        "*.zip",
+        "*.tar",
+        "*.gz",
+        "*.pem",
+        "*.key",
+        ".env",
+        ".env.*",
+        "*.log",
+      },
+      ignore_filetypes = { "", "terminal" }, -- filetypes to skip completions
+      ignore_gitignored = true,     -- skip files matched by .gitignore
+    },
+
+    provider = {
+      type = "inline",              -- "inline", "fim", "sweep", "zeta-2.1", "zeta-2", "zeta", "copilot", "windsurf", "mercuryapi"
+      url = "http://localhost:8000",
+      api_key_env = "",             -- Env var name for API key
+      model = "",
+      temperature = 0.0,
+      context_size = 0,               -- 0 = use max_tokens (inline/fim default: 1024)
+      max_tokens = 512,               -- inline default: 64, fim default: 128
+      top_k = 50,
+      completion_timeout = 5000,    -- ms
+      max_diff_history_tokens = 512,
+      completion_path = "/v1/completions",
+      -- fim_tokens is optional. Omit (the default) to use OpenAI prompt+suffix
+      -- format (e.g. DeepSeek). Set it to opt into tokenized FIM:
+      --   fim_tokens = {
+      --     prefix = "<|fim_prefix|>",
+      --     suffix = "<|fim_suffix|>",
+      --     middle = "<|fim_middle|>",
+      --     repo_name = "<|repo_name|>", -- optional; auto-detected for Qwen
+      --     file_sep = "<|file_sep|>",   -- optional; auto-detected for Qwen
+      --   },
+    },
+
+    blink = {
+      enabled = false,
+      ghost_text = true,
+    },
+
+    debug = {
+      immediate_shutdown = false,
+    },
+  })
+<
+
+KEYMAP OPTIONS                                      *cursortab-config-keymap*
+
+keymaps.accept                                  *cursortab-config-keymaps-accept*
+
+  The keymap to accept completions in insert/normal mode. Can be a keymap
+  string (e.g., "<Tab>") or `false` to disable the built-in keymap entirely.
+  Default: "<Tab>".
+  Set to `false` when managing the accept keymap yourself (e.g., blink.cmp).
+
+keymaps.partial_accept                  *cursortab-config-keymaps-partial-accept*
+
+  The keymap to partially accept completions in insert mode. For inline
+  completions (append_chars), accepts text up to the next word boundary
+  (space or punctuation). For multi-line completions, accepts one line at
+  a time. Can be a keymap string (e.g., "<S-Tab>") or `false` to disable.
+  Default: "<S-Tab>".
+
+keymaps.trigger                              *cursortab-config-keymaps-trigger*
+
+  The keymap to manually trigger a completion. For fully manual completions,
+  disable both automatic triggers: >lua
+
+    behavior = {
+      text_change_debounce = -1,   -- Disable auto-trigger on typing
+      idle_completion_delay = -1,  -- Disable auto-trigger on idle
+    },
+    keymaps = {
+      trigger = "<C-Space>",  -- Manual trigger
+    },
+<
+  Can be a keymap string (e.g., "<C-Space>") or `false` to disable.
+  Default: false (disabled).
+
+------------------------------------------------------------------------------
+UI OPTIONS                                                *cursortab-config-ui*
+
+ui.completions                            *cursortab-config-ui-completions*
+
+  `addition_style` Rendering style for addition groups (default: "dimmed").
+                  "dimmed"    - Dimmed treesitter-highlighted overlay.
+                  "highlight" - Classic green background highlight.
+
+  `fg_opacity`     Opacity for completion overlays (default: 0.6).
+                  0 = invisible, 1 = fully visible.
+
+ui.jump                                              *cursortab-config-ui-jump*
+
+  `symbol`        Symbol shown before jump indicator (default: "").
+                  U+E0B2, Powerline separator; requires a compatible font.
+                  Set to "" to hide it.
+  `text`          Text shown in jump indicator (default: " TAB ").
+  `show_distance` Show line distance for off-screen jumps (default: true).
+
+------------------------------------------------------------------------------
+BEHAVIOR OPTIONS                                    *cursortab-config-behavior*
+
+  `idle_completion_delay`
+      Delay in milliseconds after being idle in normal mode before triggering
+      completion. Set to -1 to disable idle completions.
+
+  `text_change_debounce`
+      Debounce in milliseconds after text changes before triggering completion.
+      Set to -1 to disable automatic completions on text change. This is useful
+      when combined with `keymaps.trigger` for manual-only completion triggering.
+
+  `max_visible_lines`
+      Maximum visible lines per completion. When set to a positive value,
+      completions will be split into stages if they exceed this line limit, in
+      addition to the existing proximity threshold and viewport constraints.
+      Set to 0 to disable (default: 12).
+
+  `enabled_modes`
+      List of modes where completions are active. Valid values: "insert",
+      "normal". When a mode is not listed, no completions are triggered or
+      shown in that mode, and switching to it cancels any in-flight
+      completion. Manual triggers via `keymaps.trigger` still work.
+      Default: { "insert", "normal" }.
+      Examples: >lua
+        enabled_modes = { "insert" }          -- insert-only
+        enabled_modes = { "normal" }          -- normal-only
+        enabled_modes = {}                    -- manual-only
+<
+
+behavior.cursor_prediction            *cursortab-config-behavior-cursor-prediction*
+
+  `enabled`
+      Show jump indicators after completions (default: true).
+
+  `auto_advance`
+      When a completion results in no code changes, show a cursor jump to the
+      last line of the completion (default: true).
+
+  `proximity_threshold`
+      Minimum lines apart to show a cursor jump between completions. When
+      completions span multiple distant locations, this controls when to show
+      a jump indicator instead of applying changes directly. Set to 0 to
+      disable (default: 2).
+
+behavior.ignore_paths                  *cursortab-config-behavior-ignore-paths*
+
+  List of gitignore-style glob patterns. Files matching any pattern will not
+  receive completions. If a pattern contains "/", it is matched against the
+  file's path relative to the working directory; otherwise it is matched
+  against the filename only. Supports "*" (any non-"/" characters) and "**"
+  (any characters including "/").
+
+  Default: >lua
+    {
+      "*.min.js",
+      "*.min.css",
+      "*.map",
+      "*-lock.json",
+      "*.lock",
+      "*.sum",
+      "*.csv",
+      "*.tsv",
+      "*.parquet",
+      "*.zip",
+      "*.tar",
+      "*.gz",
+      "*.pem",
+      "*.key",
+      ".env",
+      ".env.*",
+      "*.log",
+    }
+<
+
+behavior.ignore_filetypes      *cursortab-config-behavior-ignore-filetypes*
+
+  List of Neovim filetypes to skip completions. Matches the exact filetype
+  string returned by `vim.api.nvim_get_option_value("filetype", ...)`.
+  Buffers that are read-only or non-modifiable are already skipped
+  automatically, so filetypes like "help", "qf", and "netrw" do not need to
+  be listed here. Default: >lua
+    { "", "terminal" }
+<
+
+behavior.ignore_gitignored      *cursortab-config-behavior-ignore-gitignored*
+
+  When true, files matched by the repository's `.gitignore` are skipped for
+  completions. Uses `git check-ignore` and only runs on buffer/window enter.
+  Default: true.
+
+------------------------------------------------------------------------------
+PROVIDER OPTIONS                                    *cursortab-config-provider*
+
+  `type`
+      Provider type: "inline", "fim", "sweep", "zeta-2.1", "zeta-2", "zeta", "copilot", "windsurf", or "mercuryapi".
+      - inline: End-of-line completion, stops at newline
+      - fim: Fill-in-the-middle, multi-line with prefix/suffix context
+      - sweep: SweepAI Next-Edit model for multi-line edits (local)
+      - zeta-2.1: Zed's Zeta-2.1 model (SeedCoder-8B, multi-region). Includes
+        ranged diagnostics intersecting the editable excerpt.
+      - zeta-2: Zed's Zeta-2 model (SeedCoder-8B)
+      - zeta: Zed's original Zeta model (Qwen2.5-Coder-7B, legacy)
+      - copilot: GitHub Copilot completions
+      - windsurf: Windsurf completions
+      - mercuryapi: Inception Labs' Mercury hosted Next-Edit model
+
+  `url`
+      URL of the provider server.
+
+  `api_key_env`
+      Environment variable name containing the API key for authenticated
+      requests. The value is read from the environment at daemon startup.
+      Example: "OPENAI_API_KEY" reads from $OPENAI_API_KEY. Leave empty
+      for unauthenticated local servers.
+
+  `model`
+      Model name to use.
+
+  `temperature`
+      Sampling temperature for generation.
+
+  `max_tokens`
+      Maximum tokens to generate. For sweep/zeta/zeta-2/zeta-2.1 providers,
+      this also determines the input context size when `context_size` is 0.
+
+  `top_k`
+      Top-k sampling parameter.
+
+  `completion_timeout`
+      Timeout in milliseconds for completion requests.
+
+  `max_diff_history_tokens`
+      Maximum tokens for diff history context. Set to 0 for no limit.
+
+  `completion_path`
+      API endpoint path for completions. Default: "/v1/completions".
+      Must start with "/". Override when using non-standard API endpoints.
+
+  `fim_tokens`                                 *cursortab-config-provider-fim*
+      FIM (Fill-in-the-Middle) tokens configuration. Only used by the FIM
+      provider.
+
+      When omitted (nil), the FIM provider uses the standard OpenAI
+      completions API `prompt` + `suffix` format. This is the format used
+      by APIs such as DeepSeek.
+
+      When set, the provider concatenates prefix content, suffix content,
+      and special delimiter tokens into a single `prompt` string (tokenized
+      FIM format).
+
+      When `repo_name` and `file_sep` are set, the FIM provider prepends
+      cross-file context (recent files, diagnostics, treesitter, diff history,
+      staged git diff) using repo-level FIM tokens. These are auto-detected
+      for Qwen models (Qwen2.5-Coder, Qwen3.5). Example: >lua
+
+        fim_tokens = {
+          prefix = "<|fim_prefix|>",   -- Token before prefix content
+          suffix = "<|fim_suffix|>",   -- Token before suffix content
+          middle = "<|fim_middle|>",   -- Token before completion
+          repo_name = "<|repo_name|>", -- Optional: repo-level context header
+          file_sep = "<|file_sep|>",   -- Optional: file separator for context
+        }
+<
+  `privacy_mode`                         *cursortab-config-provider-privacy-mode*
+      Don't send telemetry to provider. When enabled, providers that support
+      this option will not send usage metrics. Default: true.
+
+------------------------------------------------------------------------------
+BLINK OPTIONS                                            *cursortab-config-blink*
+
+  `blink.enabled`
+      Enable the built-in blink.cmp source (default: false).
+
+  `blink.ghost_text`
+      Show native ghost text alongside blink menu (default: true).
+
+------------------------------------------------------------------------------
+DEBUG OPTIONS                                          *cursortab-config-debug*
+
+  `immediate_shutdown`
+      Shutdown daemon immediately when no clients are connected. Useful for
+      development.
+
+==============================================================================
+HIGHLIGHT GROUPS                                       *cursortab-highlights*
+
+All highlight groups are defined with `default = true`, so they can be
+overridden by your colorscheme or by calling `nvim_set_hl` before or after
+`setup()`.
+
+CursorTabDeletion                                        *hl-CursorTabDeletion*
+    Background highlight for deleted text.
+    Default: `ctermbg=DarkRed bg=#4f2f2f`
+
+CursorTabAddition                                        *hl-CursorTabAddition*
+    Background highlight for added text.
+    Default: `ctermbg=DarkGreen bg=#394f2f`
+
+CursorTabModification                                *hl-CursorTabModification*
+    Background highlight for modified text shown beside the original.
+    Default: `ctermbg=DarkGray bg=#282e38`
+
+CursorTabCompletion                                    *hl-CursorTabCompletion*
+    Foreground color for inline completion ghost text.
+    Default: `ctermfg=DarkBlue fg=#80899c`
+
+CursorTabJumpSymbol                                    *hl-CursorTabJumpSymbol*
+    Foreground color for the jump indicator symbol.
+    Default: `ctermfg=Cyan fg=#373b45`
+
+CursorTabJumpText                                        *hl-CursorTabJumpText*
+    Colors for the jump indicator text label.
+    Default: `ctermbg=Cyan ctermfg=Black bg=#373b45 fg=#bac1d1`
+
+Example override: >lua
+    vim.api.nvim_set_hl(0, "CursorTabAddition", { bg = "#1a3a1a" })
+<
+
+==============================================================================
+COMMANDS                                                   *cursortab-commands*
+
+:CursortabToggle                                            *:CursortabToggle*
+    Toggle cursortab functionality on/off.
+
+:CursortabStatus                                            *:CursortabStatus*
+    Show daemon and connection status.
+
+:CursortabShowLog                                          *:CursortabShowLog*
+    Open the daemon log file in a scratch buffer.
+
+:CursortabClearLog                                        *:CursortabClearLog*
+    Clear the daemon log file.
+
+:CursortabRestart                                          *:CursortabRestart*
+    Stop and restart the daemon process.
+
+==============================================================================
+BLINK.CMP INTEGRATION                            *cursortab-blink-integration*
+
+cursortab.nvim provides a minimal blink.cmp source that only consumes
+append_chars (end-of-line ghost text). Complex diffs (multi-line edits,
+replacements, deletions, cursor prediction UI) still render via the native UI.
+
+Example: >lua
+
+  require("cursortab").setup({
+    keymaps = {
+      accept = false,
+    },
+    blink = {
+      enabled = true,
+      ghost_text = false,
+    },
+  })
+
+  require("blink.cmp").setup({
+    sources = {
+      providers = {
+        cursortab = {
+          module = "cursortab.blink",
+          name = "cursortab",
+          async = true,
+          -- Should match provider.completion_timeout in cursortab config
+          timeout_ms = 5000,
+          score_offset = 50, -- Higher priority among suggestions
+        },
+      },
+    },
+  })
+<
+
+==============================================================================
+ARCHITECTURE                                           *cursortab-architecture*
+
+cursortab.nvim uses a hybrid Lua/Go architecture:
+
+  Lua Plugin (lua/cursortab/)
+      Handles UI rendering, keybindings, and Neovim event subscriptions.
+      Communicates with the daemon via Neovim RPC.
+
+  Go Daemon (server/)
+      Runs as a separate process, communicating via Unix socket.
+      Manages the completion state machine and AI provider calls.
+
+Communication flow: >
+
+  Neovim Events ---> Lua Plugin ---> RPC ---> Go Daemon ---> AI Provider
+                          |                        |
+                          +<-- UI Rendering <------+
+                                              Completion Response
+<
+
+State machine: >
+
+  Idle ---> PendingCompletion ---> HasCompletion ---> HasCursorTarget
+<
+
+==============================================================================
+vim:tw=78:ts=8:ft=help:norl:

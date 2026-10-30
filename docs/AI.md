@@ -1,283 +1,111 @@
-# AI suggestions
+# Local AI suggestions
 
-The local AI feature's purpose is to provide **both inline completion and
-next-edit prediction with local models**, without cloud inference, a cloud account,
-or a paid API. The existing shared LSP context collector supplies semantic context.
-Copilot is a separate opt-in alternative and does not satisfy the local feature's
-requirements.
+Cursortab is the sole local AI plugin. **One local model supplies both inline
+completion and next-edit prediction**, using Maya's existing cached standard-LSP
+collector. Local inference needs no cloud account or paid API. GitHub Copilot is
+an independent opt-in provider; failures never cause a cloud fallback.
 
-The target architecture is **one local AI plugin and one active local model** for
-both behaviors. The [Cursortab versus blink-edit evaluation](AI_CANDIDATES.md)
-compares local Sweep quality, speed and future maintenance. Plugin selection must
-prioritize demonstrated local operation on the target hardware. General provider
-support or upstream popularity alone is insufficient; an experimental edit path
-validated mainly with cloud models needs local validation before it can qualify.
-Legacy configurations should receive a documented migration rather than keeping
-a second local plugin indefinitely. The modes below describe the current runtime;
-the architecture migration has not yet been implemented.
+## Installation and models
 
-Choose Ollama, GitHub Copilot, or off with `Space ao/ac/ax` or
-`:MayaAI ollama|copilot|off`. Ordinary Blink/LSP/snippet completion remains
-available with every choice. Local requests never fall back to cloud services.
-`Space as` explains the active models, endpoint, mode, and controls for ten seconds.
-`Space am` opens the local-mode picker: **Dual** runs inline completion plus
-Sweep next edits, **Single** runs Sweep only, and **Completion-only** runs only
-the saved inline model. Choosing a mode activates Ollama immediately and saves
-that choice in `ai.json`, preserving model names, endpoints, and other preferences.
-Canceling the picker keeps the current settings. The picker does not download models.
+The installer builds the bundled Cursortab Go daemon and configures Ollama.
+It reuses Go 1.25+ or downloads a checksum-verified Go 1.27.3 into the Maya cache.
+The binary is generated locally, never committed. Editor updates rebuild it too.
 
-For reproducible comparisons and the gates for simplifying this arrangement,
-see [local AI experiments](AI_EXPERIMENTS.md).
+| Dedicated VRAM    | Recommended local model                             | Prompt format |
+| ----------------- | --------------------------------------------------- | ------------- |
+| 2 GB+ default     | `hf.co/sweepai/sweep-next-edit-1.5B:Q8_0`           | `sweep`       |
+| 8 GB+ alternative | `hf.co/mradermacher/zeta-2.1-GGUF:Q4_K_M`           | `zeta-2.1`    |
+| 8 GB+ alternative | `hf.co/bartowski/zed-industries_zeta-2-GGUF:Q4_K_M` | `zeta-2`      |
 
-## Local presets
-
-| Estimated dedicated VRAM | Inline completion            | Next-edit     |
-| ------------------------ | ---------------------------- | ------------- |
-| 2–4 GB                   | Sweep, single-model mode     | Sweep 1.5B Q8 |
-| 6 GB                     | Qwen2.5-Coder 1.5B Base Q8   | Sweep 1.5B Q8 |
-| 8 GB+                    | Qwen2.5-Coder 7B Base Q4_K_M | Sweep 1.5B Q8 |
-| 8 GB+ alternative        | Mellum 4B-SFT-All Q8         | Sweep 1.5B Q8 |
-
-Exact tags:
-
-- `qwen2.5-coder:1.5b-base-q8_0`
-- `qwen2.5-coder:7b-base-q4_K_M`
-- `hf.co/JetBrains/Mellum-4b-sft-all-gguf:Q8_0`
-- `hf.co/sweepai/sweep-next-edit-1.5B:Q8_0`
-
-The Sweep repository currently does not resolve its `Q8_0` shorthand. Setup
-reports this and downloads the explicit
-`sweep-next-edit-1.5b.q8_0.v2.gguf` asset, then creates the requested local name
-as an alias. Both names share the same weights; no second model blob is needed.
-Other download failures stop setup and keep previous preferences.
-
-These are estimates, not minimum guarantees. Context, KV cache, desktop usage,
-and other GPU applications consume memory too. At 2 GB, Sweep may need CPU
-offloading and be slow. Setup checks model metadata and residency after warm-up,
-reserving at least 512 MiB or 10% of dedicated VRAM. If a pair cannot stay
-resident, interactive setup offers single mode; unattended setup fails with a
-retry command instead of silently changing models. It does not evict unrelated
-models or change shared Ollama service settings. Explicit profile switches can
-release the previously selected completion model from memory, keeping its weights
-on disk. Dual validation keeps its selected pair resident rather than repeatedly
-unloading it between probes.
-
-Detection uses `nvidia-smi` or readable AMD sysfs counters with Python's standard
-library. macOS system memory is reported as shared memory, not dedicated VRAM.
-Unknown VRAM requires an explicit menu choice; unattended installation requires
-explicit local-model arguments, Copilot, or off. `--yes` does not guess unknown
-hardware. A 5 GB GPU receives the conservative single-model recommendation.
-
-## Installation and migration
-
-The installer asks before setting up local models and also offers **GitHub
-Copilot** and **Skip Ollama models installation**. Copilot needs `:Copilot auth`;
-it downloads no Ollama models. Skipping leaves AI off and normal completion on.
-Existing provider/model/endpoint preferences survive reruns.
+The 8 GB alternatives use Q4 weights to leave space for context and the desktop.
+Sweep remains the default on larger GPUs too: both larger models scored below
+focused Sweep in Maya's local comparison. They are explicit options, not an automatic upgrade.
+Upstream benchmarks used Q8 Zeta-2.1; their quality and latency are not Q4 guarantees.
+Zeta-2 scored slightly better for edits; Zeta-2.1 was quieter and faster in that
+benchmark. See [upstream results](https://github.com/cursortab/cursortab.nvim#benchmarks)
+and [Maya's measurements](AI_CANDIDATES.md). Two GB may require CPU offload.
+Unknown/shared memory requires an explicit choice instead of assuming GPU capacity.
 
 ```sh
-# Small dual preset:
-./install.sh --ai ollama --ai-mode dual \
-  --model qwen2.5-coder:1.5b-base-q8_0 \
-  --next-edit-model hf.co/sweepai/sweep-next-edit-1.5B:Q8_0
-
-# One model for insertions and replacements:
-./install.sh --ai ollama --ai-mode single
-
-# Existing completion-only setup remains supported:
-./install.sh --ai ollama --model your-existing-model
+./install.sh --ai ollama
+./install.sh --ai ollama --model hf.co/mradermacher/zeta-2.1-GGUF:Q4_K_M
+./install.sh --ai ollama --model hf.co/bartowski/zed-industries_zeta-2-GGUF:Q4_K_M
+./install.sh --ai off
 ```
 
-`--model` alone retains its original completion-only meaning. New settings are
-optional: absent `local_mode` means legacy completion-only mode, without a Sweep
-download. An existing custom endpoint keeps its previous transport. New dual
-presets use the native Ollama API; custom dual models require the appropriate
-`--fim-format qwen|mellum`. Single mode uses `--next-edit-model`, not `--model`.
+Use `--engine sweep|zeta-2|zeta-2.1` for a custom model name. The format must match
+the model's training. Setup pulls only missing weights, validates the local
+completion endpoint and checks GPU residency with a reserve. Failed validation
+keeps previous preferences. It does not remove downloaded models or silently
+choose a smaller/cloud model. Other resident models may need to be unloaded.
 
-`--ollama-models-dir PATH` selects storage when starting a managed server.
-A running server retains its existing storage and settings. Missing Ollama can
-be installed user-locally on Linux with zstd and a working systemd user session;
-macOS users install/start Ollama separately. See [prerequisites](PREREQUISITES.md).
-No system-wide environment variables are changed.
+Ollama's OpenAI route cannot set `num_ctx`. Setup therefore creates a dedicated
+`maya-local-<hash>` alias sharing the chosen weights, with a 4,096-token context
+for Sweep or 8,192 for Zeta. The source model's parameters remain unchanged.
+Validation is an endpoint/residency smoke test, not a correctness score.
 
-Preferences live in `${XDG_STATE_HOME:-~/.local/state}/maya-nvim/ai.json`, outside
-Git and the personal editor configuration. For example:
+## Controls
+
+- `Space ao` / `:MayaAI ollama`: enable or reload local AI.
+- `Space ac` / `:MayaAI copilot`: select Copilot; authenticate with `:Copilot auth`.
+- `Space ax` / `:MayaAI off`: cancel and disable AI.
+- `Tab`: accept selected ordinary completion first, then a visible AI suggestion.
+  Normal-mode Tab accepts an AI preview or retains jump-forward behavior.
+- `Space an`, Insert `Ctrl-L` / `Alt-[`: request a suggestion.
+- `Space aa`: accept. `Space ad` / `Ctrl-]`: dismiss until the next edit.
+- `Space as`: status. `Space am`: edit saved AI preferences, then `Space ao` to reload.
+
+Cursortab uses a 200 ms text-change debounce and 650 ms idle delay. The existing
+personal settings `ai_completion_debounce_ms` and `ai_next_edit_debounce_ms` still
+control those delays. Leaving Insert does not restart a pending text-change timer.
+Automatic Normal-mode previews consisting only of newly added lines are withheld;
+use Insert mode or an explicit request to ask for those additions. This avoids
+unwanted exports or helper functions after finishing an edit. An unchanged saved buffer is quiet; explicit requests bypass that gate. Preview
+ownership lasts until acceptance, dismissal or invalidation. Prefetch and automatic
+cursor jumps are disabled. Acceptance has its own undo step. Ordinary completion
+and snippets remain available with AI off.
+
+## Preferences and migration
+
+Preferences live in `stdpath('state')/ai.json`, never in the repository:
 
 ```json
 {
+  "schema": 2,
   "provider": "ollama",
-  "local_mode": "dual",
-  "model": "qwen2.5-coder:1.5b-base-q8_0",
-  "next_edit_model": "hf.co/sweepai/sweep-next-edit-1.5B:Q8_0",
+  "model": "maya-local-<installer-generated-hash>",
+  "source_model": "hf.co/mradermacher/zeta-2.1-GGUF:Q4_K_M",
+  "engine": "zeta-2.1",
   "endpoint": "http://127.0.0.1:11434",
-  "fim_format": "qwen"
+  "context_size": 8192
 }
 ```
 
-Use `local_mode: "single"` for Sweep in both modes, or `"completion-only"` for
-the previous Minuet behavior. Model changes require pulling the model first or
-rerunning setup. `Space ao` reloads saved settings without downloading anything.
-Validation measurements are stored separately in `ollama-validation.json`.
+Old dual/single/completion-only preferences migrate to the saved `next_edit_model`,
+or an existing Sweep model, otherwise Sweep 1.5B Q8. Provider and endpoint remain
+unchanged. The old inline model/mode/format are retained under `legacy` for reference;
+they no longer control execution. Downloaded weights are never deleted. Run the
+installer once after upgrading to ensure the chosen weights and context alias exist.
+Merely opening mvim does not download a replacement model. An old saved AI-off
+preference stays off.
 
-## Editing behavior
+The removed installer flags `--ai-mode`, `--next-edit-model` and `--fim-format`
+are replaced by `--model` and optional `--engine`. `Space am` now opens settings;
+there is no mode picker. Existing personal debounce settings still work.
 
-Dual mode requests Minuet after 200 ms of Insert-mode inactivity. Sweep becomes
-eligible after 650 ms in Insert or Normal mode, waiting for pending Minuet work
-and any visible preview. A valid preview has no expiry: elapsed time never
-replaces it or launches competing inference. Typing cancels stale work and gives
-Minuet priority. After acceptance, Sweep waits another 650 ms without edits.
-Explicit dismissal suppresses automatic suggestions until the next edit.
-Explicitly enabling/reloading Ollama (`Space ao`) or choosing a local mode
-clears that dismissal pause and restarts scheduling. `Space ax` disables AI;
-it is separate from dismissing one preview or choosing the single/dual mode.
-`Space as` distinguishes provider enablement, buffer eligibility and the current
-scheduler state: waiting for a pause/model, suggestion ready, selected editor
-completion, dismissal, or no suggestion to show. An enabled provider does not
-prove that the endpoint is reachable or that its model returned useful text.
-Single mode uses only Sweep; completion-only mode retains the saved Minuet model
-and endpoint. Special, read-only, unmodifiable, and large buffers are excluded.
+## Context and troubleshooting
 
-Sweep may return no preview. Local suggestions are filtered before display:
-edits must stay within three lines of the cursor, affect at most three existing
-nonblank lines, add at most eight lines and grow by at most 1,200 bytes. Hunks
-that remove more nonblank lines than they add are rejected. This deliberately
-suppresses deletion-only edits, truncated response windows and broad rewrites,
-including some legitimate refactors. Rejection does not retry automatically.
-These are conservative bounds, not model confidence or semantic correctness
-checks; small incorrect suggestions can still occur. Type-context collection
-and prompt assembly are unchanged.
+Maya asynchronously collects hover, signature, definition and type-definition
+context according to server capabilities. Lua/Python/TypeScript syntax adapters
+locate anchors only. Prompt hooks read the bounded cache without waiting for LSP.
+Stale buffer/cursor/definition snapshots are omitted. Cursortab uses the focused
+cache view: low-priority definition snippets larger than 1,600 bytes are omitted,
+while annotation-driven type snippets and hover/signature hints retain their budgets. Cursortab adds native history,
+diagnostics and surrounding code; all three local model formats receive Maya context.
 
-Personal `MayaConfig` settings `ai_completion_debounce_ms` (default 200) and
-`ai_next_edit_debounce_ms` (default 650) accept milliseconds from 0 to 60000.
-Existing configurations need no migration; saved model and provider preferences
-remain unchanged.
-
-- Tab accepts a selected ordinary completion first, then a valid AI suggestion.
-- Enter retains ordinary selected-completion acceptance.
-- Normal Tab accepts Sweep when visible, otherwise keeps jump-forward behavior.
-- `Space an` requests next-edit; `Space aa` accepts; `Space ad` dismisses.
-- Ctrl-] dismisses; leaving Insert mode cancels its outstanding request.
-- Ctrl-L / Alt-[ cycle Minuet or Copilot inline suggestions, not Sweep edits.
-- Selecting an ordinary completion cancels AI previews. An open menu with no
-  selected item can coexist with inline AI; ordinary selected completion keeps
-  priority on Tab.
-
-Local previews show the generating model's saved identifier in gray at the right
-edge of the editor window. The label follows window resizing and disappears with
-the preview; it is display-only and is never inserted into the document.
-
-Acceptance stays explicit and undoable. Sweep applies accepted edits after the
-completion mapping finishes, rechecking the preview identity before changing text. Provider changes, AI-off, and mode
-handover cancel outgoing requests. Monotonic generations reject late callbacks;
-display and acceptance also check provider, buffer, changedtick, cursor, and
-mode. Old results cannot clear newer requests or overwrite intervening edits.
-
-## Context and prompt formats
-
-Both engines consume the same asynchronous, bounded LSP context cache. It checks
-standard hover, signature-help, definition, and type-definition capabilities on
-each attached client and uses that client's position encoding. Lua, TypeScript,
-and Python syntax adapters locate receivers, expressions, and enclosing
-annotations/calls. Incomplete annotated tables, object literals, and dictionaries
-retain their enclosing type anchor even when the syntax tree contains an error.
-The collector follows definitions to their full bounded annotation/declaration
-snippets, then follows referenced field types for up to two additional levels
-and twelve requests. Explicit annotations take priority within the 6,000-character
-budget. Standard didOpen/didClose notifications synchronize temporary referenced
-documents where needed, without opening or modifying user buffers. Source-version
-and annotation-scope checks reject stale context. Semantic information comes
-from LSP responses; unresolved
-expected types are explicitly described as unresolved, with enclosing source
-included as a fallback. Location and LocationLink targets yield bounded snippets.
-Loaded targets use changedticks; disk targets are revalidated asynchronously by
-size and modification time. Valid target snippets can survive nearby source edits.
-Delayed or absent replies never block typing or prompt construction.
-
-Shared context is limited to 6,000 characters. Minuet receives it through its FIM
-prompt hook; Sweep receives an additional source-snippet section through the
-public `source_context` callback. Sweep retains edit history and same-file context.
-Markdown FIM prompts include surrounding prose directly, without also wrapping
-that same source in an HTML-comment LSP preface. Genuine cached LSP hints still
-reach Markdown completions; code completions retain enclosing annotations and
-full type snippets.
-Ollama separately receives a 4,096-token context and a 96-token output cap.
-Sweep receives a 4,096-token context, a 512-token output cap, a 21-line edit
-window, three history entries, and bounded references. Character budgets and
-estimated snippet tokens are not exact tokenizer counts. Server context limits
-remain authoritative. Requests time out after ten seconds.
-
-Qwen uses `<|fim_prefix|>…<|fim_suffix|>…<|fim_middle|>`. Mellum uses its
-suffix-first `<fim_suffix>…<fim_prefix>…<fim_middle>` format and filename sections.
-See [Mellum's model card](https://huggingface.co/JetBrains/Mellum-4b-sft-all-gguf).
-Native Ollama requests are built through Minuet's documented prompt/transform
-hooks; the OpenAI-compatible endpoint cannot set `num_ctx` directly. See
-[Ollama context-size documentation](https://docs.ollama.com/api/openai-compatibility#setting-the-local-context-size).
-
-## Bundled AI plugins
-
-Minuet and blink-edit runtime sources are included in `vendor/` and loaded directly
-through lazy.nvim local `dir` specs. A fresh clone includes the coordination,
-shared-context, cancellation, and model-label hooks. Separate fork clones and
-manual patch application are unnecessary. The two obsolete remote lockfile
-entries are removed; repository revisions now identify the bundled versions.
-Original licenses and snapshot provenance are retained in [vendor/README.md](../vendor/README.md).
-Git histories, images, caches, and model files are excluded.
-
-The plugins expose optional `external_scheduler`, pending/request inspection,
-explicit dismissal notification, and Sweep's cached `source_context(bufnr)` callback.
-Their standalone scheduling remains the default. The shared collector uses
-capability-checked standard LSP methods and each client's position encoding;
-it never selects behavior by server name.
-
-### Local validation (2026-10-16)
-
-Ten warm samples per engine alternated the Qwen 1.5B Q8 and Sweep 1.5B Q8 models
-on the RTX 3060 Laptop GPU (6 GiB), after one warmup per engine. Repeated small
-Python fixtures measured from a programmatic edit notification through debounce
-to a visible preview, polled every 20 ms. These warm repeated prompts benefit
-from server caching; they are not cold-start or large-project estimates.
-
-| Engine | Render median | Render p95 | Request median | Request p95 | Empty/rejected | Failed/timeout |
-| ------ | ------------: | ---------: | -------------: | ----------: | -------------: | -------------: |
-| Qwen   |      271.6 ms |   272.3 ms |        62.0 ms |     67.3 ms |           0/10 |           0/10 |
-| Sweep  |      749.2 ms |   750.2 ms |        88.2 ms |     90.9 ms |           0/10 |           0/10 |
-
-The p95 uses the nearest-rank estimate (the maximum of ten samples). Ollama
-reported both models' full sizes in VRAM throughout warm alternation; NVIDIA
-reported 3,894 MiB used. No eviction or CPU offloading was observed. Defaults
-remain 200/650 ms. `tests/ai_latency.py` reproduces these measurements.
-
-`tests/ai_shared_context.py` uses real lua-language-server, typescript-language-server,
-and ty processes and captures outgoing HTTP payloads for both engines with a
-local deterministic model endpoint. All four semantic capabilities were advertised
-by those servers. Receiver hovers identified `MayaConfig` or `Settings`, and
-source snippets preserved field types and documentation in both final prompts.
-This verifies delivery, not model quality or reliable expected-type resolution
-inside every incomplete table/object literal; that remains best effort and is
-labelled unresolved in enclosing-source fallback context.
-
-Deterministic tests cover both previews surviving 1.4-second pauses, pending
-serialization, acceptance followed by Sweep, dismissal through navigation,
-resumed typing, stale callbacks, provider changes, completion-menu priority,
-undo, delayed/absent LSP replies, LocationLink targets, and changed target versions.
-The 65 Python unit tests pass, as do the general integration and typed-config
-completion checks with normal LSP activation. An initial run with
-`MAYA_NVIM_NO_INSTALL=1` timed out because that flag also skips automatic LSP
-activation; the focused context test starts its servers explicitly.
-
-The annotated-value regression captures both Qwen and Sweep HTTP requests for
-`---@type MayaConfig` followed by an incomplete `theme = `, using the actual
-repository schema in a separate library. Every `MayaConfig` field and all
-`MayaTheme` fields and formatting guidance survive prompt assembly. Equivalent
-TypeScript interface and Python TypedDict fixtures place their schema and nested
-type in separate files and verify both prompts with real language servers.
-These tests verify context delivery; suggestions can still ignore that context.
-
-The Markdown regression captures the native Qwen HTTP request at a blank line
-after an unfinished sentence. It checks that the preceding sentence and suffix
-reach the correct FIM positions exactly once and that genuine semantic hints
-remain available. In a local reproduction with Qwen 1.5B Q8, the duplicated-source
-prompt repeated a prior heading/table in two of three seeded requests; removing
-that redundant source copy produced no section repetitions in those three seeds.
-The previous line was present in both variants. Some responses still contained
-incorrect facts, so this establishes a prompt fix rather than guaranteed prose quality.
+Use `:CursortabStatus`, `:CursortabShowLog`, and `Space as` to diagnose missing
+suggestions. Each mvim process owns its own daemon under the state directory.
+If the binary is missing, run `python3 scripts/build_cursortab.py` with
+`NVIM_APPNAME=maya-nvim`, then restart mvim. Re-run the installer for model or
+residency failures. A local OpenAI-compatible endpoint can also be configured
+manually; its operator must set a matching model and context size.

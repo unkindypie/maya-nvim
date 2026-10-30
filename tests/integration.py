@@ -14,7 +14,9 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def start():
-    return pynvim.attach("child", argv=["nvim", "--embed", "--headless"])
+    return pynvim.attach(
+        "child", argv=[str(ROOT / "bin/mvim"), "--embed", "--headless"]
+    )
 
 
 def wait(nvim, expression, timeout=45):

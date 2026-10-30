@@ -1,0 +1,551 @@
+package engine
+
+import (
+	"context"
+	"cursortab/assert"
+	"cursortab/buffer"
+	"cursortab/ctx"
+	"cursortab/text"
+	"cursortab/types"
+	"sync"
+	"testing"
+	"time"
+)
+
+// --- Mock implementations ---
+
+// mockBuffer implements the Buffer interface for testing
+type mockBuffer struct {
+	mu               sync.Mutex
+	lines            []string
+	row              int
+	col              int
+	path             string
+	version          int
+	viewportTop      int
+	viewportBottom   int
+	previousLines    []string
+	originalLines    []string
+	diffHistories    []*types.DiffEntry
+	diagnostics      *types.Diagnostics
+	treesitter       *types.TreesitterContext
+	diagnosticsCalls int
+	treesitterCalls  int
+	// Track method calls
+	syncCalls              int
+	clearUICalls           int
+	commitPendingCalls     int
+	showCursorTargetLine   int
+	prepareCompletionCalls int
+	lastPreparedCompletion struct {
+		startLine  int
+		endLineInc int
+		lines      []string
+	}
+
+	// Partial accept tracking
+	lastInsertedText    string
+	lastInsertLine      int
+	lastInsertCol       int
+	lastReplacedLine    int
+	lastReplacedContent string
+}
+
+func newMockBuffer() *mockBuffer {
+	return &mockBuffer{
+		lines:          []string{"line 1", "line 2", "line 3"},
+		row:            1,
+		col:            0,
+		path:           "test.go",
+		version:        1,
+		viewportTop:    1,
+		viewportBottom: 50,
+	}
+}
+
+func (b *mockBuffer) Sync(workspacePath string) (*buffer.SyncResult, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.syncCalls++
+	return &buffer.SyncResult{BufferChanged: false}, nil
+}
+
+func (b *mockBuffer) Lines() []string {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.lines
+}
+
+func (b *mockBuffer) Row() int {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.row
+}
+
+func (b *mockBuffer) Col() int {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.col
+}
+
+func (b *mockBuffer) Path() string {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.path
+}
+
+func (b *mockBuffer) Version() int {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.version
+}
+
+func (b *mockBuffer) ViewportBounds() (top, bottom int) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.viewportTop, b.viewportBottom
+}
+
+func (b *mockBuffer) AvailableWidth() int {
+	return 120
+}
+
+func (b *mockBuffer) PreviousLines() []string {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.previousLines
+}
+
+func (b *mockBuffer) OriginalLines() []string {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.originalLines
+}
+
+func (b *mockBuffer) DiffHistories() []*types.DiffEntry {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.diffHistories
+}
+
+func (b *mockBuffer) DiskLines() []string {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return nil
+}
+
+func (b *mockBuffer) Diagnostics() *types.Diagnostics {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.diagnosticsCalls++
+	return b.diagnostics
+}
+
+func (b *mockBuffer) TreesitterSymbols(row int, col int, maxSiblings int) *types.TreesitterContext {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.treesitterCalls++
+	return b.treesitter
+}
+
+func (b *mockBuffer) SetFileContext(ctx buffer.FileContext) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.previousLines = ctx.PreviousLines
+	b.originalLines = ctx.OriginalLines
+	b.diffHistories = ctx.DiffHistories
+}
+
+func (b *mockBuffer) HasChanges(startLine, endLineInc int, lines []string) bool {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	// Simple implementation: check if any line differs
+	for i := startLine; i <= endLineInc && i-1 < len(b.lines); i++ {
+		relIdx := i - startLine
+		if relIdx < len(lines) {
+			if i-1 < len(b.lines) && lines[relIdx] != b.lines[i-1] {
+				return true
+			}
+		}
+	}
+	return len(lines) != (endLineInc - startLine + 1)
+}
+
+func (b *mockBuffer) PrepareCompletion(startLine, endLineInc int, lines []string, groups []*text.Group) buffer.Batch {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.prepareCompletionCalls++
+	b.lastPreparedCompletion.startLine = startLine
+	b.lastPreparedCompletion.endLineInc = endLineInc
+	b.lastPreparedCompletion.lines = lines
+	return &mockBatch{}
+}
+
+func (b *mockBuffer) CommitPending() {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.commitPendingCalls++
+}
+
+func (b *mockBuffer) CommitUserEdits() bool {
+	return false
+}
+
+func (b *mockBuffer) ClearDiffHistory() {
+}
+
+func (b *mockBuffer) IsModified() bool {
+	return true // Default to modified so completions aren't suppressed in tests
+}
+
+func (b *mockBuffer) CursorScopes() []string { return nil }
+
+func (b *mockBuffer) SkipHistory() bool {
+	return false
+}
+
+func (b *mockBuffer) ShowCursorTarget(line int) error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.showCursorTargetLine = line
+	return nil
+}
+
+func (b *mockBuffer) ClearUI() error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.clearUICalls++
+	return nil
+}
+
+func (b *mockBuffer) MoveCursor(line int, center, mark bool) error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.row = line
+	return nil
+}
+
+func (b *mockBuffer) InsertText(line, col int, text string, keepUI bool) error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.lastInsertLine = line
+	b.lastInsertCol = col
+	b.lastInsertedText = text
+	// Also update lines for state consistency
+	if line >= 1 && line <= len(b.lines) {
+		idx := line - 1
+		currentLine := b.lines[idx]
+		if col <= len(currentLine) {
+			b.lines[idx] = currentLine[:col] + text + currentLine[col:]
+		}
+	}
+	return nil
+}
+
+func (b *mockBuffer) ReplaceLine(line int, content string, keepUI bool) error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.lastReplacedLine = line
+	b.lastReplacedContent = content
+	if line >= 1 && line <= len(b.lines) {
+		b.lines[line-1] = content
+	}
+	return nil
+}
+
+func (b *mockBuffer) InsertLine(line int, content string, keepUI bool) error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	// Insert new line at position, pushing existing lines down
+	if line >= 1 && line <= len(b.lines)+1 {
+		newLines := make([]string, len(b.lines)+1)
+		copy(newLines[:line-1], b.lines[:line-1])
+		newLines[line-1] = content
+		copy(newLines[line:], b.lines[line-1:])
+		b.lines = newLines
+	}
+	return nil
+}
+
+// mockBatch implements buffer.Batch
+type mockBatch struct {
+	executed bool
+	err      error
+}
+
+func (b *mockBatch) Execute() error {
+	b.executed = true
+	return b.err
+}
+
+// mockProvider implements the Provider interface for testing
+type mockProvider struct {
+	mu                              sync.Mutex
+	completion                      CompletionKind
+	canPrefetchFromSyntheticCurrent bool
+	completionResp                  *types.CompletionResponse
+	completionErr                   error
+	materials                       ctx.Materials
+	completionCalls                 int
+	lastInput                       ctx.CompletionInput
+}
+
+func newMockProvider() *mockProvider {
+	return &mockProvider{
+		completion:                      CompletionEdit,
+		canPrefetchFromSyntheticCurrent: true,
+		completionResp: &types.CompletionResponse{
+			Completion: &types.Completion{
+				StartLine:  1,
+				EndLineInc: 1,
+				Lines:      []string{"completed line 1"},
+			},
+		},
+	}
+}
+
+func newMockProviderWithKind(kind CompletionKind) *mockProvider {
+	p := newMockProvider()
+	p.completion = kind
+	return p
+}
+
+func newMockProviderWithLiveEditorState() *mockProvider {
+	p := newMockProvider()
+	p.canPrefetchFromSyntheticCurrent = false
+	return p
+}
+
+func completionResponse(completion *types.Completion) *types.CompletionResponse {
+	return &types.CompletionResponse{Completion: completion}
+}
+
+func showDisplayedCompletionForTest(
+	eng *Engine,
+	completion *types.Completion,
+	originalLines []string,
+	groups []*text.Group,
+) {
+	showDisplayedCompletionWithBatchForTest(eng, completion, nil, originalLines, groups)
+}
+
+func showDisplayedCompletionWithBatchForTest(
+	eng *Engine,
+	completion *types.Completion,
+	batch buffer.Batch,
+	originalLines []string,
+	groups []*text.Group,
+) {
+	eng.display.show(
+		completion,
+		batch,
+		originalLines,
+		groups,
+		eng.rejectedCompletionFor(completion),
+	)
+}
+
+func assertNoPrefetch(t *testing.T, eng *Engine, label string) {
+	t.Helper()
+	assert.Nil(t, eng.prefetch.inflight, label+" inflight")
+	assert.Nil(t, eng.prefetch.ready, label+" ready")
+}
+
+func assertReadyPrefetch(t *testing.T, eng *Engine, label string) {
+	t.Helper()
+	assert.NotNil(t, eng.readyPrefetch(), label)
+}
+
+func assertInflightPrefetch(t *testing.T, eng *Engine, wait prefetchWait, label string) {
+	t.Helper()
+	assert.NotNil(t, eng.prefetch.inflight, label)
+	assert.Nil(t, eng.prefetch.ready, label+" ready")
+	assert.Equal(t, wait, eng.prefetch.inflight.wait, label+" wait")
+}
+
+func seedInflightPrefetch(eng *Engine, wait prefetchWait) uint64 {
+	eng.prefetchRequestID++
+	requestID := eng.prefetchRequestID
+	eng.prefetch = prefetchSlot{inflight: &prefetchInflight{requestID: requestID, wait: wait}}
+	return requestID
+}
+
+func (p *mockProvider) CompletionKind() CompletionKind {
+	return p.completion
+}
+
+func (p *mockProvider) CanPrefetchFromSyntheticCurrent() bool {
+	return p.canPrefetchFromSyntheticCurrent
+}
+
+func (p *mockProvider) RequiredMaterials() ctx.Materials {
+	return p.materials
+}
+
+func (p *mockProvider) Complete(_ context.Context, input ctx.CompletionInput) (*types.CompletionResponse, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.completionCalls++
+	p.lastInput = input
+	if p.completionErr != nil {
+		return nil, p.completionErr
+	}
+	return p.completionResp, nil
+}
+
+type mockStreamingProvider struct {
+	*mockProvider
+	stream    CompletionStream
+	streamErr error
+}
+
+func newMockStreamingProvider(stream CompletionStream) *mockStreamingProvider {
+	return &mockStreamingProvider{
+		mockProvider: newMockProvider(),
+		stream:       stream,
+	}
+}
+
+func (p *mockStreamingProvider) StreamCompletion(_ context.Context, _ ctx.CompletionInput) (CompletionStream, error) {
+	if p.streamErr != nil {
+		return nil, p.streamErr
+	}
+	return p.stream, nil
+}
+
+type mockCompletionStream struct {
+	lines       chan string
+	cancel      context.CancelFunc
+	windowStart int
+	oldLines    []string
+	response    *types.CompletionResponse
+	err         error
+}
+
+func newMockCompletionStream(cancel context.CancelFunc) *mockCompletionStream {
+	return &mockCompletionStream{lines: make(chan string), cancel: cancel}
+}
+
+func (s *mockCompletionStream) Lines() <-chan string {
+	return s.lines
+}
+
+func (s *mockCompletionStream) Window() (int, []string) {
+	return s.windowStart, s.oldLines
+}
+
+func (s *mockCompletionStream) Cancel() {
+	if s.cancel != nil {
+		s.cancel()
+	}
+}
+
+func (s *mockCompletionStream) Finish() (*types.CompletionResponse, error) {
+	return s.response, s.err
+}
+
+// mockClock implements Clock for testing
+type mockClock struct {
+	mu     sync.Mutex
+	now    time.Time
+	timers []*mockTimer
+}
+
+func newMockClock() *mockClock {
+	return &mockClock{
+		now: time.Now(),
+	}
+}
+
+func (c *mockClock) AfterFunc(d time.Duration, f func()) Timer {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	t := &mockTimer{
+		fireTime: c.now.Add(d),
+		f:        f,
+		stopped:  false,
+	}
+	c.timers = append(c.timers, t)
+	return t
+}
+
+func (c *mockClock) Now() time.Time {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.now
+}
+
+func (c *mockClock) Advance(d time.Duration) {
+	c.mu.Lock()
+	c.now = c.now.Add(d)
+	// Copy timers to avoid holding lock during callback
+	var toFire []*mockTimer
+	for _, t := range c.timers {
+		if !t.stopped && !t.now.After(c.now) {
+			toFire = append(toFire, t)
+		}
+	}
+	c.mu.Unlock()
+
+	for _, t := range toFire {
+		t.fire()
+	}
+}
+
+type mockTimer struct {
+	fireTime time.Time
+	now      time.Time
+	f        func()
+	stopped  bool
+	mu       sync.Mutex
+}
+
+func (t *mockTimer) Stop() bool {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	wasActive := !t.stopped
+	t.stopped = true
+	return wasActive
+}
+
+func (t *mockTimer) fire() {
+	t.mu.Lock()
+	if t.stopped {
+		t.mu.Unlock()
+		return
+	}
+	t.stopped = true
+	f := t.f
+	t.mu.Unlock()
+	if f != nil {
+		f()
+	}
+}
+
+// --- Helper functions ---
+
+func createTestEngine(buf *mockBuffer, prov Provider, clock *mockClock) *Engine {
+	eng, _ := NewEngine(prov, buf, EngineConfig{
+		NsID:                1,
+		CompletionTimeout:   5 * time.Second,
+		IdleCompletionDelay: 500 * time.Millisecond,
+		TextChangeDebounce:  100 * time.Millisecond,
+		CursorPrediction: CursorPredictionConfig{
+			Enabled:            true,
+			AutoAdvance:        true,
+			ProximityThreshold: 3,
+		},
+		CompleteInInsert: true,
+		CompleteInNormal: true,
+	}, clock, nil)
+	return eng
+}
+
+// createTestEngineWithContext creates an engine with mainCtx set (needed for prefetch tests)
+func createTestEngineWithContext(buf *mockBuffer, prov Provider, clock *mockClock) (*Engine, context.CancelFunc) {
+	eng := createTestEngine(buf, prov, clock)
+	ctx, cancel := context.WithCancel(context.Background())
+	eng.mainCtx = ctx
+	eng.mainCancel = cancel
+	return eng, cancel
+}

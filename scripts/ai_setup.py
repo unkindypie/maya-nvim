@@ -1,87 +1,97 @@
-"""Dependency-free GPU detection and AI setup choices."""
+"""Local edit-model presets and dependency-free GPU detection."""
 
 import platform
 import subprocess
 from pathlib import Path
 
-DEFAULT_MODEL = "qwen2.5-coder:3b-base"
-SMALL_MODEL = "qwen2.5-coder:1.5b-base"
-QWEN_SMALL = "qwen2.5-coder:1.5b-base-q8_0"
-QWEN_LARGE = "qwen2.5-coder:7b-base-q4_K_M"
-MELLUM = "hf.co/JetBrains/Mellum-4b-sft-all-gguf:Q8_0"
 SWEEP = "hf.co/sweepai/sweep-next-edit-1.5B:Q8_0"
+ZETA21 = "hf.co/mradermacher/zeta-2.1-GGUF:Q4_K_M"
+ZETA2 = "hf.co/bartowski/zed-industries_zeta-2-GGUF:Q4_K_M"
+
+
+def engine_for(model):
+    name = model.lower()
+    if "zeta-2.1" in name:
+        return "zeta-2.1"
+    if "zeta-2" in name:
+        return "zeta-2"
+    if "sweep" in name:
+        return "sweep"
+    raise ValueError("Specify --engine sweep, zeta-2 or zeta-2.1 for a custom model")
+
+
+def migrate(saved):
+    result = dict(saved)
+    if result.get("schema") != 2:
+        result["legacy"] = {
+            key: result[key]
+            for key in ("model", "local_mode", "fim_format")
+            if key in result
+        }
+        old = result.get("model", "")
+        result["model"] = result.get("next_edit_model") or (
+            old if "sweep" in old.lower() else SWEEP
+        )
+        result["engine"] = (
+            "zeta-2.1"
+            if "zeta-2.1" in result["model"].lower()
+            else "zeta-2"
+            if "zeta-2" in result["model"].lower()
+            else "sweep"
+        )
+    for key in ("local_mode", "next_edit_model", "fim_format"):
+        result.pop(key, None)
+    result["schema"] = 2
+    result.setdefault("model", SWEEP)
+    result.setdefault(
+        "engine",
+        engine_for(result["model"]) if not result.get("engine") else result["engine"],
+    )
+    result.setdefault("context_size", 4096 if result["engine"] == "sweep" else 8192)
+    return result
 
 
 def recommended_profile(gpu):
     memory = gpu.get("vram_mib")
     if memory is None or memory < 2048:
         return None
-    if memory < 6144:
-        return {"local_mode": "single", "next_edit_model": SWEEP}
-    return {
-        "local_mode": "dual",
-        "model": QWEN_SMALL if memory < 8192 else QWEN_LARGE,
-        "next_edit_model": SWEEP,
-    }
+    model = SWEEP
+    return {"model": model, "engine": engine_for(model)}
 
 
 def choose_profile():
     gpu = detect_gpu()
     recommended = recommended_profile(gpu)
-    print(f"🌺 AI setup — {gpu}; VRAM tiers are estimates, not guarantees.")
-    print("  1. Sweep single model (2–4 GB; CPU offload may be needed at 2 GB)")
-    print("  2. Qwen 1.5B Q8 + Sweep (6 GB)")
-    print("  3. Qwen 7B Q4_K_M + Sweep (8 GB+)")
-    print("  4. Mellum 4B Q8 + Sweep (8 GB+ alternative)")
-    print("  5. Custom / legacy inline completion only")
-    print("  6. GitHub Copilot (authenticate with :Copilot auth)")
-    print("  7. Skip Ollama models installation (AI off)")
-    default = (
-        None
-        if not recommended
-        else (
-            "1"
-            if recommended["local_mode"] == "single"
-            else "2"
-            if recommended["model"] == QWEN_SMALL
-            else "3"
-        )
-    )
+    default = "1" if recommended else None
+    print(f"Local AI — {gpu}. VRAM tiers are estimates; setup validates residency.")
+    print("  1. Sweep 1.5B Q8 (recommended: measured quality and speed)")
+    print("  2. Zeta-2.1 8B Q4_K_M (8 GB+ alternative)")
+    print("  3. Zeta-2 8B Q4_K_M (8 GB+ alternative)")
+    print("  4. Custom local edit model")
+    print("  5. GitHub Copilot")
+    print("  6. AI off")
     while True:
         try:
             answer = (
-                input(
-                    "🌠 Choose AI setup"
-                    + (f" [{default}]" if default else " (required)")
-                    + ": "
-                ).strip()
-                or default
+                input(f"Choose AI setup [{default or 'required'}]: ").strip() or default
             )
-        except EOFError:
+        except EOFError as error:
             raise ValueError(
-                "AI choice required; use --ai off, --ai copilot, or explicit --ai-mode and models"
-            )
+                "Choose --ai off, --ai copilot, or --ai ollama --model MODEL"
+            ) from error
         if answer in ("n", "no"):
-            answer = "7"
-        if answer in ("y", "yes") and default:
-            answer = default
-        if answer == "6":
-            return "copilot", {}
-        if answer == "7":
-            return "off", {}
-        if answer == "1":
-            return "ollama", {"local_mode": "single", "next_edit_model": SWEEP}
-        if answer in ("2", "3", "4"):
-            return "ollama", {
-                "local_mode": "dual",
-                "model": {"2": QWEN_SMALL, "3": QWEN_LARGE, "4": MELLUM}[answer],
-                "next_edit_model": SWEEP,
-            }
-        if answer == "5":
-            name = input("🌸 Ollama model tag: ").strip()
-            if name:
-                return "ollama", {"local_mode": "completion-only", "model": name}
-        print("🔔 Choose a number from 1 to 7.")
+            answer = "6"
+        if answer in ("5", "6"):
+            return ("copilot" if answer == "5" else "off"), {}
+        if answer in ("1", "2", "3"):
+            model = {"1": SWEEP, "2": ZETA21, "3": ZETA2}[answer]
+            return "ollama", {"model": model, "engine": engine_for(model)}
+        if answer == "4":
+            model = input("Local Ollama model: ").strip()
+            engine = input("Prompt format [sweep/zeta-2/zeta-2.1]: ").strip()
+            if model and engine in ("sweep", "zeta-2", "zeta-2.1"):
+                return "ollama", {"model": model, "engine": engine}
+        print("Choose a number from 1 to 6.")
 
 
 def detect_gpu():
@@ -154,56 +164,3 @@ def detect_gpu():
         except (OSError, ValueError, subprocess.SubprocessError):
             pass
     return {"name": "VRAM unavailable"}
-
-
-def recommended_model(gpu):
-    memory = gpu.get("vram_mib")
-    return SMALL_MODEL if memory is not None and memory < 4096 else DEFAULT_MODEL
-
-
-def choose():
-    gpu = detect_gpu()
-    recommended = recommended_model(gpu)
-    memory = gpu.get("vram_mib")
-    detail = (
-        f"{memory / 1024:.1f} GiB dedicated VRAM"
-        if memory
-        else "dedicated VRAM unavailable"
-    )
-    if "shared_mib" in gpu:
-        detail = f"{gpu['shared_mib'] / 1024:.1f} GiB shared system memory (not dedicated VRAM)"
-    print(f"🌺 AI setup — {gpu['name']}: {detail}")
-    print(f"  1. Recommended: {recommended}")
-    print("  2. Qwen2.5-Coder 1.5B Base (lightweight)")
-    print("  3. Qwen2.5-Coder 3B Base (balanced)")
-    print("  4. Qwen2.5-Coder 7B Base (prefer 8 GB+ VRAM)")
-    print("  5. Custom Ollama model")
-    print("  6. GitHub Copilot (no Ollama; authenticate with :Copilot auth)")
-    print("  7. Skip Ollama models installation (AI off)")
-    models = {
-        "1": recommended,
-        "2": SMALL_MODEL,
-        "3": DEFAULT_MODEL,
-        "4": "qwen2.5-coder:7b-base",
-    }
-    while True:
-        try:
-            answer = input("🌠 Choose AI setup [1]: ").strip().lower() or "1"
-        except EOFError:
-            return "off", None
-        if answer in ("y", "yes"):
-            answer = "1"
-        if answer in ("n", "no", "7"):
-            return "off", None
-        if answer == "6":
-            return "copilot", None
-        if answer in models:
-            return "ollama", models[answer]
-        if answer == "5":
-            try:
-                name = input("🌸 Ollama model tag: ").strip()
-            except EOFError:
-                return "off", None
-            if name:
-                return "ollama", name
-        print("🔔 Choose a number from 1 to 7.")

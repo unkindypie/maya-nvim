@@ -232,11 +232,9 @@ Native quickfix and location-list result windows (including multiple `gd` result
 close with `q`, returning to the file window.
 
 `Space as` shows AI provider/model/server, buffer restrictions, scheduler pause
-or request state, and controls for 10 seconds. `Space ao`
+or request state, and controls. `Space ao`
 enables Ollama or reloads its saved local model and clears dismissal pauses.
-`Space ax` disables all AI. `Space am` chooses a local mode and enables Ollama;
-single/dual mode is separate from whether AI is enabled. Menu labels state these
-actions explicitly. Dismissing a preview (`Space ad` / `Ctrl-]`) pauses automatic
+`Space ax` disables all AI. `Space am` opens the saved local AI settings. Dismissing a preview (`Space ad` / `Ctrl-]`) pauses automatic
 suggestions until the next edit, rather than disabling the provider.
 
 `Space ai` / `:MayaCodexStatus` shows the optional native Codex CLI context
@@ -275,13 +273,12 @@ behavior or compatibility with every future Neovim release.
 
 ### Local next-edit
 
-| Key                   | Action                                                  |
-| --------------------- | ------------------------------------------------------- |
-| `Space an`            | Request Sweep next-edit                                 |
-| `Space aa`            | Accept the current AI suggestion                        |
-| `Space ad` / `Ctrl-]` | Cancel and dismiss                                      |
-| Normal `Tab`          | Accept visible Sweep prediction; otherwise jump forward |
+| Key                   | Action                                               |
+| --------------------- | ---------------------------------------------------- |
+| `Space an`            | Request local AI suggestion                          |
+| `Space aa`            | Accept the current AI suggestion                     |
+| `Space ad` / `Ctrl-]` | Cancel and dismiss                                   |
+| Normal `Tab`          | Accept visible AI prediction; otherwise jump forward |
 
-Dual local mode runs Minuet in Insert mode and Sweep on Normal idle. Single
-mode uses Sweep in both modes. Selected ordinary completion takes priority on
+Cursortab uses one local model in Insert and Normal modes. Selected ordinary completion takes priority on
 Insert Tab; Enter and arrow navigation keep their existing completion behavior.

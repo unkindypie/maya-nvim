@@ -14,12 +14,6 @@ spec.loader.exec_module(ai)
 
 
 class AISetupTest(unittest.TestCase):
-    def test_thresholds_and_unknown(self):
-        self.assertEqual(ai.recommended_model({"vram_mib": 2048}), ai.SMALL_MODEL)
-        self.assertEqual(ai.recommended_model({"vram_mib": 4096}), ai.DEFAULT_MODEL)
-        self.assertEqual(ai.recommended_model({"shared_mib": 16384}), ai.DEFAULT_MODEL)
-        self.assertEqual(ai.recommended_model({}), ai.DEFAULT_MODEL)
-
     def test_largest_nvidia_gpu_not_sum(self):
         with (
             patch.object(ai.platform, "system", return_value="Linux"),
@@ -76,20 +70,3 @@ class AISetupTest(unittest.TestCase):
             result = ai.detect_gpu()
             self.assertEqual(result["shared_mib"], 16384)
             self.assertNotIn("vram_mib", result)
-
-    def test_menu_recommendation_overrides_copilot_skip(self):
-        for inputs, expected in [
-            ([""], ("ollama", ai.SMALL_MODEL)),
-            (["3"], ("ollama", ai.DEFAULT_MODEL)),
-            (["6"], ("copilot", None)),
-            (["7"], ("off", None)),
-            (["5", "custom:model"], ("ollama", "custom:model")),
-            (["bad", "7"], ("off", None)),
-        ]:
-            with (
-                patch.object(
-                    ai, "detect_gpu", return_value={"name": "test", "vram_mib": 2048}
-                ),
-                patch("builtins.input", side_effect=inputs),
-            ):
-                self.assertEqual(ai.choose(), expected)

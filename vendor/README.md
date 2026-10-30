@@ -1,26 +1,33 @@
-# Bundled AI plugins
+# Bundled Cursortab
 
-These runtime source snapshots are loaded directly by lazy.nvim through `dir`
-specs. They travel with maya-nvim and need no separate clones or patch application.
-Repository updates update their source; local plugins have no lockfile pins.
+`cursortab.nvim` is a source snapshot of
+[cursortab/cursortab.nvim](https://github.com/cursortab/cursortab.nvim), pinned to
+`211f7159ecc9ec56c705cf5a486637f1221ad2fd` (29 October 2026). Its MIT license,
+upstream README, contribution guidance, source and tests are retained. Images,
+git history, compiled binaries and generated HTML reports are excluded.
+Local `dir` plugins have no lazy-lock entry; this pin records the provenance.
 
-| Directory         | Upstream                                                                                  | Fork base                                                                              |
-| ----------------- | ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| `minuet-ai.nvim`  | [milanglacier/minuet-ai.nvim](https://github.com/milanglacier/minuet-ai.nvim)             | `maya-nvim` branch `fork/minuet-cancel`, `fb376cbb88c99080fb44d01c323413108ad7e09a`    |
-| `blink-edit.nvim` | [BlinkResearchLabs/blink-edit.nvim](https://github.com/BlinkResearchLabs/blink-edit.nvim) | `maya-nvim` branch `fork/blink-edit-async`, `06672de18f5ac1f44916ea15bcf90eae77f00dc7` |
+Maya's small extensions are:
 
-The snapshots include the local coordination, cancellation, shared-source-context,
-and model-label changes. Each plugin retains its original license and source
-attribution. Runtime Lua, plugin entry points, formatting guidance, and focused
-fork regression tests are included. Git history, images, caches, and model files
-are excluded.
+- `source_context(bufnr)`: optional cached text, captured with the buffer snapshot,
+  bounded to 6,000 bytes, omitted on error/staleness and synthetic prefetch snapshots.
+  Sweep, Zeta-2 and Zeta-2.1 receive it as a native-format pseudo-file.
+- `enabled_predicate()`: optional dynamic eligibility check, including late previews.
+- `behavior.prefetch`: defaults true upstream-style; Maya sets false to avoid
+  speculative inference while a preview owns the screen.
+- `behavior.normal_edit_only`: defaults false; Maya enables it to withhold
+  automatic Normal-mode stages consisting only of added lines. Explicit requests
+  and Insert mode are unchanged; both streaming and batch stages use the gate.
+- Read Neovim's actual modified flag so edits before the first daemon sync count.
+  Replay a text-change notification after asynchronous connection if needed.
+- Separate acceptance from surrounding typing in the undo history.
 
-blink-edit exposes an optional `prediction_filter(snapshot, lines, metadata)`
-callback, applied after response realignment to normal and prefetched results.
-Returning false discards the result without retrying. Standalone defaults accept
-results as before; Maya supplies its conservative local edit filter.
+Cursortab owns all request scheduling, streaming, staging, rendering and acceptance.
+Maya supplies provider preferences, existing keys and its cached standard-LSP
+collector. No Minuet, blink-edit or dual-engine coordinator remains. Ordinary
+`blink.cmp` continues to provide non-AI editor completion.
 
-The shared semantic collector lives in `lua/maya/ai_context.lua`. It checks LSP
-capabilities and uses standard hover, signature-help, definition, and type-definition
-methods with each client's position encoding. Language syntax adapters locate
-annotation references; neither plugin selects or assumes a particular LSP server.
+Build with `NVIM_APPNAME=maya-nvim python3 scripts/build_cursortab.py`. The installer
+and editor updater rebuild the source. Run `go test ./...` inside `server` and
+Maya's `tests/ai_cursortab.py`, `ai_candidate_context.py`, and `ai_shared_context.py`.
+Do not mark upstream E2E fixtures human-verified without a human review.

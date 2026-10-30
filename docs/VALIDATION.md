@@ -1,3 +1,26 @@
+# Cursortab migration validation — 2026-10-30
+
+Validated on Neovim 0.12.5, Ollama 0.40.4 and an RTX 3060 Laptop with 6 GB VRAM.
+The [experiment report](AI_CANDIDATES.md) separates controlled corpus results,
+native typing, model comparison and remaining limitations.
+
+- All 69 Python unit tests and bundled Cursortab Go tests passed.
+- Real daemon tests passed automatic startup, preview ownership, cancellation,
+  delayed replies, Insert/Normal acceptance, undo boundaries and Normal-mode
+  append suppression with explicit-request bypass.
+- Cached-context/staleness tests, six real-LSP fidelity fixtures, annotation and
+  collector tests, AI status, completion keys and personal-config completion passed.
+- Editor integration, all 11 language fixtures, plugin updates, repository updates
+  and theme transparency passed. Startup, Python compilation and shell syntax passed.
+- Missing-Go installation downloaded and checksum-verified the isolated toolchain
+  and built the daemon successfully.
+
+Real LSP startup checks ran with normal tool activation: `MAYA_NVIM_NO_INSTALL=1`
+also suppresses automatic LSP activation in this configuration. Headless isolated
+checks used it. All Neovim checks used `NVIM_APPNAME=maya-nvim` through `bin/mvim`.
+No 8 GB+ GPU, interactive human acceptance review, or new cross-platform container
+installation was performed for this migration. Earlier validation follows.
+
 # Validation — 2026-10-14
 
 ## Automatic prerequisite installation

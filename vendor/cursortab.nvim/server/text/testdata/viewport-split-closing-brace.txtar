@@ -1,0 +1,77 @@
+cursorRow: 15
+cursorCol: 0
+viewportTop: 1
+viewportBottom: 15
+-- old.txt --
+  });
+
+  return true;
+}
+
+export function addTag(id: string, tag: string): boolean {
+  const article = store[id];
+  if (!article) {
+    return false;
+  }
+
+  if (article.tags.length === 0) {
+    article.tags.push(tag);
+  } else {
+    article.tags.push(tag);
+  }
+
+  inc("tag_added");
+
+  return true;
+}
+
+export function hasTags(id: string): boolean {
+  const article = store[id];
+  if (!article) {
+    return false;
+  }
+
+  if (article.tags === null) {
+-- new.txt --
+  });
+
+  return true;
+}
+
+export function addTag(id: string, tag: string): boolean {
+  const article = store[id];
+  if (!article) {
+    return false;
+  }
+
+  article.tags.push(tag);
+
+  inc("tag_added");
+
+  return true;
+}
+
+export function hasTags(id: string): boolean {
+  const article = store[id];
+  if (!article) {
+    return false;
+  }
+
+  if (article.tags.length === 0) {
+-- expected --
+stage @12 cursor=1:2
+  modification @13 1-1 delete_chars 2:4
+    + "  article.tags.push(tag);"
+    - "    article.tags.push(tag);"
+  deletion @12 2-2
+    + "  if (article.tags.length === 0) {"
+  deletion @14 4-6
+    + "  } else {"
+    + "    article.tags.push(tag);"
+    + "  }"
+
+stage @29 cursor=1:34
+  modification @29 1-1
+    + "  if (article.tags.length === 0) {"
+    - "  if (article.tags === null) {"
+

@@ -52,7 +52,7 @@ Run these commands inside your maya-nvim checkout:
 ./install.sh --no-shell                    # do not edit zsh configuration
 ./install.sh --skip-bootstrap              # links/shell integration only
 ./install.sh --ollama-models-dir /mnt/ml/ollama
-./install.sh --ollama-models-dir "$HOME/models" --model qwen2.5-coder:1.5b-base
+./install.sh --ollama-models-dir "$HOME/models" --model hf.co/sweepai/sweep-next-edit-1.5B:Q8_0
 ./install.sh --tmux-sessionizer "$HOME/scripts/tmux-sessionizer"
 ```
 
@@ -145,14 +145,11 @@ need neither. On macOS, install/start Ollama separately: https://ollama.com/down
 
 ### Local AI arguments
 
-| Argument                                  | Purpose                                                   |
-| ----------------------------------------- | --------------------------------------------------------- |
-| `--ai ollama\|copilot\|off`               | Select the provider                                       |
-| `--ai-mode completion-only\|single\|dual` | Select local engine arrangement                           |
-| `--model TAG`                             | Inline model; alone preserves legacy completion-only mode |
-| `--next-edit-model TAG`                   | Sweep model for single/dual mode                          |
-| `--fim-format qwen\|mellum`               | Explicit prompt format for custom dual models             |
-| `--ollama-models-dir PATH`                | Storage when starting the managed Ollama server           |
+| Argument                    | Purpose                                         |
+| --------------------------- | ----------------------------------------------- |
+| `--ai ollama\|copilot\|off` | Select the provider                             |
+| `--model TAG`               | One local model for completion and edits        |
+| `--ollama-models-dir PATH`  | Storage when starting the managed Ollama server |
 
 Only selected models are downloaded. Missing new settings preserve existing
 choices; unknown VRAM requires explicit local selection in unattended runs.
@@ -184,3 +181,5 @@ checks stop and print commands. Optional overrides are `--install-audio`,
 Removing maya-nvim's data directory also removes its private tools. Optional font
 files have a separate directory above; remove only that directory if you no
 longer want those fonts. System packages remain installed for other applications.
+
+Cursortab requires Go 1.25+ to build. The installer reuses a compatible Go or downloads a checksum-verified Go 1.27.3 toolchain into the Maya cache. No system Go installation is replaced. `--engine sweep|zeta-2|zeta-2.1` selects the prompt format for a custom `--model`.

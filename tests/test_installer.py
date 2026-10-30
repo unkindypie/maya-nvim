@@ -25,10 +25,10 @@ class InstallerTest(unittest.TestCase):
             self.assertTrue(installer.sound_enabled(args, personal))
 
     def test_declining_ai_skips_ollama_and_persists_off(self):
-        self.check_provider_without_ollama("7", "off")
+        self.check_provider_without_ollama("6", "off")
 
     def test_copilot_menu_skips_ollama_and_persists_copilot(self):
-        self.check_provider_without_ollama("6", "copilot")
+        self.check_provider_without_ollama("5", "copilot")
 
     def check_provider_without_ollama(self, answer, provider):
         with tempfile.TemporaryDirectory() as temp:
@@ -70,7 +70,7 @@ class InstallerTest(unittest.TestCase):
                 patch("builtins.input", return_value=answer),
             ):
                 installer.main()
-                self.assertEqual(run.call_count, 2)  # Only plugin/tool bootstrap.
+                self.assertEqual(run.call_count, 3)  # Only plugin/tool bootstrap.
                 self.assertNotIn("setup_ollama.py", str(run.call_args_list))
                 prerequisites.return_value.ollama.assert_not_called()
             import json
@@ -99,15 +99,13 @@ class InstallerTest(unittest.TestCase):
             ):
                 self.assertEqual(installer.choose_ai(args, state), "ollama")
             args.model = None
-            args.ai_mode = None
-            args.next_edit_model = None
+            args.engine = None
             with patch.object(installer.sys.stdin, "isatty", return_value=False):
                 self.assertEqual(installer.choose_ai(args, state), "off")
                 args.yes = True
                 self.assertEqual(installer.choose_ai(args, state), "ollama")
             args.model = None
-            args.ai_mode = None
-            args.next_edit_model = None
+            args.engine = None
             (state / "ai.json").write_text('{"provider":"off"}')
             with patch(
                 "builtins.input",
@@ -116,7 +114,7 @@ class InstallerTest(unittest.TestCase):
                 self.assertEqual(installer.choose_ai(args, state), "off")
                 args.ai = "copilot"
                 args.model = None
-                args.ai_mode = None
+                args.engine = None
                 self.assertEqual(installer.choose_ai(args, state), "copilot")
             (state / "ai.json").unlink()
             args.ai = None
@@ -129,7 +127,9 @@ class InstallerTest(unittest.TestCase):
     def test_saved_model_and_explicit_override(self):
         with tempfile.TemporaryDirectory() as temp:
             state = Path(temp)
-            (state / "ai.json").write_text('{"provider":"ollama","model":"custom:old"}')
+            (state / "ai.json").write_text(
+                '{"provider":"ollama","model":"custom:old","schema":2,"engine":"sweep"}'
+            )
             args = SimpleNamespace(
                 ai=None, model=None, skip_bootstrap=False, dry_run=False, yes=False
             )
@@ -143,7 +143,7 @@ class InstallerTest(unittest.TestCase):
                 self.assertEqual(args.model, "qwen2.5-coder:3b-base")
                 args.ai = "copilot"
                 args.model = None
-                args.ai_mode = None
+                args.engine = None
                 self.assertEqual(installer.choose_ai(args, state), "copilot")
 
     def test_preference_questions(self):

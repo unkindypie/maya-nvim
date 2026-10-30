@@ -1,0 +1,42 @@
+cursorRow: 5
+cursorCol: 0
+viewportTop: 1
+viewportBottom: 50
+-- old.txt --
+  if (!article) {
+    return false;
+  }
+
+  if (article.tags === null) {
+    article.tags = tag;
+  } else {
+    article.tags = concat(tag);
+  }
+
+  inc("tag_added");
+
+  return true;
+}
+-- new.txt --
+  if (!article) {
+    return false;
+  }
+
+  article.tags.push(tag);
+
+  inc("tag_added");
+
+  return true;
+}
+-- expected --
+stage @5 cursor=1:25
+  modification @8 1-1
+    + "  article.tags.push(tag);"
+    - "    article.tags = concat(tag);"
+  deletion @5 2-4
+    + "  if (article.tags === null) {"
+    + "    article.tags = tag;"
+    + "  } else {"
+  deletion @9 6-6
+    + "  }"
+

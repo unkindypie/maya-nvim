@@ -1,130 +1,155 @@
-local M = { initialized = false }
+-- Cursortab owns requests, debounce, streaming, previews and acceptance.
+local M = { initialized = false, state = { state = "Idle", pending = false } }
 local generation = 0
-M.default_model = "hf.co/sweepai/sweep-next-edit-1.5B:Q8_0"
+local dismissed
 function M.cancel()
   generation = generation + 1
   if M.initialized then
-    require("blink-edit").cancel()
+    require("cursortab.daemon").set_enabled(false)
+    require("cursortab.events").clear_all_completions()
   end
+  M.state = { state = "Idle", pending = false }
+end
+function M.dismiss()
+  dismissed = { vim.api.nvim_get_current_buf(), vim.api.nvim_buf_get_changedtick(0) }
+  M.cancel()
+end
+local function eligible(ai)
+  local cmp = package.loaded["blink.cmp"]
+  return ai.provider == "ollama"
+    and ai.eligible()
+    and not (cmp and cmp.get_selected_item())
+    and not vim.deep_equal(
+      dismissed,
+      { vim.api.nvim_get_current_buf(), vim.api.nvim_buf_get_changedtick(0) }
+    )
 end
 function M.setup(ai)
-  generation = generation + 1
-  local edit = require("blink-edit")
   if M.initialized then
-    edit.reset()
+    require("cursortab.daemon").stop_daemon()
   end
-  edit.setup({
-    llm = {
-      backend = "ollama",
-      provider = "sweep",
-      url = ai.endpoint,
-      model = ai.next_edit_model,
-      max_tokens = 512,
-      timeout_ms = 10000,
-    },
-    backends = { ollama = { num_ctx = 4096 } },
-    mode = "next-edit",
-    external_scheduler = true,
-    prediction_filter = require("maya.ai_edit_filter").accept,
-    on_dismiss = function()
-      require("maya.ai_coordinator").dismiss()
+  dismissed = nil
+  local user = require("maya.user")
+  require("cursortab").setup({
+    enabled = true,
+    contribute_data = false,
+    -- Each editor owns its daemon; disabling one editor cannot affect another.
+    state_dir = vim.fn.stdpath("state") .. "/cursortab/" .. vim.fn.getpid(),
+    debug = { immediate_shutdown = true },
+    keymaps = { accept = false, partial_accept = false, trigger = false },
+    enabled_predicate = function()
+      return eligible(ai)
     end,
     source_context = function()
-      return require("maya.ai_context").get()
+      return require("maya.ai_context").get({ focused = true })
     end,
-    debounce_ms = 650,
-    cancel_in_flight = true,
-    enabled_predicate = function()
-      local mode = vim.api.nvim_get_mode().mode
-      local cmp = package.loaded["blink.cmp"]
-      return ai.provider == "ollama"
-        and ai.local_mode ~= "completion-only"
-        and ai.eligible()
-        and (mode == "i" or mode == "n")
-        and not (cmp and cmp.get_selected_item())
-    end,
-    trigger_modes = { "i", "n" },
-    context = {
+    behavior = {
+      text_change_debounce = user.get("ai_completion_debounce_ms"),
+      idle_completion_delay = user.get("ai_next_edit_debounce_ms"),
+      prefetch = false,
+      normal_edit_only = true,
+      cursor_prediction = { enabled = false, auto_advance = false },
+    },
+    provider = {
+      type = ai.engine,
+      url = ai.endpoint,
+      model = ai.model,
+      context_size = ai.context_size,
       max_tokens = 512,
-      history = { enabled = true, max_items = 3, max_tokens = 512 },
-      lsp = {
-        enabled = true,
-        max_references = 2,
-        timeout_ms = 1000,
-        lines_before = 3,
-        lines_after = 16,
-      },
-      same_file = { enabled = true, max_lines_before = 20, max_lines_after = 20 },
+      temperature = 0,
+      completion_timeout = 10000,
+      privacy_mode = true,
     },
-    keymaps = {
-      insert = { accept = false, accept_line = false, clear = false, reject = false },
-      normal = { accept = false, accept_line = false },
-    },
-    normal_mode = { enabled = true, debounce_ms = 800 },
-    ui = { suppress_lsp_floats = false, progress = false, show_model = true },
-    highlight = {
-      addition = { link = "DiffAdd" },
-      deletion = { link = "DiffDelete" },
-      preview = { link = "Comment" },
-      jump = { link = "DiagnosticHint" },
-    },
-    prefetch = { enabled = false },
-    use_daemon = false,
-    daemon_auto_start = false,
   })
   M.initialized = true
-  -- setup initializes the plugin; provider predicates control activation quietly.
-  vim.g.blink_edit_enabled = true
+  require("maya.ai_context").refresh()
 end
 function M.visible()
-  return M.initialized and require("blink-edit").has_prediction()
+  return M.initialized and require("cursortab.ui").has_completion()
+end
+function M.pending()
+  return M.state.pending
+end
+function M.status()
+  if M.visible() then
+    return "suggestion ready"
+  end
+  if M.pending() then
+    return "waiting for model response"
+  end
+  return dismissed and "dismissed; waiting for the next edit"
+    or "ready; edit to request a suggestion"
 end
 function M.accept()
   if not M.visible() then
     return false
   end
-  local expected = generation
-  local buf = vim.api.nvim_get_current_buf()
-  local tick = vim.api.nvim_buf_get_changedtick(buf)
-  local cursor = vim.api.nvim_win_get_cursor(0)
-  local mode = vim.api.nvim_get_mode().mode
-  local function valid()
-    return expected == generation
-      and vim.api.nvim_buf_is_valid(buf)
-      and vim.api.nvim_get_current_buf() == buf
-      and vim.api.nvim_buf_get_changedtick(buf) == tick
-      and vim.deep_equal(vim.api.nvim_win_get_cursor(0), cursor)
-      and vim.api.nvim_get_mode().mode == mode
-      and M.visible()
-  end
-  -- Completion expression mappings run under textlock.
+  local expected, buf, tick =
+    generation, vim.api.nvim_get_current_buf(), vim.api.nvim_buf_get_changedtick(0)
+  local cursor, mode = vim.api.nvim_win_get_cursor(0), vim.api.nvim_get_mode().mode
   vim.schedule(function()
-    if not valid() then
-      return
-    end
-    -- Close the typing undo block without changing either option value.
-    vim.cmd("let &g:undolevels = &g:undolevels")
-    if not valid() then
-      return
-    end
-    require("blink-edit").accept()
-    if vim.api.nvim_buf_get_changedtick(buf) ~= tick then
-      vim.cmd("let &g:undolevels = &g:undolevels")
-      require("maya.ai_coordinator").accepted()
+    if
+      expected == generation
+      and buf == vim.api.nvim_get_current_buf()
+      and tick == vim.api.nvim_buf_get_changedtick(0)
+      and M.visible()
+      and vim.deep_equal(cursor, vim.api.nvim_win_get_cursor(0))
+      and mode == vim.api.nvim_get_mode().mode
+    then
+      require("cursortab").accept()
     end
   end)
   return true
 end
-function M.pending()
-  return M.initialized and require("blink-edit").is_pending and require("blink-edit").is_pending()
-end
 function M.trigger()
-  require("maya.ai_coordinator").trigger()
-end
-function M.request()
-  generation = generation + 1
-  if M.initialized then
-    require("blink-edit").trigger({ force = true })
+  local ai = require("maya.ai")
+  if not M.initialized or ai.provider ~= "ollama" or M.visible() or M.pending() then
+    return
   end
+  dismissed = nil
+  if eligible(ai) then
+    require("cursortab.daemon").set_enabled(true)
+    require("cursortab.daemon").send_event("trigger_completion")
+  end
+end
+function M.watch(ai)
+  local group = vim.api.nvim_create_augroup("MayaAIContext", { clear = true })
+  vim.api.nvim_create_autocmd({
+    "TextChanged",
+    "TextChangedI",
+    "TextChangedP",
+    "CursorMoved",
+    "CursorMovedI",
+    "InsertEnter",
+    "BufEnter",
+    "LspAttach",
+  }, {
+    group = group,
+    callback = function()
+      if not M.initialized then
+        return
+      end
+      if eligible(ai) then
+        dismissed = nil
+        require("cursortab.daemon").set_enabled(true)
+        require("maya.ai_context").refresh()
+      else
+        M.cancel()
+      end
+    end,
+  })
+  vim.api.nvim_create_autocmd({ "BufLeave", "LspDetach" }, {
+    group = group,
+    callback = function()
+      ai.cancel()
+    end,
+  })
+  vim.api.nvim_create_autocmd("User", {
+    group = group,
+    pattern = "CursortabStateChanged",
+    callback = function(e)
+      M.state = e.data
+    end,
+  })
 end
 return M

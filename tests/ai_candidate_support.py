@@ -10,9 +10,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-MODEL = os.environ.get(
-    "MAYA_NVIM_BENCHMARK_MODEL", "hf.co/sweepai/sweep-next-edit-1.5B:Q8_0"
-)
+MODEL = os.environ.get("MAYA_NVIM_BENCHMARK_MODEL", "maya-sweep-candidate-eval")
 
 
 class Capture:
@@ -120,44 +118,24 @@ class Capture:
 
 
 SETUP = r"""
-local candidate, path, endpoint, state, delay, model, context_chars = ...
+local candidate, path, endpoint, state, delay, model, context_chars, engine = ...
 _G.eval_enabled=false
 _G.eval_status={state="Idle",pending=false}
 pcall(vim.api.nvim_del_augroup_by_name,"MayaAIScheduler")
 require("maya.ai").cancel()
-if candidate=="dual" then
- local ai=require("maya.ai")
- local orig=vim.fn.stdpath
- vim.fn.stdpath=function(k) return k=="state" and state or orig(k) end
- vim.fn.writefile({vim.json.encode({provider="ollama",local_mode="dual",
-  endpoint=endpoint,model="qwen2.5-coder:1.5b-base-q8_0",next_edit_model=model})},state.."/ai.json")
- require("maya.user").config.ai_completion_debounce_ms=200
- require("maya.user").config.ai_next_edit_debounce_ms=650
- _G.eval_reset=function() ai.select("ollama",false); ai.cancel() end
- _G.eval_reset()
- _G.eval_visible=function()
-  return require("maya.ai_next_edit").visible() or require("minuet.virtualtext").action.is_visible()
- end
- _G.eval_pending=function()
-  local s=require("maya.ai_coordinator").status()
-  return s=="waiting for model response" or s=="waiting for an editing pause"
- end
- _G.eval_accept=function() ai.accept() end
- _G.eval_cancel=function() ai.cancel() end
- _G.eval_request=function() require("maya.ai_coordinator").activity(true) end
-elseif candidate=="cursortab" then
+do
  vim.opt.rtp:prepend(path)
  require("cursortab").setup({
   enabled=true, state_dir=state.."/cursortab", contribute_data=false,
   log_level="debug", debug={immediate_shutdown=true},
   keymaps={accept=false,partial_accept=false,trigger=false},
-  source_context=function() return require("maya.ai_context").get():sub(1,context_chars) end,
-  behavior={text_change_debounce=delay,idle_completion_delay=650,
+  source_context=function() return require("maya.ai_context").get({focused=vim.env.MAYA_AI_FOCUSED~="0"}):sub(1,context_chars) end,
+  behavior={prefetch=false,normal_edit_only=true,text_change_debounce=delay,idle_completion_delay=650,
    cursor_prediction={enabled=false,auto_advance=false},
    ignore_gitignored=false,ignore_paths={},ignore_filetypes={},
    enabled_modes={"insert","normal"}},
-  provider={type="sweep",url=endpoint,model=model,
-   context_size=4096,max_tokens=512,temperature=0,completion_timeout=10000},
+  provider={type=engine,url=endpoint,model=model,
+   context_size=tonumber(vim.env.MAYA_AI_TEST_CONTEXT) or 4096,max_tokens=512,temperature=0,completion_timeout=10000},
  })
  require("cursortab.daemon").set_enabled(false)
  vim.api.nvim_create_autocmd("User",{pattern="CursortabStateChanged",callback=function(e) _G.eval_status=e.data end})
@@ -174,29 +152,6 @@ elseif candidate=="cursortab" then
  _G.eval_request=function(manual)
   require("cursortab.daemon").set_enabled(true)
   require("cursortab.daemon").send_event(manual and "trigger_completion" or (vim.fn.mode()=="i" and "text_changed" or "cursor_moved"))
- end
-else
- require("maya.ai_next_edit").setup({provider="ollama",local_mode="single",endpoint=endpoint,
-  next_edit_model=model,eligible=function() return _G.eval_enabled end})
- local edit=require("blink-edit")
- local cfg=vim.deepcopy(require("blink-edit.config").get())
- cfg.external_scheduler=false; cfg.debounce_ms=delay; cfg.normal_mode.debounce_ms=650
- cfg.enabled_predicate=function() return _G.eval_enabled end
- cfg.on_dismiss=function() end
- cfg.source_context=function() return require("maya.ai_context").get():sub(1,context_chars) end
- cfg.context.lsp.enabled=false
- edit.reset(); edit.setup(cfg)
- _G.eval_reset=function() edit.reset(); edit.setup(cfg) end
- _G.eval_visible=function() return edit.has_prediction() end
- _G.eval_pending=function() return edit.is_pending() end
- _G.eval_accept=function() edit.accept() end
- _G.eval_cancel=function() _G.eval_enabled=false; edit.cancel(); edit.clear() end
- _G.eval_enable=function() _G.eval_enabled=true end
- _G.eval_request=function(manual)
-  _G.eval_enabled=true
-  if manual then edit.trigger({force=true}) else
-   vim.api.nvim_exec_autocmds(vim.fn.mode()=="i" and "TextChangedI" or "CursorMoved",{buffer=0})
-  end
  end
 end
 """
@@ -227,8 +182,9 @@ def start(
             endpoint,
             str(state),
             delay,
-            MODEL,
+            os.environ.get("MAYA_AI_TEST_MODEL", MODEL),
             context_chars,
+            os.environ.get("MAYA_AI_TEST_ENGINE", "sweep"),
         )
         if candidate == "cursortab":
             deadline = time.monotonic() + 12

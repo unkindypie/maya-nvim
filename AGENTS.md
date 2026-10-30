@@ -41,13 +41,10 @@ plugins by demonstrated local-model support, quality, latency, and maintenance o
 the target hardware. Popularity, broad cloud-provider support, or cloud-oriented
 next-edit features do not establish suitability for this feature.
 
-Compare Cursortab and blink-edit with the same local Sweep model before migration.
-Favor upstream maintenance and tested native behavior over custom scheduling code;
-a pure-Lua implementation alone is not a maintenance advantage. Minuet's general
-completion support alone does not establish that its Duet next-edit path is
-suitable for small local models. Require local evidence for both behaviors before
-recommending an alternative. The dual-engine rules below describe the existing
-implementation during migration, not the desired final architecture.
+Cursortab is the sole local suggestion engine. Favor upstream maintenance and
+native scheduling over custom coordination. Keep the shared cached LSP collector
+connected to every supported local prompt format. Benchmark changes against the
+recorded Blink baseline in docs/AI_CANDIDATES.md; report quality regressions honestly.
 
 ## Workflow
 
@@ -68,17 +65,18 @@ Do not commit credentials, AI state, model blobs, generated parsers, logs, or
 machine-specific shell configuration. AI preferences live under
 `stdpath('state')/ai.json`. Never silently switch a local AI request to a cloud
 provider. Keep one provider active and one suggestion engine active for the current mode.
-Dual local mode uses one coordinator: Minuet after 200 ms in Insert mode and
-Sweep after 650 ms in Insert or Normal mode. A valid visible preview owns the
-preview until accepted, dismissed, or invalidated; never replace it on a timer.
-Do not start competing inference while a preview or request is active. Shared
-semantic context uses capability-checked standard LSP requests, never server names;
-syntax adapters only locate anchors. Prompt hooks read cached context without waiting.
-The bundled Minuet and blink-edit sources in `vendor/` are authoritative;
-retain their licenses and provenance, exclude images/history, and test their public hooks.
+Cursortab owns debounce, request cancellation, streaming and previews. A valid
+visible preview owns the preview until accepted, dismissed, or invalidated;
+never replace it on a timer. Disable speculative prefetch so no competing inference
+starts while a preview or request is active. Shared semantic context uses
+capability-checked standard LSP requests, never server names; syntax adapters
+only locate anchors. Prompt hooks read cached context without waiting.
+The bundled Cursortab source in `vendor/` is authoritative; retain its license
+and provenance, exclude binaries/images/history, and test local extensions.
 Keep semantic collection independent of LSP server names and cover incomplete
-annotated values in Lua, Python, and TypeScript.
-Copilot and AI-off must cancel both local engines.
+annotated values in Lua, Python, and TypeScript. Copilot and AI-off must cancel
+local work and discard late responses. Acceptance must have its own undo step. Automatic Normal-mode stages that only
+add new lines are withheld; explicit requests and Insert completions may add lines.
 
 ## Checks
 
@@ -105,17 +103,15 @@ MAYA_NVIM_NO_INSTALL=1 MAYA_NVIM_NO_AI=1 bin/mvim --headless '+lua assert(vim.g.
 .local/test-env/bin/python tests/codex_ide.py
 # Opt-in real Codex TUI /ide handshake (requires installed, logged-in CLI):
 MAYA_NVIM_TEST_CODEX=1 .local/test-env/bin/python tests/codex_cli_ide.py
-.local/test-env/bin/python tests/ai_local.py
-.local/test-env/bin/python tests/ai_acceptance_keys.py
-.local/test-env/bin/python tests/ai_edit_filter.py
+.local/test-env/bin/python tests/ai_cursortab.py
 .local/test-env/bin/python tests/ai_context.py
 .local/test-env/bin/python tests/ai_annotations.py
-.local/test-env/bin/python tests/ai_automatic.py
-.local/test-env/bin/python tests/ai_coordination.py
 .local/test-env/bin/python tests/ai_shared_context.py
-.local/test-env/bin/python tests/ai_markdown_context.py
-# Opt-in real model latency/residency measurement:
-MAYA_NVIM_TEST_OLLAMA=1 .local/test-env/bin/python tests/ai_latency.py
+.local/test-env/bin/python tests/ai_candidate_context.py --cursortab vendor/cursortab.nvim
+# Opt-in real model comparison, after creating the documented evaluation alias:
+MAYA_NVIM_TEST_OLLAMA=1 .local/test-env/bin/python tests/ai_candidates.py --cursortab vendor/cursortab.nvim
+# From vendor/cursortab.nvim/server, with Go 1.25+:
+go test ./...
 ```
 
 `MAYA_NVIM_NO_INSTALL=1` disables automatic tool downloads during isolated

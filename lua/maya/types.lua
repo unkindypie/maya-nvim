@@ -18,7 +18,7 @@
 ---@field pokemon_sound_on_start_volume_percentage? number Playback volume from 0 to 100. Default: 50; zero mutes.
 ---@field reopen_tabs? boolean Restore this folder's saved buffers, tabs, and splits. Default: true.
 ---@field ai_completion_debounce_ms? number Insert completion idle delay in milliseconds, from 0 to 60000. Default: 200.
----@field ai_next_edit_debounce_ms? number Sweep idle delay in milliseconds, from 0 to 60000. Default: 650.
+---@field ai_next_edit_debounce_ms? number Local AI idle delay in milliseconds, from 0 to 60000. Default: 650.
 ---@field options? MayaOptions Editor options applied after defaults.
 ---@field plugins? LazySpec[] Personal plugin specs and overrides.
 ---@field setup? fun() Runs after built-in options and keymaps.

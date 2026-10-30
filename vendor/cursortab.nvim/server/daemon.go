@@ -1,0 +1,321 @@
+package main
+
+import (
+	"context"
+	"fmt"
+	"io"
+	"net"
+	"os"
+	"strconv"
+	"sync/atomic"
+	"time"
+
+	"cursortab/buffer"
+	"cursortab/engine"
+	"cursortab/logger"
+	"cursortab/metrics"
+	"cursortab/provider/copilot"
+	"cursortab/provider/dataset"
+	"cursortab/provider/fim"
+	"cursortab/provider/inline"
+	"cursortab/provider/mercuryapi"
+	"cursortab/provider/sweep"
+	"cursortab/provider/windsurf"
+	"cursortab/provider/zeta"
+	"cursortab/provider/zeta2"
+	"cursortab/types"
+
+	"github.com/neovim/go-client/nvim"
+)
+
+type Daemon struct {
+	config      Config
+	provider    engine.Provider
+	buffer      *buffer.NvimBuffer
+	engine      *engine.Engine
+	listener    net.Listener
+	pidPath     string
+	clientCount int64
+	shutdown    chan bool
+	ctx         context.Context
+	cancel      context.CancelFunc
+}
+
+func newDaemonContext() (context.Context, context.CancelFunc) {
+	return context.WithCancel(context.Background())
+}
+
+func NewDaemon(config Config) (*Daemon, error) {
+	apiKey := ""
+	if config.Provider.ApiKeyEnv != "" {
+		apiKey = os.Getenv(config.Provider.ApiKeyEnv)
+		if apiKey == "" {
+			logger.Warn("api_key_env is set to %q but environment variable is not defined", config.Provider.ApiKeyEnv)
+		}
+	}
+
+	providerConfig := &types.ProviderConfig{
+		ProviderURL:         config.Provider.URL,
+		APIKey:              apiKey,
+		ProviderModel:       config.Provider.Model,
+		ProviderTemperature: config.Provider.Temperature,
+		ProviderContextSize: config.Provider.ContextSize,
+		ProviderMaxTokens:   config.Provider.MaxTokens,
+		ProviderTopK:        config.Provider.TopK,
+		CompletionPath:      config.Provider.CompletionPath,
+		CompletionTimeout:   config.Provider.CompletionTimeout,
+		PrivacyMode:         config.Provider.PrivacyMode,
+		Version:             Version,
+		EditorVersion:       config.EditorVersion,
+		EditorOS:            config.EditorOS,
+		StateDir:            config.StateDir,
+		DeviceID:            loadOrCreateDeviceID(config.StateDir),
+	}
+
+	if config.Provider.FIMTokens != nil {
+		providerConfig.FIMTokens = &types.FIMTokenConfig{
+			Prefix:   config.Provider.FIMTokens.Prefix,
+			Suffix:   config.Provider.FIMTokens.Suffix,
+			Middle:   config.Provider.FIMTokens.Middle,
+			RepoName: config.Provider.FIMTokens.RepoName,
+			FileSep:  config.Provider.FIMTokens.FileSep,
+		}
+	}
+
+	buf := buffer.New(buffer.Config{
+		NsID: config.NsID,
+	})
+
+	var prov engine.Provider
+	switch types.ProviderType(config.Provider.Type) {
+	case types.ProviderTypeInline:
+		prov = inline.NewProvider(providerConfig)
+	case types.ProviderTypeFIM:
+		prov = fim.NewProvider(providerConfig)
+	case types.ProviderTypeSweep:
+		prov = sweep.NewProvider(providerConfig)
+	case types.ProviderTypeZeta:
+		prov = zeta.NewProvider(providerConfig)
+	case types.ProviderTypeZeta2:
+		prov = zeta2.NewProvider(providerConfig)
+	case types.ProviderTypeZeta21:
+		prov = zeta2.NewProvider21(providerConfig)
+	case types.ProviderTypeCopilot:
+		prov = copilot.NewProvider(buf)
+	case types.ProviderTypeWindsurf:
+		prov = windsurf.NewProvider(buf)
+	case types.ProviderTypeMercuryAPI:
+		prov = mercuryapi.NewProvider(providerConfig)
+	default:
+		return nil, fmt.Errorf("unsupported provider type: %s", config.Provider.Type)
+	}
+
+	// Initialize dataset sender if user opted in to contribute data
+	var datasetSender metrics.Sender
+	if config.ContributeData {
+		datasetSender = dataset.NewSender(
+			providerConfig.DeviceID,
+			providerConfig.Version,
+			"", // Default: api.cursortab.com
+		)
+	}
+
+	eng, err := engine.NewEngine(prov, buf, engine.EngineConfig{
+		NsID:                config.NsID,
+		ProviderName:        config.Provider.Type,
+		CompletionTimeout:   time.Duration(config.Provider.CompletionTimeout) * time.Millisecond,
+		NormalEditOnly:      config.Behavior.NormalEditOnly,
+		DisablePrefetch:     !config.Behavior.Prefetch,
+		IdleCompletionDelay: time.Duration(config.Behavior.IdleCompletionDelay) * time.Millisecond,
+		TextChangeDebounce:  time.Duration(config.Behavior.TextChangeDebounce) * time.Millisecond,
+		CursorPrediction: engine.CursorPredictionConfig{
+			Enabled:            config.Behavior.CursorPrediction.Enabled,
+			AutoAdvance:        config.Behavior.CursorPrediction.AutoAdvance,
+			ProximityThreshold: config.Behavior.CursorPrediction.ProximityThreshold,
+		},
+		MaxDiffTokens:    config.Provider.MaxDiffHistoryTokens,
+		MaxVisibleLines:  config.Behavior.MaxVisibleLines,
+		DisabledIn:       config.Behavior.DisabledIn,
+		CompleteInInsert: config.Behavior.CompleteInInsert,
+		CompleteInNormal: config.Behavior.CompleteInNormal,
+	}, engine.SystemClock, datasetSender)
+	if err != nil {
+		return nil, err
+	}
+	eng.SetStateNotifier(buf.NotifyState)
+
+	ctx, cancel := newDaemonContext()
+
+	return &Daemon{
+		config:   config,
+		provider: prov,
+		buffer:   buf,
+		engine:   eng,
+		pidPath:  getPidPath(config.StateDir),
+		shutdown: make(chan bool, 1),
+		ctx:      ctx,
+		cancel:   cancel,
+	}, nil
+}
+
+func (d *Daemon) Start() error {
+	// Setup logging and PID management
+	d.writePidFile()
+	defer d.removePidFile()
+
+	// Setup IPC
+	listener, addr, err := listenIPC(d.config.StateDir)
+	if err != nil {
+		return err
+	}
+	d.listener = listener
+	defer cleanupIPC(d.config.StateDir)
+
+	logger.Info("daemon listening on: %s", addr)
+
+	// Start engine
+	d.engine.Start(d.ctx)
+
+	// Setup shutdown handling
+	d.setupShutdownHandling()
+
+	// Start connection handling
+	go d.acceptConnections()
+
+	// Start idle monitoring
+	go d.monitorIdleShutdown()
+
+	// Wait for shutdown
+	<-d.ctx.Done()
+	logger.Info("daemon shutting down...")
+	return nil
+}
+
+func (d *Daemon) setupShutdownHandling() {
+	setupShutdownHandler(func() {
+		logger.Info("received shutdown signal")
+		d.Stop()
+	})
+}
+
+func (d *Daemon) acceptConnections() {
+	for {
+		conn, err := d.listener.Accept()
+		if err != nil {
+			select {
+			case <-d.ctx.Done():
+				return // Server is shutting down
+			default:
+				logger.Error("error accepting connection: %v", err)
+				continue
+			}
+		}
+
+		atomic.AddInt64(&d.clientCount, 1)
+		logger.Info("new client connected, total clients: %d", atomic.LoadInt64(&d.clientCount))
+		go d.handleConnection(conn)
+	}
+}
+
+func (d *Daemon) handleConnection(conn net.Conn) {
+	defer conn.Close()
+	defer func() {
+		atomic.AddInt64(&d.clientCount, -1)
+		logger.Info("client disconnected, remaining clients: %d", atomic.LoadInt64(&d.clientCount))
+	}()
+
+	// Create Neovim client from the connection
+	n, err := nvim.New(conn, conn, conn, logger.Debug)
+	if err != nil {
+		logger.Error("error creating nvim client: %v", err)
+		return
+	}
+
+	if err := n.RegisterHandler("cursortab_event", d.engine.HandleEditorEvent); err != nil {
+		logger.Error("error registering editor event handler: %v", err)
+		return
+	}
+
+	served := make(chan error, 1)
+	d.engine.ConnectEditor(func() {
+		go func() { served <- n.Serve() }()
+		d.buffer.SetClient(n)
+	})
+
+	select {
+	case <-d.ctx.Done():
+		return
+	case err := <-served:
+		if err != nil && err != io.EOF {
+			logger.Error("error serving connection: %v", err)
+		}
+	}
+}
+
+func (d *Daemon) monitorIdleShutdown() {
+	// In debug mode, shut down immediately when no clients are connected
+	if d.config.Debug.ImmediateShutdown {
+		ticker := time.NewTicker(1 * time.Second)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-d.ctx.Done():
+				return
+			case <-ticker.C:
+				if atomic.LoadInt64(&d.clientCount) == 0 {
+					logger.Debug("debug mode: no clients connected, shutting down daemon immediately")
+					d.Stop()
+					return
+				}
+			}
+		}
+	} else {
+		// Normal mode: wait for timeout period before shutting down
+		idleTimer := time.NewTimer(30 * time.Second)
+		defer idleTimer.Stop()
+
+		for {
+			select {
+			case <-d.ctx.Done():
+				return
+			case <-idleTimer.C:
+				if atomic.LoadInt64(&d.clientCount) == 0 {
+					logger.Info("no clients connected for timeout period, shutting down daemon")
+					d.Stop()
+					return
+				}
+			}
+
+			// Reset timer when no clients
+			if atomic.LoadInt64(&d.clientCount) == 0 {
+				idleTimer.Reset(5 * time.Second)
+			} else {
+				idleTimer.Reset(30 * time.Second)
+			}
+		}
+	}
+}
+
+func (d *Daemon) Stop() {
+	d.engine.Stop()
+	d.cancel()
+	if d.listener != nil {
+		d.listener.Close()
+	}
+}
+
+func (d *Daemon) writePidFile() {
+	pid := os.Getpid()
+	err := os.WriteFile(d.pidPath, []byte(strconv.Itoa(pid)), 0644)
+	if err != nil {
+		logger.Warn("could not write PID file: %v", err)
+	}
+	logger.Info("server started with PID %d", pid)
+}
+
+func (d *Daemon) removePidFile() {
+	if err := os.Remove(d.pidPath); err != nil && !os.IsNotExist(err) {
+		logger.Warn("could not remove PID file: %v", err)
+	}
+}
