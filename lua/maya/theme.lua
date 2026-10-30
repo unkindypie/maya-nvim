@@ -152,6 +152,11 @@ function M.setup_default(opts)
   local function highlights()
     bufferline_palette()
     M.apply_transparency()
+    -- Keep hidden/ignored explorer paths readable, including transparent light themes.
+    local normal = vim.api.nvim_get_hl(0, { name = "Normal", link = false })
+    local directory = vim.api.nvim_get_hl(0, { name = "Directory", link = false })
+    vim.api.nvim_set_hl(0, "SnacksPickerPathHidden", { fg = directory.fg or normal.fg })
+    vim.api.nvim_set_hl(0, "SnacksPickerPathIgnored", { fg = normal.fg, italic = true })
     -- Keep Markdown backgrounds transparent with every colorscheme.
     vim.api.nvim_set_hl(0, "MayaMarkdownBackground", {})
     if not (vim.g.colors_name or ""):match("^catppuccin") then

@@ -25,6 +25,9 @@ for _, transparent in ipairs({false,true}) do
   vim.cmd.colorscheme(scheme=="catppuccin" and (mode=="light" and "catppuccin-latte" or "catppuccin-frappe") or scheme)
   vim.cmd.redrawtabline()
   local function hl(name) return vim.api.nvim_get_hl(0,{name=name,link=false}) end
+  assert(hl("SnacksPickerPathHidden").fg==hl("Directory").fg)
+  assert(hl("SnacksPickerPathIgnored").fg==hl("Normal").fg)
+  assert(hl("SnacksPickerPathIgnored").italic)
   local selected=hl("BufferLineBufferSelected")
   local inactive=hl("BufferLineBackground")
   local separator=hl("BufferLineSeparator")

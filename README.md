@@ -177,6 +177,7 @@ uninstalling unless you explicitly want to remove them.
 Buffer tabs follow the active light/dark colorscheme, with a distinct selected tab
 and vertical separators. Styling refreshes on live theme changes and works with
 transparent editor backgrounds; no personal bufferline color overrides are needed.
+Hidden and ignored explorer entries also use theme colors; ignored paths are italic.
 
 ## 🌟 Daily use
 
