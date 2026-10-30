@@ -243,3 +243,10 @@ maya-nvim never requires deleting LunarVim or Ollama models.
 
 Configuration licensed GPL-3.0; LunarVim-derived mappings are attributed in
 [NOTICE](NOTICE). Plugins retain their own licenses.
+
+## Backlog / TODO
+
+- Add cross-platform desktop light/dark detection, with Linux desktop and macOS
+  support, live updates, and a safe fallback. The current personal Maya watcher
+  reads `~/.config/maya-theme/current`; built-in `theme_background = "auto"`
+  preserves Neovim's existing background rather than detecting the desktop.
