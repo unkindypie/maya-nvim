@@ -68,16 +68,15 @@ machine-specific shell configuration. AI preferences live under
 provider. Keep one provider active and one suggestion engine active for the current mode.
 Cursortab owns debounce, request cancellation, streaming and previews. A valid
 visible preview owns the preview until accepted, dismissed, or invalidated;
-never replace it on a timer. Disable speculative prefetch so no competing inference
-starts while a preview or request is active. Shared semantic context uses
+never replace it on a timer. Use native prefetch and cursor navigation; Cursortab owns inference scheduling. Shared semantic context uses
 capability-checked standard LSP requests, never server names; syntax adapters
 only locate anchors. Prompt hooks read cached context without waiting.
 The bundled Cursortab source in `vendor/` is authoritative; retain its license
 and provenance, exclude binaries/images/history, and test local extensions.
 Keep semantic collection independent of LSP server names and cover incomplete
 annotated values in Lua, Python, and TypeScript. Copilot and AI-off must cancel
-local work and discard late responses. Acceptance must have its own undo step. Automatic Normal-mode stages that only
-add new lines are withheld; explicit requests and Insert completions may add lines.
+local work and discard late responses. Acceptance must have its own undo step. Keep native Normal-mode additions, partial acceptance and 50 ms default delays.
+Preserve explicit personal delay overrides.
 
 ## Checks
 

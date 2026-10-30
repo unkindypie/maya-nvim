@@ -46,9 +46,6 @@ function M.setup(ai)
     behavior = {
       text_change_debounce = user.get("ai_completion_debounce_ms"),
       idle_completion_delay = user.get("ai_next_edit_debounce_ms"),
-      prefetch = false,
-      normal_edit_only = true,
-      cursor_prediction = { enabled = false, auto_advance = false },
     },
     provider = ai.provider == "copilot" and { type = "copilot", completion_timeout = 10000 } or {
       type = ai.engine,
@@ -65,7 +62,10 @@ function M.setup(ai)
   require("maya.ai_context").refresh()
 end
 function M.visible()
-  return M.initialized and require("cursortab.ui").has_completion()
+  return M.initialized
+    and (
+      require("cursortab.ui").has_completion() or require("cursortab.ui").has_cursor_prediction()
+    )
 end
 function M.pending()
   return M.state.pending
@@ -80,8 +80,8 @@ function M.status()
   return dismissed and "dismissed; waiting for the next edit"
     or "ready; edit to request a suggestion"
 end
-function M.accept()
-  if not M.visible() then
+function M.accept(partial)
+  if not M.visible() or (partial and not require("cursortab.ui").has_completion()) then
     return false
   end
   local expected, buf, tick =
@@ -96,7 +96,11 @@ function M.accept()
       and vim.deep_equal(cursor, vim.api.nvim_win_get_cursor(0))
       and mode == vim.api.nvim_get_mode().mode
     then
-      require("cursortab").accept()
+      if partial then
+        require("cursortab").partial_accept()
+      else
+        require("cursortab").accept()
+      end
     end
   end)
   return true

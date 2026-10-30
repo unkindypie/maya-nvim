@@ -36,7 +36,14 @@ return {
           "select_prev",
           "fallback",
         },
-        ["<S-Tab>"] = { "select_prev", "snippet_backward", "fallback" },
+        ["<S-Tab>"] = {
+          function()
+            return require("maya.ai").accept(true)
+          end,
+          "select_prev",
+          "snippet_backward",
+          "fallback",
+        },
         ["<C-j>"] = { "select_next", "fallback" },
         ["<C-k>"] = { "select_prev", "fallback" },
         ["<C-Space>"] = { "show", "show_documentation", "hide_documentation" },

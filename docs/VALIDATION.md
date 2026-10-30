@@ -1,3 +1,14 @@
+# Native Cursortab behavior defaults — 2026-10-30
+
+Restored native 50 ms delays, prefetch, cursor predictions/auto-advance and Normal
+additions. Maya's Shift-Tab dispatch now uses native partial acceptance, and Tab
+recognizes cursor-only targets. Explicit personal delay overrides remain intact.
+Real-daemon HTTP tests verify preview stability with prefetch, Normal additions,
+acceptance/undo and cancellation. The simulated Copilot LSP test exercises native
+partial acceptance through Shift-Tab. Provider tests cover rejection of late cursor predictions after AI-off. Existing completion
+menu navigation is preserved. Earlier model-quality/latency measurements used
+restricted behavior and do not establish scores for these new defaults.
+
 # Native Copilot integration — 2026-10-30
 
 Cursortab now handles the opt-in Copilot provider through Neovim LSP; the separate

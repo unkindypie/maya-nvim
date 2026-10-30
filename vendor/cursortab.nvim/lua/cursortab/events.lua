@@ -364,6 +364,14 @@ function events.accept()
 	return on_accept() == ""
 end
 
+---Partially accept a completion without requiring a plugin-owned keymap.
+function events.partial_accept()
+	if not ui.has_completion() then
+		return false
+	end
+	return on_partial_accept() == ""
+end
+
 ---Check if cursortab is mid-completion (for other plugins to suppress their menus).
 ---@return boolean
 function events.is_completing()

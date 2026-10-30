@@ -24,6 +24,11 @@ function M.accept()
 	return events.accept()
 end
 
+---Partially accept current completion if available.
+function M.partial_accept()
+	return events.partial_accept()
+end
+
 ---Check if cursortab is mid-completion (for other plugins to suppress their menus).
 ---@return boolean
 function M.is_completing()
@@ -61,6 +66,9 @@ end
 ---RPC callback: called when cursor prediction is ready
 ---@param line_num integer Predicted line number (1-indexed)
 function M.on_cursor_prediction_ready(line_num)
+	if not daemon.is_enabled() or require("cursortab.buffer").should_skip() then
+		return
+	end
 	ui.show_cursor_prediction(line_num)
 end
 

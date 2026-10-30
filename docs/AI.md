@@ -55,15 +55,18 @@ Validation is an endpoint/residency smoke test, not a correctness score.
 - `Space aa`: accept. `Space ad` / `Ctrl-]`: dismiss until the next edit.
 - `Space as`: status. `Space am`: edit saved AI preferences, then `Space ao` to reload.
 
-Cursortab uses a 200 ms text-change debounce and 650 ms idle delay. The existing
-personal settings `ai_completion_debounce_ms` and `ai_next_edit_debounce_ms` still
-control those delays. Leaving Insert does not restart a pending text-change timer.
-Automatic Normal-mode previews consisting only of newly added lines are withheld;
-use Insert mode or an explicit request to ask for those additions. This avoids
-unwanted exports or helper functions after finishing an edit. An unchanged saved buffer is quiet; explicit requests bypass that gate. Preview
-ownership lasts until acceptance, dismissal or invalidation. Prefetch and automatic
-cursor jumps are disabled. Acceptance has its own undo step. Ordinary completion
-and snippets remain available with AI off.
+Cursortab uses its native behavior defaults: 50 ms text-change and idle delays,
+prefetch, cursor predictions with auto-advance, and additions in Normal mode.
+Tab accepts an edit or navigates to its target; Shift-Tab accepts a word or line
+at a time. When no AI completion is available, Shift-Tab retains completion-menu
+and snippet navigation. Esc uses Cursortab's native rejection behavior.
+
+Explicit personal `ai_completion_debounce_ms` and `ai_next_edit_debounce_ms`
+settings still take precedence. Remove older explicit values to use 50 ms defaults.
+Maya retains its focused cached LSP context, local model/context setup, provider
+cancellation, stale-response guards, per-editor daemon isolation and undo boundaries.
+Prefetch prepares subsequent suggestions without replacing the visible preview.
+Ordinary completion and snippets remain available with AI off.
 
 ## Preferences and migration
 

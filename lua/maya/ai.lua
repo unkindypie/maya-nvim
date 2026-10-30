@@ -105,8 +105,8 @@ function M.edit_settings()
   -- Space am edits the settings for the one local model.
   vim.cmd.edit(vim.fn.fnameescape(vim.fn.stdpath("state") .. "/ai.json"))
 end
-function M.accept()
-  return M.provider ~= "off" and require("maya.ai_next_edit").accept() or false
+function M.accept(partial)
+  return M.provider ~= "off" and require("maya.ai_next_edit").accept(partial) or false
 end
 function M.action(name)
   if M.provider == "off" then
@@ -133,14 +133,11 @@ function M.setup()
     end,
   })
   vim.keymap.set("n", "<Tab>", function()
-    if M.provider ~= "off" and require("maya.ai_next_edit").visible() then
-      vim.schedule(function()
-        M.accept()
-      end)
-      return ""
-    end
-    return "<C-i>"
-  end, { expr = true, desc = "Accept next-edit or jump forward" })
+    return M.accept() and "" or "<C-i>"
+  end, { expr = true, desc = "Accept AI edit or cursor jump; otherwise jump forward" })
+  vim.keymap.set("n", "<S-Tab>", function()
+    return M.accept(true) and "" or "<S-Tab>"
+  end, { expr = true, desc = "Partially accept AI edit" })
   vim.api.nvim_create_user_command("MayaAI", function(cmd)
     M.select(cmd.args)
   end, {

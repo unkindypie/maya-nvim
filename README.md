@@ -86,8 +86,8 @@ return {
   pokemon_sound_on_start = true, -- Play a Pokémon cry.
   pokemon_sound_on_start_volume_percentage = 50, -- 0–100; 0 mutes playback.
   reopen_tabs = true, -- Restore this folder's files, tabs, and splits.
-  ai_completion_debounce_ms = 200, -- Insert-mode completion idle delay.
-  ai_next_edit_debounce_ms = 650, -- Local AI idle delay.
+  ai_completion_debounce_ms = 50, -- Insert-mode completion idle delay.
+  ai_next_edit_debounce_ms = 50, -- Local AI idle delay.
 
   options = {}, -- No personal editor-option overrides.
 

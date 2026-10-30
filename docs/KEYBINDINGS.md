@@ -273,12 +273,13 @@ behavior or compatibility with every future Neovim release.
 
 ### Local next-edit
 
-| Key                   | Action                                               |
-| --------------------- | ---------------------------------------------------- |
-| `Space an`            | Request local AI suggestion                          |
-| `Space aa`            | Accept the current AI suggestion                     |
-| `Space ad` / `Ctrl-]` | Cancel and dismiss                                   |
-| Normal `Tab`          | Accept visible AI prediction; otherwise jump forward |
+| Key                   | Action                                                                      |
+| --------------------- | --------------------------------------------------------------------------- |
+| `Space an`            | Request local AI suggestion                                                 |
+| `Space aa`            | Accept the current AI suggestion                                            |
+| `Space ad` / `Ctrl-]` | Cancel and dismiss                                                          |
+| Normal `Tab`          | Accept AI edit or cursor jump; otherwise jump forward                       |
+| `Shift-Tab`           | Partially accept AI completion; otherwise menu/snippet navigation in Insert |
 
 Cursortab uses one local model in Insert and Normal modes. Selected ordinary completion takes priority on
 Insert Tab; Enter and arrow navigation keep their existing completion behavior.

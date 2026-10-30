@@ -1,5 +1,13 @@
 # Local AI: Cursortab rollout and candidate evaluation
 
+## Native UX defaults — subsequent update
+
+Runtime now uses native cursor prediction/auto-advance, prefetch, Normal additions,
+partial acceptance and 50 ms delays. The measurements below describe the earlier
+restricted configuration, not these new defaults. The candidate harness retains
+those historical settings for reproducibility. Default behavior is covered by
+runtime integration tests; no new real-model quality/latency claim is made here.
+
 ## Runtime migration — 30 October 2026
 
 The full migration is now authorized and implemented. **Cursortab is the only

@@ -48,6 +48,8 @@ ai.select("off",false)
 installed() -- A late install must not re-enable cloud access after AI-off.
 assert(enabled[#enabled]==false and #enabled==1)
 assert(ai.status()=="" and not ai.accept() and not require("cursortab.daemon").is_enabled())
+require("cursortab").on_cursor_prediction_ready(1)
+assert(not require("cursortab.ui").has_cursor_prediction(), "late cursor prediction survived AI-off")
 ai.select("copilot",false)
 installed()
 assert(enabled[#enabled]==true)

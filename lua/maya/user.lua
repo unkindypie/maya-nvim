@@ -8,8 +8,8 @@ local defaults = {
   pokemon_sound_on_start = true,
   pokemon_sound_on_start_volume_percentage = 50,
   reopen_tabs = true,
-  ai_completion_debounce_ms = 200,
-  ai_next_edit_debounce_ms = 650,
+  ai_completion_debounce_ms = 50,
+  ai_next_edit_debounce_ms = 50,
 }
 function M.get(key)
   if M.config[key] ~= nil then

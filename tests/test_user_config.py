@@ -25,8 +25,8 @@ assert(require("maya.user").get("ai_next_edit_debounce_ms")==700)
             """
 assert(require("maya.user").get("pokemon_sound_on_start")==true)
 assert(require("maya.user").get("reopen_tabs")==true)
-assert(require("maya.user").get("ai_completion_debounce_ms")==200)
-assert(require("maya.user").get("ai_next_edit_debounce_ms")==650)
+assert(require("maya.user").get("ai_completion_debounce_ms")==50)
+assert(require("maya.user").get("ai_next_edit_debounce_ms")==50)
 """,
         )
 

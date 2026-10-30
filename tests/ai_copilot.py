@@ -59,7 +59,7 @@ require("maya.ai").select("copilot",false)
         nvim.input("A ")
         wait(nvim, 'require("maya.ai_next_edit").visible()')
         assert nvim.exec_lua("return requests > 0")
-        nvim.input("\t")
+        nvim.input("<S-Tab>")
         wait(nvim, 'vim.api.nvim_get_current_line():find("a + b",1,true) ~= nil')
         nvim.input("<Esc>")
         nvim.exec_lua('require("maya.ai").select("off",false)')
@@ -69,7 +69,7 @@ require("maya.ai").select("copilot",false)
         nvim.exec_lua('require("cursortab.daemon").stop_daemon()')
         assert source.read_text() == "def add(a, b):\n    return a - b\n"
         print(
-            "PASS: native Copilot LSP bridge, Cursortab preview/Tab and AI-off shutdown"
+            "PASS: native Copilot LSP bridge, Cursortab preview/partial acceptance and AI-off shutdown"
         )
     finally:
         stop(nvim)

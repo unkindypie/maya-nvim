@@ -72,13 +72,14 @@ require("maya.ai").select("ollama",false)
                     nvim.exec_lua(
                         'return require("cursortab.config").get().behavior.prefetch'
                     )
-                    is False
+                    is True
                 )
                 count = len(capture.rows)
                 time.sleep(0.6)
-                assert len(capture.rows) == count, (
-                    "visible preview caused competing inference"
+                assert nvim.exec_lua('return require("maya.ai_next_edit").visible()'), (
+                    "prefetch replaced the visible preview"
                 )
+                count = len(capture.rows)
                 nvim.input("<C-]>")
                 time.sleep(0.2)
                 assert not nvim.exec_lua(
@@ -196,27 +197,33 @@ def normal_append_check():
                 "lua",
             )
             try:
+                nvim.exec_lua(
+                    """local state,endpoint=...
+local original=vim.fn.stdpath
+vim.fn.stdpath=function(k) return k=="state" and state or original(k) end
+vim.fn.writefile({vim.json.encode({schema=2,model="test-sweep",engine="sweep",endpoint=endpoint})},state.."/ai.json")
+require("maya.ai").select("ollama",false)
+local cfg=require("cursortab.config").get()
+assert(cfg.behavior.prefetch and not cfg.behavior.normal_edit_only)
+assert(cfg.behavior.cursor_prediction.enabled and cfg.behavior.cursor_prediction.auto_advance)
+assert(cfg.behavior.text_change_debounce==50 and cfg.behavior.idle_completion_delay==50)
+""",
+                    temp,
+                    capture.url,
+                )
                 nvim.current.window.cursor = (3, 0)
-                nvim.exec_lua("_G.eval_enable()")
                 nvim.input("Ad<Esc>")
                 wait(nvim, 'vim.fn.mode()=="n"')
-                deadline = time.monotonic() + 5
-                while not capture.rows and time.monotonic() < deadline:
-                    time.sleep(0.02)
-                assert capture.rows, "automatic request was not made"
-                wait(nvim, "not _G.eval_pending()")
-                time.sleep(0.2)
-                assert not nvim.exec_lua("return _G.eval_visible()"), (
-                    "automatic Normal append flashed a preview"
-                )
-                assert "\n".join(nvim.current.buffer[:]) == source
-                nvim.exec_lua("_G.eval_request(true)")
-                wait(nvim, "_G.eval_visible()")
-                nvim.exec_lua("_G.eval_accept()")
-                time.sleep(0.2)
+                wait(nvim, 'require("maya.ai_next_edit").visible()')
+                # Tab may first navigate to the insertion before accepting it.
+                for _ in range(3):
+                    nvim.input("<Tab>")
+                    time.sleep(0.3)
+                    if "\n".join(nvim.current.buffer[:]) == expected:
+                        break
                 assert "\n".join(nvim.current.buffer[:]) == expected
                 print(
-                    "PASS: automatic Normal append withheld; explicit append accepted"
+                    "PASS: default behavior enables Normal additions and Tab navigation/acceptance"
                 )
             finally:
                 close(nvim, "cursortab")

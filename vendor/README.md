@@ -13,11 +13,11 @@ Maya's small extensions are:
   bounded to 6,000 bytes, omitted on error/staleness and synthetic prefetch snapshots.
   Sweep, Zeta-2 and Zeta-2.1 receive it as a native-format pseudo-file.
 - `enabled_predicate()`: optional dynamic eligibility check, including late previews.
-- `behavior.prefetch`: defaults true upstream-style; Maya sets false to avoid
-  speculative inference while a preview owns the screen.
-- `behavior.normal_edit_only`: defaults false; Maya enables it to withhold
-  automatic Normal-mode stages consisting only of added lines. Explicit requests
-  and Insert mode are unchanged; both streaming and batch stages use the gate.
+- `behavior.prefetch` and `behavior.normal_edit_only`: retained experiment controls;
+  runtime uses their native defaults (prefetch on, Normal additions allowed).
+- `partial_accept()`: public wrapper around the native handler so Maya can arbitrate
+  Shift-Tab with blink.cmp without duplicating acceptance behavior.
+- Check eligibility before late cursor predictions as well as completions.
 - Read Neovim's actual modified flag so edits before the first daemon sync count.
   Replay a text-change notification after asynchronous connection if needed.
 - Separate acceptance from surrounding typing in the undo history.
