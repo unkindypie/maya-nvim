@@ -250,3 +250,12 @@ Configuration licensed GPL-3.0; LunarVim-derived mappings are attributed in
   support, live updates, and a safe fallback. The current personal Maya watcher
   reads `~/.config/maya-theme/current`; built-in `theme_background = "auto"`
   preserves Neovim's existing background rather than detecting the desktop.
+- Add shared Codex/OpenCode task controls using Codex app-server and OpenCode's
+  server API: task/session picker, live status and notifications, explicit sending
+  of selections/files/diagnostics to a chosen task, and a worktree picker that
+  opens changes in Diffview. Reuse Snacks and lualine. First verify access to
+  existing running CLI sessions without taking them over; identify targets by
+  server, workspace and task/session ID. Reuse Maya's Visual-mode selection
+  capture, including unsaved selected text, and keep adding context to a draft
+  separate from submitting a request. Preserve the existing Codex IDE bridge;
+  OpenCode selection sharing still needs implementation and validation.
