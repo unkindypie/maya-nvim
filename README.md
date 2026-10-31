@@ -259,3 +259,5 @@ Configuration licensed GPL-3.0; LunarVim-derived mappings are attributed in
   capture, including unsaved selected text, and keep adding context to a draft
   separate from submitting a request. Preserve the existing Codex IDE bridge;
   OpenCode selection sharing still needs implementation and validation.
+  Use strategy pattern (port/adapter) to unify code for both Codex and OpenCode,
+  and also keep future extensibility for Claude Code and Gemini CLI.
