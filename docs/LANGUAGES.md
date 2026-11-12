@@ -76,7 +76,7 @@ bundled Smetana Java layout engine when `dot` is unavailable. Some diagram types
 may still require Graphviz. The LSP remains an early-development project with
 limited user-defined symbol support.
 
-- `Space up` / `:PlantumlPreview`: toggle the current diagram's browser preview.
+- `Space Enter` / `:PlantumlPreview`: toggle the current diagram's browser preview.
 - `:PlantumlStop`: stop rendering and remove temporary preview files.
 - `:PlantumlExport diagram.svg` (or `.png`): export current unsaved contents.
   Existing files require `:PlantumlExport!`. Paths with spaces use normal Ex escaping.
@@ -92,3 +92,7 @@ buttons and scrolling handle large diagrams.
 Ordinary startup loads no PlantUML module, language server or Java process. Only
 the lazy plugin/filetype registration is present. `MAYA_NVIM_NO_INSTALL=1` prevents
 automatic downloads; already installed tools can still be used.
+
+In a PlantUML buffer, Which-key shows **Preview UML Diagram** first after Space;
+press Enter to activate it. The action is absent from other filetypes. The former
+`Space u p` remains a hidden compatibility alias; `Space p` remains the Plugins menu.

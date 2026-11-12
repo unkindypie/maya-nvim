@@ -28,7 +28,16 @@ with tempfile.TemporaryDirectory(prefix="maya-plantuml-") as temp:
         nvim.exec_lua(
             "_G.preview_url=nil; vim.ui.open=function(url) _G.preview_url=url end"
         )
-        nvim.command("PlantumlPreview")
+        nvim.input(" ")
+        wait(
+            nvim,
+            '(function() for _,w in ipairs(vim.api.nvim_list_wins()) do local lines=vim.api.nvim_buf_get_lines(vim.api.nvim_win_get_buf(w),0,-1,false); if table.concat(lines," "):find("Preview UML Diagram",1,true) then return true end end return false end)()',
+        )
+        rows = nvim.exec_lua(
+            'local rows={} for _,w in ipairs(vim.api.nvim_list_wins()) do local lines=vim.api.nvim_buf_get_lines(vim.api.nvim_win_get_buf(w),0,-1,false); if table.concat(lines," "):find("Preview UML Diagram",1,true) then rows=lines end end return rows'
+        )
+        assert "Preview UML Diagram" in next(line for line in rows if line.strip())
+        nvim.input("<CR>")
         wait(nvim, 'require("maya.plantuml").status() ~= nil')
         preview = Path(
             nvim.exec_lua('return require("maya.plantuml").status().directory')
@@ -76,6 +85,18 @@ m.install=install
 """)
         assert nvim.current.buffer.options["modified"]
         assert path.read_text() == source
+        nvim.command("enew!")
+        nvim.command("setfiletype text")
+        assert nvim.exec_lua('return vim.fn.maparg(" <CR>","n")==""')
+        nvim.input(" ")
+        wait(
+            nvim,
+            '(function() for _,w in ipairs(vim.api.nvim_list_wins()) do if vim.api.nvim_win_get_config(w).relative~="" then return true end end return false end)()',
+        )
+        assert not nvim.exec_lua(
+            'local rows={} for _,w in ipairs(vim.api.nvim_list_wins()) do vim.list_extend(rows,vim.api.nvim_buf_get_lines(vim.api.nvim_win_get_buf(w),0,-1,false)) end return table.concat(rows," "):find("Preview UML Diagram",1,true)~=nil'
+        )
+        nvim.input("<Esc>")
         print(
             "PASS: lazy syntax/LSP, local unsaved SVG/includes, last-good preview, diagnostics, PNG/SVG exports and cleanup"
         )

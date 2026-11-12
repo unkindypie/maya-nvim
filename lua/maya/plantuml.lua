@@ -230,6 +230,14 @@ function M.attach(buf)
       end, true)
     end, {})
     vim.api.nvim_create_autocmd("VimLeavePre", { callback = M.stop })
+    vim.api.nvim_create_autocmd("FileType", {
+      callback = function(event)
+        if vim.bo[event.buf].filetype ~= "plantuml" and vim.b[event.buf].maya_uml_preview_key then
+          pcall(vim.keymap.del, "n", "<leader><CR>", { buffer = event.buf })
+          vim.b[event.buf].maya_uml_preview_key = nil
+        end
+      end,
+    })
   end
   if vim.bo[buf].filetype ~= "plantuml" then
     return
@@ -241,6 +249,10 @@ function M.attach(buf)
     M.open,
     { buffer = buf, desc = "Toggle PlantUML live preview" }
   )
+  vim.b[buf].maya_uml_preview_key = true
+  vim.keymap.set("n", "<leader><CR>", M.open, { buffer = buf, desc = "Preview UML Diagram" })
+  -- Which-key sorts buffer-local actions first; hide only the older alias.
+  require("which-key").add({ { "<localleader>up", buffer = buf, hidden = true } })
   M.install(function()
     if not vim.api.nvim_buf_is_valid(buf) or vim.bo[buf].filetype ~= "plantuml" then
       return

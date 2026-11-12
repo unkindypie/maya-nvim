@@ -189,7 +189,7 @@ Files format on save and reload after external changes; unsaved edits use native
 conflict handling. Launching `mvim` without file arguments restores the folder's
 saved files and tabs when enabled.
 
-PlantUML files load syntax and LSP support on demand. In a diagram, `Space up`
+PlantUML files load syntax and LSP support on demand. In a diagram, `Space Enter`
 toggles a local live browser preview; see [diagram tools](docs/LANGUAGES.md#plantuml-diagrams).
 
 See [keybindings](docs/KEYBINDINGS.md), [language tools](docs/LANGUAGES.md), and
