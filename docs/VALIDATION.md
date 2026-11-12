@@ -1,3 +1,18 @@
+# Readable diagram viewport — 2026-11-12
+
+Reproduced fit-to-window shrinkage with a read-only 3,670 × 1,840 user diagram.
+Checked a cropped render at the new default 125% logical scale: text remains
+readable instead of shrinking the entire diagram. Project files were not edited;
+rendered artifacts remain outside Git.
+
+`tests/image_view.py` uses a synthetic image of the same dimensions and real
+ImageMagick crops. It verifies viewport PNG dimensions, mouse-wheel zoom while
+source focus remains unchanged, mouse dragging, a real toolbar Fit click,
+keyboard zoom/reset, camera retention across frame refreshes, cleanup and native
+mouse behavior after closing. Existing media, PlantUML and editor integration
+checks passed. Headless tests cannot establish real Kitty/tmux pixel placement;
+that remains an interactive visual check.
+
 # Automatic diagram and image panes — 2026-11-12
 
 PlantUML opens an automatic PNG preview split, using the existing Snacks image

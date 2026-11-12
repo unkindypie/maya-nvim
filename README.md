@@ -191,7 +191,8 @@ saved files and tabs when enabled.
 
 **Diagram- and image-friendly:** PlantUML opens with a live preview pane plus syntax
 and LSP support. Images open directly in the editor; SVG keeps editable source
-with a live preview beside it. Views open automatically and load on demand.
+with a live preview beside it. Diagram panes have zoom, drag-to-pan and Fit
+controls. Views open automatically and load on demand.
 See [diagram and image previews](docs/LANGUAGES.md#plantuml-diagrams).
 
 See [keybindings](docs/KEYBINDINGS.md), [language tools](docs/LANGUAGES.md), and

@@ -70,6 +70,7 @@ function M.pane(source, on_close)
       pcall(vim.api.nvim_win_close, self.win, true)
     end
   end
+  require("maya.image_view").attach(pane)
   return pane
 end
 local svgs = {}
