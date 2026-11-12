@@ -27,8 +27,10 @@ with tempfile.TemporaryDirectory(prefix="maya-image-view-") as temp:
         initial = nvim.exec_lua(
             "return {pane.view.zoom,pane.view.viewport,pane.view_path}"
         )
-        assert initial[0] == 1.25
-        assert initial[1]["crop_width"] < 3670 / 3
+        assert initial[0] < 1
+        assert nvim.exec_lua("return pane.view.fit")
+        assert initial[1]["crop_width"] == 3670
+        assert initial[1]["crop_height"] == 1840
         data = Path(initial[2]).read_bytes()
         assert struct.unpack(">II", data[16:24]) == (
             initial[1]["width"],
@@ -37,7 +39,7 @@ with tempfile.TemporaryDirectory(prefix="maya-image-view-") as temp:
         assert nvim.exec_lua("return vim.api.nvim_get_current_win() ~= pane.win")
         row, col = nvim.exec_lua("return vim.api.nvim_win_get_position(pane.win)")
         nvim.api.input_mouse("wheel", "up", "", 0, row + 5, col + 8)
-        wait(nvim, "pane.view.zoom > 1.25")
+        wait(nvim, "pane.view.zoom > " + str(initial[0]))
         assert nvim.exec_lua("return vim.api.nvim_get_current_win() ~= pane.win"), (
             "wheel stole source focus"
         )
@@ -72,6 +74,23 @@ with tempfile.TemporaryDirectory(prefix="maya-image-view-") as temp:
         assert (
             nvim.exec_lua("return {pane.view.zoom,pane.view.x,pane.view.y}") == camera
         )
+        nvim.api.win_set_width(nvim.exec_lua("return pane.win"), 44)
+        wait(nvim, "pane.view.fit and pane.view.x==0 and pane.view.y==0")
+        wait(
+            nvim,
+            "pane.view.viewport.crop_width==3670 and pane.view.viewport.crop_height==1840",
+        )
+        nvim.input("0")
+        wait(nvim, "not pane.view.fit")
+        nvim.api.ui_try_resize(150, 48)
+        wait(
+            nvim,
+            "vim.o.columns==150 and pane.view.fit and pane.view.x==0 and pane.view.y==0",
+        )
+        wait(
+            nvim,
+            "pane.view.viewport.crop_width==3670 and pane.view.viewport.crop_height==1840",
+        )
         nvim.exec_lua("pane:close()")
         assert not Path(initial[2]).parent.exists()
         assert path.exists()
@@ -81,7 +100,7 @@ with tempfile.TemporaryDirectory(prefix="maya-image-view-") as temp:
         wait(nvim, "vim.api.nvim_win_get_cursor(0)[1] == 2")
         assert nvim.current.buffer[:] == ["alpha", "beta", "gamma"]
         print(
-            "PASS: readable crop, wheel zoom without focus theft, mouse drag, clickable Fit, keyboard controls, camera retention and cleanup"
+            "PASS: initial fit, pane/terminal resize refit, wheel zoom without focus theft, mouse drag, clickable Fit, keyboard controls, camera retention and cleanup"
         )
     finally:
         stop(nvim)

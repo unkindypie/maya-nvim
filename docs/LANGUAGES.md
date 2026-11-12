@@ -87,13 +87,12 @@ Rendering is local, asynchronous and refreshed after a 500 ms editing pause.
 One diagram per buffer is supported. Relative includes resolve from the source
 file's directory. Invalid edits keep the last valid image and report errors in
 mvim. Closing/hiding the source or exiting stops its preview; export never saves
-the source buffer. Press `q` in the preview pane to close it. Large diagrams open at a readable 125%
-logical scale; the pane shows a cropped viewport rather than shrinking the entire
-diagram. The toolbar has clickable **+**, **−**, **Fit**, and **1:1** controls.
+the source buffer. Press `q` in the preview pane to close it. Diagrams open fitted to the pane so the whole image is visible; zoom in to
+inspect details. The toolbar has clickable **+**, **−**, **Fit**, and **1:1** controls.
 Mouse wheel zooms over the pane without taking source focus; click-drag pans.
 With the pane focused, use `+`/`-` to zoom, `hjkl` or arrows to pan, `f` for an
 overview, `0` for 100%, and `?` for help. Zoom/pan survives live updates; resizing
-the pane refreshes the viewport. These controls also apply to SVG preview panes
+the terminal or preview pane resets to Fit and clears the pan offset. These controls also apply to SVG preview panes
 and require ImageMagick. Existing global personal mouse mappings take precedence
 when the source is focused; click the pane first if necessary.
 

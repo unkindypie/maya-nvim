@@ -1,3 +1,10 @@
+# Fit-first previews and resize reset — 2026-11-12
+
+Diagram/SVG panes now open in Fit mode. Real viewport tests verify the entire
+3,670 × 1,840 fixture is visible initially; wheel/keyboard zoom still works,
+live frame updates preserve the camera, and both split resizing and terminal UI
+resizing reset zoom/pan to Fit. Earlier 125% defaults below are historical.
+
 # Readable diagram viewport — 2026-11-12
 
 Reproduced fit-to-window shrinkage with a read-only 3,670 × 1,840 user diagram.

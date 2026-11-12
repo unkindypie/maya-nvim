@@ -16,7 +16,7 @@ function M.attach(pane)
     return
   end
   local display = pane.update
-  local view = { zoom = 1.25, x = 0, y = 0, version = 0, pane = pane }
+  local view = { zoom = 1, fit = true, x = 0, y = 0, version = 0, pane = pane }
   views[pane.win] = view
   pane.view = view
   local directory = vim.fn.tempname()
@@ -245,7 +245,22 @@ function M.attach(pane)
       vim.log.levels.INFO
     )
   end, { buffer = pane.buf, desc = "Preview help" })
-  vim.api.nvim_create_autocmd("WinResized", { group = group, callback = request })
+  vim.api.nvim_create_autocmd({ "WinResized", "VimResized" }, {
+    group = group,
+    callback = function(event)
+      if view.closed or not vim.api.nvim_win_is_valid(pane.win) then
+        return
+      end
+      if event.event == "WinResized" and view.viewport then
+        local width, height = geometry()
+        if width == view.viewport.width and height == view.viewport.height then
+          return
+        end
+      end
+      view.fit, view.x, view.y, view.drag = true, 0, 0, nil
+      request()
+    end,
+  })
   local function close()
     if view.closed then
       return
