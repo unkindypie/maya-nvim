@@ -4,6 +4,8 @@ Hi. I'm Maya and it's my Neovim config/distro. 🎀
 I wanted to build something simple and familiar to use, but also modern, fast, flexible, and
 with local type aware AI suggestions (optional but recommended, it uses many custom context collection improvements).
 
+![maya-nvim dashboard in Kitty with a Pokémon greeting and quick actions](docs/images/mvim-dashboard.webp)
+
 ## 🌟 Features
 
 It's standalone Neovim 0.12.5+ setup for Mac and Linux with an **easy installation**. Inspired by **LunarVim**,
