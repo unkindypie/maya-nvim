@@ -1,3 +1,20 @@
+# Automatic diagram and image panes — 2026-11-12
+
+PlantUML opens an automatic PNG preview split, using the existing Snacks image
+renderer, and SVG retains source beside a live ImageMagick-rendered preview.
+Raster images open as display-only buffers. No browser is opened.
+
+Real rendering tests passed automatic split creation without stealing source focus,
+unsaved updates, local PlantUML includes, invalid-edit last-good retention, export,
+closing/hiding sources and cleanup. Raster tests cover both the first image open
+and later opens through Snacks, and verify forced writes preserve the original
+image bytes. Headless startup asserts both media and Snacks image modules remain
+unloaded. Existing editor integration and unit tests passed.
+
+Headless tests use Snacks' unsupported-terminal explanation in place of pixels.
+Actual image placement/clipping inside the user's Kitty/tmux session remains a
+manual visual check; run `:checkhealth snacks` if graphics are unavailable.
+
 # PlantUML on-demand tools — 2026-11-12
 
 Validated local PlantUML 1.2026.10 (verified JAR checksum) and plantuml-lsp

@@ -286,6 +286,6 @@ Insert Tab; Enter and arrow navigation keep their existing completion behavior.
 
 ### PlantUML
 
-In PlantUML buffers, `Space Enter` toggles a local live browser preview. Use
+In PlantUML buffers, `Space Enter` toggles the automatic local preview pane. Use
 `:PlantumlExport path.svg` or `path.png` to export and `:PlantumlStop` to stop.
 Existing LSP keys (`K`, `gd`, `gl`) apply when the language server attaches.

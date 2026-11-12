@@ -76,18 +76,18 @@ bundled Smetana Java layout engine when `dot` is unavailable. Some diagram types
 may still require Graphviz. The LSP remains an early-development project with
 limited user-defined symbol support.
 
-- `Space Enter` / `:PlantumlPreview`: toggle the current diagram's browser preview.
+- `Space Enter` / `:PlantumlPreview`: toggle the current diagram's preview pane.
 - `:PlantumlStop`: stop rendering and remove temporary preview files.
 - `:PlantumlExport diagram.svg` (or `.png`): export current unsaved contents.
   Existing files require `:PlantumlExport!`. Paths with spaces use normal Ex escaping.
 - `:PlantumlSetup`: install/check tools again after a setup failure or upgrade.
 
-Preview is opt-in, local, asynchronous and refreshed after a 500 ms editing pause;
-the browser polls the resulting SVG every second. One diagram per buffer is
-supported. Relative includes resolve from the source file's directory. Invalid
-edits keep the last valid image and report errors in mvim. Closing a buffer or
-exiting stops its preview; export never saves the source buffer. Browser zoom
-buttons and scrolling handle large diagrams.
+The preview pane opens automatically on the right and leaves focus in the source.
+Rendering is local, asynchronous and refreshed after a 500 ms editing pause.
+One diagram per buffer is supported. Relative includes resolve from the source
+file's directory. Invalid edits keep the last valid image and report errors in
+mvim. Closing/hiding the source or exiting stops its preview; export never saves
+the source buffer. Press `q` in the preview pane to close it.
 
 Ordinary startup loads no PlantUML module, language server or Java process. Only
 the lazy plugin/filetype registration is present. `MAYA_NVIM_NO_INSTALL=1` prevents
@@ -96,3 +96,18 @@ automatic downloads; already installed tools can still be used.
 In a PlantUML buffer, Which-key shows **Preview UML Diagram** first after Space;
 press Enter to activate it. The action is absent from other filetypes. The former
 `Space u p` remains a hidden compatibility alias; `Space p` remains the Plugins menu.
+
+## Images and SVG
+
+Opening PNG, JPEG, GIF, WebP, BMP, TIFF, AVIF, HEIC or ICO displays an image in
+the current window, without a binary text editor. SVG opens as editable source
+with an automatic live preview pane; unsaved edits update after a short pause,
+and invalid SVG preserves the last valid image. Close its pane with `q`.
+
+Views use the existing Snacks image renderer and load only when needed. Kitty
+and compatible graphics terminals are required for pixels. With tmux, enable
+`set -g allow-passthrough on` if automatic detection does not work. Unsupported
+terminals show a display-only explanation rather than raw image bytes. ImageMagick
+(`magick`) is required for SVG and non-PNG conversion: `sudo apt install imagemagick`
+on systems providing ImageMagick 7, or `brew install imagemagick`. Use
+`:checkhealth snacks` to diagnose graphics support. No browser is opened.

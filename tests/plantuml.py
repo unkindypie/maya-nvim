@@ -28,6 +28,9 @@ with tempfile.TemporaryDirectory(prefix="maya-plantuml-") as temp:
         nvim.exec_lua(
             "_G.preview_url=nil; vim.ui.open=function(url) _G.preview_url=url end"
         )
+        wait(nvim, 'require("maya.plantuml").status() ~= nil')
+        assert len(nvim.windows) == 2
+        assert nvim.current.buffer.name == str(path)
         nvim.input(" ")
         wait(
             nvim,
@@ -38,26 +41,30 @@ with tempfile.TemporaryDirectory(prefix="maya-plantuml-") as temp:
         )
         assert "Preview UML Diagram" in next(line for line in rows if line.strip())
         nvim.input("<CR>")
+        assert nvim.exec_lua('return require("maya.plantuml").status()==nil')
+        nvim.input(" <CR>")
         wait(nvim, 'require("maya.plantuml").status() ~= nil')
         preview = Path(
             nvim.exec_lua('return require("maya.plantuml").status().directory')
         )
-        svg = preview / "diagram.svg"
-        wait(nvim, "vim.fn.filereadable(" + repr(str(svg)) + ")==1")
-        assert "Original" in svg.read_text() and "Included" in svg.read_text()
+        wait(nvim, 'require("maya.plantuml").status().pane.path ~= nil')
+        frame = Path(
+            nvim.exec_lua('return require("maya.plantuml").status().pane.path')
+        )
+        assert frame.read_bytes().startswith(b"\x89PNG")
         nvim.current.buffer[:] = source.replace("Original", "Unsaved").splitlines()
         nvim.command("doautocmd TextChanged")
-        wait(
-            nvim,
-            "table.concat(vim.fn.readfile("
-            + repr(str(svg))
-            + "), ' ' ):find('Unsaved',1,true) ~= nil",
-        )
-        good = svg.read_bytes()
+        wait(nvim, 'require("maya.plantuml").status().pane.path ~= ' + repr(str(frame)))
+        good_path = nvim.exec_lua('return require("maya.plantuml").status().pane.path')
+        good = Path(good_path).read_bytes()
         nvim.current.buffer[:] = ["@startuml", "class { broken", "@enduml"]
         nvim.command("doautocmd TextChanged")
         wait(nvim, 'require("maya.plantuml").status().error ~= nil')
-        assert svg.read_bytes() == good
+        assert (
+            nvim.exec_lua('return require("maya.plantuml").status().pane.path')
+            == good_path
+        )
+        assert Path(good_path).read_bytes() == good
         wait(nvim, "#vim.diagnostic.get(0)>0")
         nvim.current.buffer[:] = source.replace("Original", "Exported").splitlines()
         for ext in ("svg", "png"):
@@ -98,7 +105,7 @@ m.install=install
         )
         nvim.input("<Esc>")
         print(
-            "PASS: lazy syntax/LSP, local unsaved SVG/includes, last-good preview, diagnostics, PNG/SVG exports and cleanup"
+            "PASS: lazy syntax/LSP, automatic split, local unsaved PNG/includes, last-good preview, diagnostics, PNG/SVG exports and cleanup"
         )
     finally:
         stop(nvim)

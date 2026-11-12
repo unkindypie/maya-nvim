@@ -49,6 +49,59 @@ return {
     priority = 1000,
     lazy = false,
     init = function()
+      -- Register handlers only; image conversion/terminal detection stay on demand.
+      vim.g.maya_image_handler = vim.api.nvim_create_autocmd("BufReadCmd", {
+        pattern = {
+          "*.png",
+          "*.jpg",
+          "*.jpeg",
+          "*.gif",
+          "*.webp",
+          "*.bmp",
+          "*.tif",
+          "*.tiff",
+          "*.avif",
+          "*.heic",
+          "*.ico",
+          "*.PNG",
+          "*.JPG",
+          "*.JPEG",
+        },
+        once = true,
+        callback = function(event)
+          require("maya.media").image(event)
+        end,
+      })
+      vim.api.nvim_create_autocmd({ "FileType", "BufWinEnter" }, {
+        callback = function(event)
+          local ft = vim.bo[event.buf].filetype
+          if ft == "svg" or ft == "plantuml" then
+            vim.schedule(function()
+              if not vim.api.nvim_buf_is_valid(event.buf) or vim.fn.bufwinid(event.buf) == -1 then
+                return
+              end
+              if ft == "svg" then
+                require("maya.media").svg(event.buf)
+              else
+                require("maya.plantuml").attach(event.buf)
+              end
+            end)
+          end
+        end,
+      })
+      vim.api.nvim_create_autocmd("BufWinLeave", {
+        callback = function(event)
+          local ft = vim.bo[event.buf].filetype
+          if ft == "svg" or ft == "plantuml" then
+            vim.schedule(function()
+              if vim.api.nvim_buf_is_valid(event.buf) and vim.fn.bufwinid(event.buf) == -1 then
+                vim.b[event.buf].maya_uml_auto_started = nil
+                vim.b[event.buf].maya_svg_preview_closed = nil
+              end
+            end)
+          end
+        end,
+      })
       vim.api.nvim_create_autocmd("User", {
         pattern = "SnacksDashboardUpdatePost",
         once = true,

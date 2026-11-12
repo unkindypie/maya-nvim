@@ -189,8 +189,10 @@ Files format on save and reload after external changes; unsaved edits use native
 conflict handling. Launching `mvim` without file arguments restores the folder's
 saved files and tabs when enabled.
 
-PlantUML files load syntax and LSP support on demand. In a diagram, `Space Enter`
-toggles a local live browser preview; see [diagram tools](docs/LANGUAGES.md#plantuml-diagrams).
+**Diagram- and image-friendly:** PlantUML opens with a live preview pane plus syntax
+and LSP support. Images open directly in the editor; SVG keeps editable source
+with a live preview beside it. Views open automatically and load on demand.
+See [diagram and image previews](docs/LANGUAGES.md#plantuml-diagrams).
 
 See [keybindings](docs/KEYBINDINGS.md), [language tools](docs/LANGUAGES.md), and
 [sessions and troubleshooting](docs/MAINTENANCE.md) for more.

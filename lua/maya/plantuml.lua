@@ -100,6 +100,9 @@ function M.stop()
   if state.job then
     state.job:kill(15)
   end
+  if state.pane then
+    state.pane:close()
+  end
   vim.api.nvim_del_augroup_by_id(state.group)
   vim.fn.delete(state.directory, "rf")
 end
@@ -111,7 +114,7 @@ local function refresh(state)
     return -- Completion checks the latest changedtick and renders again if needed.
   end
   local tick = vim.api.nvim_buf_get_changedtick(state.buf)
-  state.job = render(state.buf, "svg", function(result)
+  state.job = render(state.buf, "png", function(result)
     state.job = nil
     if preview ~= state or not vim.api.nvim_buf_is_valid(state.buf) then
       return
@@ -119,9 +122,11 @@ local function refresh(state)
     if tick ~= vim.api.nvim_buf_get_changedtick(state.buf) then
       return refresh(state)
     end
-    if result.code == 0 and result.stdout:find("<svg", 1, true) then
-      write(state.directory .. "/next.svg", result.stdout)
-      assert(vim.uv.fs_rename(state.directory .. "/next.svg", state.directory .. "/diagram.svg"))
+    if result.code == 0 and result.stdout:sub(1, 4) == "\137PNG" then
+      state.version = (state.version or 0) + 1
+      local path = state.directory .. "/" .. state.version .. ".png"
+      write(path, result.stdout)
+      state.pane:update(path)
       state.error = nil
     else
       state.error = (result.stderr or ""):sub(1, 1500)
@@ -132,13 +137,16 @@ local function refresh(state)
     end
   end)
 end
-function M.open()
-  local buf = vim.api.nvim_get_current_buf()
+function M.open(buf, automatic)
+  buf = buf or vim.api.nvim_get_current_buf()
   if vim.bo[buf].filetype ~= "plantuml" then
     return notify("Open a PlantUML buffer first", vim.log.levels.WARN)
   end
   if preview and preview.buf == buf then
-    return M.stop()
+    if not automatic then
+      M.stop()
+    end
+    return
   end
   M.stop()
   local expected = generation
@@ -155,14 +163,10 @@ function M.open()
       group = vim.api.nvim_create_augroup("MayaPlantumlPreview", { clear = true }),
     }
     preview = state
-    write(
-      directory .. "/index.html",
-      [[<!doctype html><meta charset="utf-8"><title>PlantUML preview</title>
-<style>body{margin:1rem;background:#eee;color:#222;font:16px system-ui}header{position:sticky;top:0}img{display:block;max-width:none}button{margin:.3rem;padding:.3rem}</style>
-<header>PlantUML · live local preview <button onclick="zoom/=1.2;update()">−</button><button onclick="zoom*=1.2;update()">+</button><button onclick="zoom=1;update()">Reset</button></header><img id="diagram" alt="Waiting for the first valid diagram">
-<script>let zoom=1;const img=document.getElementById('diagram');function update(){img.style.width=img.naturalWidth*zoom+'px'}
-function reload(){const next=new Image();next.onload=()=>{img.src=next.src;img.onload=update};next.src='diagram.svg?'+Date.now()};setInterval(reload,1000);reload()</script>]]
-    )
+    state.pane = require("maya.media").pane(buf, M.stop)
+    if not state.pane then
+      return M.stop()
+    end
     state.timer = assert(vim.uv.new_timer())
     vim.api.nvim_create_autocmd({ "TextChanged", "TextChangedI", "BufWritePost" }, {
       group = state.group,
@@ -178,11 +182,21 @@ function reload(){const next=new Image();next.onload=()=>{img.src=next.src;img.o
       end,
     })
     vim.api.nvim_create_autocmd(
-      "BufWipeout",
+      { "BufWipeout", "BufDelete" },
       { group = state.group, buffer = buf, callback = M.stop }
     )
+    vim.api.nvim_create_autocmd("BufWinLeave", {
+      group = state.group,
+      buffer = buf,
+      callback = function()
+        vim.schedule(function()
+          if preview == state and vim.fn.bufwinid(buf) == -1 then
+            M.stop()
+          end
+        end)
+      end,
+    })
     refresh(state)
-    vim.ui.open(vim.uri_from_fname(directory .. "/index.html"))
   end)
 end
 function M.export(opts)
@@ -217,7 +231,9 @@ end
 function M.attach(buf)
   if not M.initialized then
     M.initialized = true
-    vim.api.nvim_create_user_command("PlantumlPreview", M.open, {})
+    vim.api.nvim_create_user_command("PlantumlPreview", function()
+      M.open()
+    end, {})
     vim.api.nvim_create_user_command("PlantumlStop", M.stop, {})
     vim.api.nvim_create_user_command(
       "PlantumlExport",
@@ -267,6 +283,14 @@ function M.attach(buf)
       root_markers = { ".git" },
     })
     vim.lsp.enable("plantuml_lsp")
+    if not vim.b[buf].maya_uml_auto_started and vim.fn.bufwinid(buf) ~= -1 then
+      vim.b[buf].maya_uml_auto_started = true
+      vim.schedule(function()
+        if vim.api.nvim_buf_is_valid(buf) and vim.fn.bufwinid(buf) ~= -1 then
+          M.open(buf, true)
+        end
+      end)
+    end
   end)
 end
 function M.status()
