@@ -1,6 +1,12 @@
 -- One inventory drives first-use installs and installer bootstrap.
 local M = { pending = {}, failed = {} }
 M.specs = {
+  plantuml = {
+    servers = {},
+    packages = {},
+    module = "maya.plantuml",
+    extensions = { "puml", "plantuml", "iuml", "pu" },
+  },
   python = { servers = { "ruff", "ty" }, packages = { "ruff", "ty" }, parser = "python" },
   javascript = {
     servers = { "ts_ls", "eslint" },
@@ -166,6 +172,9 @@ function M.ensure(buf)
   if not spec then
     return
   end
+  if spec.module then
+    require(spec.module).attach(buf)
+  end
   M.parser(buf, spec.parser)
   local registry = require("mason-registry")
   local function packages()
@@ -184,6 +193,13 @@ function M.ensure(buf)
   end
 end
 function M.setup()
+  local extensions = {}
+  for ft, spec in pairs(M.specs) do
+    for _, extension in ipairs(spec.extensions or {}) do
+      extensions[extension] = ft
+    end
+  end
+  vim.filetype.add({ extension = extensions })
   local caps = require("blink.cmp").get_lsp_capabilities()
   vim.lsp.config("*", { capabilities = caps })
   vim.lsp.config("lua_ls", {

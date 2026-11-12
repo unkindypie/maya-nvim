@@ -1,3 +1,26 @@
+# PlantUML on-demand tools — 2026-11-12
+
+Validated local PlantUML 1.2026.10 (verified JAR checksum) and plantuml-lsp
+`dd37e40914b8c2826c360c8ee7d3a211f7e7af83` on Linux/Neovim 0.12.5. Setup downloaded
+and built the pinned language server with the isolated Go toolchain and extracted
+PlantUML's standard library. Real Java rendering passed with Smetana, without
+Graphviz installed.
+
+`tests/plantuml.py` passed lazy-load assertions, filetype/syntax, real LSP attachment
+and syntax diagnostics, relative includes, unsaved preview updates, last-good SVG
+retention after invalid edits, PNG/SVG export, cancellation after delayed setup,
+source preservation and temporary-file cleanup. The browser opener is stubbed in
+the test: interactive browser zoom/reload and macOS installation are unverified.
+The test requires Java and installed tools; provision with
+`NVIM_APPNAME=maya-nvim python3 scripts/setup_plantuml.py ~/.local/share/maya-nvim/tools/plantuml`
+when using default XDG paths.
+
+All 69 Python unit tests, shell syntax, headless startup and editor integration
+passed. A startup trace shows only PlantUML filetype registration (about 0.03 ms
+in this sample); the syntax plugin's body, Maya preview module, Java renderer and
+language server remain unloaded until use. This is not an overall interactive
+startup benchmark or a claim to fix existing startup latency.
+
 # Native Cursortab behavior defaults — 2026-10-30
 
 Restored native 50 ms delays, prefetch, cursor predictions/auto-advance and Normal

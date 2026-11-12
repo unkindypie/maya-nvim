@@ -19,7 +19,7 @@ for ft, spec in pairs(languages.specs) do
     for _, name in ipairs(spec.packages) do
       packages[name] = true
     end
-    if not vim.tbl_contains(parsers, spec.parser) then
+    if spec.parser and not vim.tbl_contains(parsers, spec.parser) then
       table.insert(parsers, spec.parser)
     end
   end
