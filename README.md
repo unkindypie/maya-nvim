@@ -46,7 +46,7 @@ Launch your new maya-nvim:
 mvim
 ```
 
-![maya-nvim running in Kitty with restored buffers and a Pokémon notification](docs/images/mvim.png)
+![maya-nvim in Kitty with PlantUML source and an automatic diagram preview pane](docs/images/mvim-diagrams.webp)
 
 The installer links the repository into `${XDG_CONFIG_HOME:-~/.config}/maya-nvim`,
 installs the launcher under `~/.local/bin` and an executable symlink under
