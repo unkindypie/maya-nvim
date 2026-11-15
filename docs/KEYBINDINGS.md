@@ -141,8 +141,9 @@ author/date/commit text is shortened to fit beside the file content.
 Neovim's native `eol_right_align` placement avoids stale-window sizing errors
 when switching into a diff tab.
 
-Markdown files render headings, tables, checkboxes, and code blocks inside the
-buffer. Use `Space om` or `:RenderMarkdown toggle` to switch rendering off/on.
+Markdown and MDX files render headings, tables, checkboxes, and code blocks
+inside the buffer. MDX previews cover Markdown syntax; JSX components and
+expressions remain source and are not executed. Use `Space om` or `:RenderMarkdown toggle` to switch rendering off/on.
 Long Markdown lines wrap visually at word boundaries, with indentation carried
 onto continuation rows. Wrapping adapts to the window width in both editing and
 preview modes; it does not insert newlines or reformat the file. Other filetypes

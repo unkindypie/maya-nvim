@@ -32,7 +32,7 @@ return {
   { "nvim-tree/nvim-web-devicons", lazy = true },
   {
     "MeanderingProgrammer/render-markdown.nvim",
-    ft = "markdown",
+    ft = { "markdown", "mdx" },
     cmd = "RenderMarkdown",
     dependencies = { "nvim-treesitter/nvim-treesitter", "nvim-tree/nvim-web-devicons" },
     opts = {

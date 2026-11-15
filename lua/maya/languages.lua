@@ -51,6 +51,8 @@ M.specs = {
   },
   html = { servers = { "html" }, packages = { "html-lsp", "prettier" }, parser = "html" },
   css = { servers = { "cssls" }, packages = { "css-lsp", "prettier" }, parser = "css" },
+  -- Partial MDX: render Markdown structure; leave JSX/ESM as source.
+  mdx = { servers = {}, packages = { "prettier" }, parser = "markdown", extensions = { "mdx" } },
   markdown = {
     servers = { "marksman" },
     packages = { "marksman", "prettier" },
@@ -195,6 +197,9 @@ end
 function M.setup()
   local extensions = {}
   for ft, spec in pairs(M.specs) do
+    if spec.parser then
+      vim.treesitter.language.register(spec.parser, ft)
+    end
     for _, extension in ipairs(spec.extensions or {}) do
       extensions[extension] = ft
     end

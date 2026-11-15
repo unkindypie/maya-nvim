@@ -18,6 +18,7 @@ Unknown filetypes do not trigger arbitrary package downloads.
 | Docker        | dockerls                 | hadolint                                                                 |
 | YAML          | yamlls                   | SchemaStore, Prettier                                                    |
 | HTML/CSS/SCSS | html/cssls               | Prettier                                                                 |
+| MDX           | —                        | Prettier; partial in-buffer Markdown rendering                           |
 | Markdown      | marksman                 | Prettier                                                                 |
 | PlantUML      | plantuml-lsp (on demand) | Syntax highlighting, local renderer diagnostics and live browser preview |
 | Rust          | rust-analyzer            | rustfmt from the user's Rust toolchain                                   |
@@ -27,6 +28,18 @@ bootstrap to exercise installation on first use. PlantUML tools are also deferre
 Python/JS debug adapters are provisioned by the installer. Mason package versions
 may move independently of `lazy-lock.json`; inspect installed versions in Mason,
 and record/test tool upgrades rather than assuming the plugin lock pins tools.
+
+## Markdown and MDX
+
+`.md` and `.mdx` open with automatic in-buffer previews and visual word wrapping.
+`Space om` toggles rendering; Insert mode shows the source. MDX reuses the
+Markdown parser and renderer for headings, lists, tables and fenced code, with
+MDX-aware Prettier formatting and JSX-style comments.
+
+MDX support is partial: JSX components, imports and expressions remain editable
+source and are not executed. Markdown nested inside JSX blocks may not render.
+Use the project's development server for the fully rendered component page.
+Marksman is only enabled for regular Markdown.
 
 ## Python
 

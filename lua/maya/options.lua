@@ -48,9 +48,12 @@ vim.filetype.add({
   pattern = { [".*/hypr/.*%.conf"] = "hyprlang", ["[jt]sconfig.*%.json"] = "jsonc" },
 })
 vim.api.nvim_create_autocmd("FileType", {
-  pattern = "markdown",
+  pattern = { "markdown", "mdx" },
   desc = "Wrap Markdown visually at word boundaries without changing source lines",
-  callback = function()
+  callback = function(event)
+    if event.match == "mdx" then
+      vim.bo.commentstring = "{/* %s */}"
+    end
     vim.opt_local.wrap = true
     vim.opt_local.linebreak = true
     vim.opt_local.breakindent = true

@@ -13,6 +13,69 @@ os.environ["MAYA_NVIM_NO_SOUND"] = "1"
 
 
 class MarkdownPreviewTest(unittest.TestCase):
+    def test_mdx_partial_preview_and_formatting(self):
+        source = (
+            "import {Card} from './Card'\n\n"
+            "# MDX preview\n\n"
+            "- [x] Markdown content\n\n"
+            "| Tool | State |\n| --- | --- |\n| mvim | Ready |\n\n"
+            "```js\nconsole.log('hello')\n```\n\n"
+            '<Card title="Custom">{1 + 1}</Card>\n\n'
+            "Cursor here.\n"
+        )
+        with tempfile.TemporaryDirectory(prefix="maya-mdx-") as temp:
+            file = Path(temp) / "preview.mdx"
+            file.write_text(source)
+            nvim = start()
+            try:
+                nvim.ui_attach(120, 40, rgb=True)
+                self.assertTrue(
+                    nvim.exec_lua('return package.loaded["render-markdown"] == nil')
+                )
+                nvim.command("edit " + str(file))
+                self.assertEqual(nvim.current.buffer.options["filetype"], "mdx")
+                self.assertTrue(nvim.current.window.options["wrap"])
+                self.assertTrue(nvim.current.window.options["linebreak"])
+                self.assertTrue(nvim.current.window.options["breakindent"])
+                self.assertEqual(
+                    nvim.current.buffer.options["commentstring"], "{/* %s */}"
+                )
+                self.assertEqual(
+                    nvim.exec_lua("return vim.treesitter.get_parser(0):lang()"),
+                    "markdown",
+                )
+                nvim.current.window.cursor = (17, 0)
+                marks = '#vim.api.nvim_buf_get_extmarks(0,vim.api.nvim_get_namespaces()["render-markdown.nvim"],0,-1,{})'
+                wait(nvim, marks + " > 0")
+                time.sleep(0.3)  # Let the initial asynchronous render settle.
+                self.assertEqual(file.read_text(), source)
+                self.assertFalse(nvim.current.buffer.options["modified"])
+                wait(nvim, 'vim.fn.maparg(" om", "n") ~= ""')
+                nvim.input(" om")
+                wait(nvim, 'require("render-markdown").get() == false')
+                wait(nvim, marks + " == 0")
+                nvim.input(" om")
+                wait(nvim, marks + " > 0")
+                nvim.input("i")
+                wait(nvim, marks + " == 0")
+                nvim.input("\x1b")
+                wait(nvim, marks + " > 0")
+                # Prettier must infer MDX, preserving JSX and ESM rather than escaping them.
+                nvim.exec_lua(
+                    'require("conform").format({timeout_ms=5000,lsp_format="never"})'
+                )
+                text = "\n".join(nvim.current.buffer[:])
+                self.assertIn("import { Card }", text)
+                self.assertIn('<Card title="Custom">{1 + 1}</Card>', text)
+                self.assertNotIn("&lt;Card", text)
+                self.assertEqual(file.read_text(), source)
+                code = Path(temp) / "code.lua"
+                code.write_text("local value = 1\n")
+                nvim.command("edit! " + str(code))
+                self.assertFalse(nvim.current.window.options["wrap"])
+            finally:
+                stop(nvim)
+
     def test_render_and_toggle_preserve_source(self):
         source = '# Preview\n\n| Tool | State |\n| --- | --- |\n| mvim | Ready |\n\n- [x] Markdown\n\n```lua\nprint("hello")\n```\n\nCursor here.\n'
         long_line = "  - " + "readable prose " * 20 + "WRAPTAIL"
